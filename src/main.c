@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "tnetacle.h"
+#include "tntexits.h"
 
 int debug;
 
@@ -48,7 +49,7 @@ main(int argc, char *argv[]) {
 	argc -= optind;
 	argv += optind;
 
-	return 0;
+	return TNT_OK;
 }
 
 static void
@@ -56,6 +57,6 @@ usage(void) {
 	char *progname = tnt_getprogname();
 
 	(void)fprintf(stderr, "%s: [-dh]\n", progname);
-	exit(64);
+	exit(TNT_USAGE);
 }
 
