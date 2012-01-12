@@ -23,7 +23,7 @@
 #include "compress.h"
 
 t_string *
-do_compress(t_string *in)
+tnt_compress(t_string *in)
 {
     int		error;
     t_string	*out;
@@ -91,7 +91,7 @@ do_compress(t_string *in)
 }
 
 t_string *
-do_uncompress(t_string *in, const size_t orignal_len)
+tnt_uncompress(t_string *in, const size_t orignal_len)
 {
     int		ret;
     t_string	*out;
