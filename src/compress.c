@@ -14,9 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/mman.h>
-
-#include <err.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,8 +33,8 @@ do_compress(t_string *in)
     out->data = malloc((in->size < Z_MIN_SPACE ? Z_MIN_SPACE : in->size));
     if (out == NULL || out->data == NULL)
     {
-        warn("OOM\n");
-        return (NULL);
+        log_warn("do_compress");
+        return NULL;
     }
 
     /* Initialisation */
@@ -47,7 +44,7 @@ do_compress(t_string *in)
     error = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
     if (error != Z_OK)
     {
-        warn("Error on init zlib number %d\n", error);
+        log_warnx("zlib: error on deflateInit (%d)\n", error);
         return (NULL);
     }
     strm.avail_in = in->size;
@@ -67,7 +64,7 @@ do_compress(t_string *in)
 	  (in->size / 2 < Z_MIN_SPACE ? Z_MIN_SPACE : in->size / 2));
         if (out->data == NULL)
         {
-            warn("OOM\n");
+            log_warn("do_compress");
             (void)deflateEnd(&strm);
             return NULL;
         }
@@ -81,7 +78,7 @@ do_compress(t_string *in)
     /* Should never happen */
     if (error != Z_STREAM_END)
     {
-        warn("Error deflating\n");
+        log_warnx("zlib: deflating error\n");
         free(out->data);
         free(out);
         (void)deflateEnd(&strm);
@@ -104,7 +101,7 @@ do_uncompress(t_string *in, const size_t orignal_len)
     out->data = malloc(orignal_len);
     if (out == NULL || out->data == NULL)
     {
-        warn("OOM\n");
+        log_warn("do_uncompress");
         return NULL;
     }
     strm.zalloc = Z_NULL;
@@ -118,13 +115,13 @@ do_uncompress(t_string *in, const size_t orignal_len)
     ret = inflateInit(&strm);
     if (ret != Z_OK)
     {
-        warn("Error on init zlib number %d\n", ret);
+        log_warnx("zlib: error on inflateInit (%d)\n", error);
         return NULL;
     }
     ret = inflate(&strm, Z_FINISH);
     if (ret != Z_STREAM_END)
     {
-        warn("Error on decompressing number %d\n", ret);
+        log_warnx("zlib: error on inflate (%d)\n", error);
         free(out->data);
         free(out);
         out = NULL;
