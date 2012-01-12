@@ -49,6 +49,14 @@ main(int argc, char *argv[]) {
 	argc -= optind;
 	argv += optind;
 
+	log_init();
+
+	if (geteuid())
+		log_errx(1, "need root privileges");
+
+	if ((pw = getpwnam(TNETACLE_USER)) == NULL)
+		log_errx(TNT_NOUSER, "unknown user %s", TNETACLE_USER);
+
 	return TNT_OK;
 }
 
