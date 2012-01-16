@@ -87,6 +87,8 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 
 	imsg_init(&ibuf, imsg_fds[1]);
 
+	log_info("tnetacle unpriv ready");
+
 	for (;;) {
 		n = imsg_read(&ibuf);
 		if (n == -1) {
