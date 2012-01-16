@@ -59,11 +59,12 @@ tnt_priv_drop(struct passwd *pw) {
 int
 tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	pid_t pid;
-	
+	struct imsg imsg;
+	struct imsgbuf ibuf;
+
 	switch ((pid = fork())) {
 	case -1:
-		(void)fprintf(stderr, "cannot fork");
-		exit(TNT_OSERR);
+		log_err(TNT_OSERR, "tnt_fork: ");
 		break;
 	case 0:
 		tnt_setproctitle("[unpriv]");
@@ -84,7 +85,35 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	if (close(imsg_fds[0]))
 		log_err(1, "[unpriv] close");
 
-	/* imsg stuff here */
+	imsg_init(&ibuf, imsg_fds[1]);
+
+	for (;;) {
+		n = imsg_read(&ibuf);
+		if (n == -1) {
+			log_warnx(1, "[unpriv] loose some imsgs");
+			imsg_clear(&ibuf);
+			continue;
+		}
+		if (n == 0)
+			log_errx(1, "[unpriv] pipe closed");
+
+		for (;;) {
+			/* Loops through the queue created by imsg_read */
+			n = imsg_get(&ibuf, &imsg);
+			if (n == -1)
+				log_err(1, "[unpriv] get");
+
+			/* Nothing was ready */
+			if (n == 0)
+				break;
+
+			switch (imsg.hdr.type) {
+			default:
+				break;
+			}
+			imsg_free(&imsg);
+		}
+	}
 	exit(TNT_OK);
 }
 
