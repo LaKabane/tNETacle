@@ -31,6 +31,16 @@
 volatile sig_atomic_t chld_quit;
 
 void
+chld_sighdlr(int sig) {
+	switch (sig) {
+	case SIGTERM:
+	case SIGINT:
+		chld_quit = 1;
+		break;
+	}
+}
+
+void
 tnt_priv_drop(struct passwd *pw) {
 	struct stat ss; /* Heil! */
 
@@ -76,8 +86,8 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 
 	tnt_priv_drop(pw);
 
-	/*signal(SIGTERM, unpriv_sighdlr);
-	signal(SIGINT, unpriv_sighdlr);*/
+	signal(SIGTERM, chld_sighdlr);
+	signal(SIGINT, chld_sighdlr);
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGHUP, SIG_IGN);
 	signal(SIGCHLD, SIG_DFL);
