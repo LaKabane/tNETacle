@@ -83,7 +83,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	signal(SIGCHLD, SIG_DFL);
 
 	if (close(imsg_fds[0]))
-		log_err(1, "[unpriv] close");
+		log_notice("[unpriv] close");
 
 	imsg_init(&ibuf, imsg_fds[1]);
 
