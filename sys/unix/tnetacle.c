@@ -15,6 +15,7 @@
  */
 
 #include <sys/types.h>
+#include <sys/select.h>
 #include <sys/stat.h>
 
 #include <grp.h>

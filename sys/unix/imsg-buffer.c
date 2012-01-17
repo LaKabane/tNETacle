@@ -247,7 +247,7 @@ msgbuf_write(struct msgbuf *msgbuf)
 	msg.msg_iovlen = i;
 
 	if (buf != NULL && buf->fd != -1) {
-		msg.msg_control = (caddr_t)&cmsgbuf.buf;
+		msg.msg_control = &cmsgbuf.buf;
 		msg.msg_controllen = sizeof(cmsgbuf.buf);
 		cmsg = CMSG_FIRSTHDR(&msg);
 		cmsg->cmsg_len = CMSG_LEN(sizeof(int));

@@ -21,6 +21,11 @@
 #ifndef _IMSG_H_
 #define _IMSG_H_
 
+#if defined Linux
+typedef unsigned char u_char;
+#define IOV_MAX 1024
+#endif
+
 #define IBUF_READ_SIZE		65535
 #define IMSG_HEADER_SIZE	sizeof(struct imsg_hdr)
 #define MAX_IMSGSIZE		16384
