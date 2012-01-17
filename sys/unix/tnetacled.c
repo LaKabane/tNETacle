@@ -80,14 +80,20 @@ main(int argc, char *argv[]) {
 
 	log_init();
 
-	if (geteuid())
-		log_errx(1, "need root privileges");
+	if (geteuid()) {
+		(void)fprintf(stderr, "need root privileges\n");
+		return 1;
+	}
 
-	if ((pw = getpwnam(TNETACLE_USER)) == NULL)
-		log_errx(TNT_NOUSER, "unknown user " TNETACLE_USER);
+	if ((pw = getpwnam(TNETACLE_USER)) == NULL) {
+		(void)fprintf(stderr, "unknown user " TNETACLE_USER "\n");
+		return TNT_NOUSER;
+	}
 
-	if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1)
-		log_err(1, "socketpair");
+	if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1) {
+		perror("socketpair");
+		return 1;
+	}
 
 	signal(SIGCHLD, sighdlr);
 	chld_pid = tnt_fork(imsg_fds, pw);
