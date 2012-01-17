@@ -25,8 +25,24 @@
 #include "tntexits.h"
 
 int debug;
+volatile sig_atomic_t sigchld;
+volatile sig_atomic_t quit;
 
 static void usage(void);
+
+void
+sighdlr(int sig) {
+	switch (sig) {
+	case SIGTERM:
+	case SIGINT:
+		quit = 1;
+		break;
+	case SIGCHLD:
+		sigchld = 1;
+		break;
+	/* TODO: SIGHUP */
+	}
+}
 
 /* 
  * Added here for initial convenience, but the main will
@@ -65,7 +81,11 @@ main(int argc, char *argv[]) {
 	if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1)
 		log_err(1, "socketpair");
 
+	signal(SIGCHLD, sighdlr);
 	chld_pid = tnt_fork(imsg_fds, pw);
+
+	signal(SIGTERM, sighdlr);
+	signal(SIGINT, sighdlr);
 
 	if (close(imsg_fds[1]))
 		log_notice("[priv] close");
@@ -98,7 +118,15 @@ main(int argc, char *argv[]) {
 			}
 			imsg_free(&imsg);
 		}
+		
+		if (sigchld == 1) {
+			quit = 1;
+			chld_pid = 0;
+			sigchld = 0;
+		}
 	}
+
+	signal(SIGCHLD, SIG_DFL);
 
 	if (chld_pid != 0)
 		kill(chld_pid, SIGTERM)
