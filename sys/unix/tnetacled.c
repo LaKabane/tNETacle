@@ -15,7 +15,9 @@
  */
 
 #include <sys/types.h>
+#include <sys/socket.h>
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +25,12 @@
 
 #include "tnetacle.h"
 #include "tntexits.h"
+#include "log.h"
+
+/* imsg specific includes */
+#include <sys/uio.h>
+#include <sys/queue.h>
+#include <imsg.h>
 
 int debug;
 volatile sig_atomic_t sigchld;
@@ -76,7 +84,7 @@ main(int argc, char *argv[]) {
 		log_errx(1, "need root privileges");
 
 	if ((pw = getpwnam(TNETACLE_USER)) == NULL)
-		log_errx(TNT_NOUSER, "unknown user %s", TNETACLE_USER);
+		log_errx(TNT_NOUSER, "unknown user " TNETACLE_USER);
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1)
 		log_err(1, "socketpair");
@@ -92,10 +100,10 @@ main(int argc, char *argv[]) {
 
 	imsg_init(&ibuf, imsg_fds[1]);
 
-	while (quit == 0)
+	while (quit == 0) {
 		int n = imsg_read(&ibuf);
 		if (n == -1) {
-			log_warnx(1, "[priv] loose some imsgs");
+			log_warnx("[priv] loose some imsgs");
 			imsg_clear(&ibuf);
 			continue;
 		}
@@ -129,9 +137,9 @@ main(int argc, char *argv[]) {
 	signal(SIGCHLD, SIG_DFL);
 
 	if (chld_pid != 0)
-		kill(chld_pid, SIGTERM)
+		kill(chld_pid, SIGTERM);
 
-	msgbuf_clear(*ibuf->w);
+	msgbuf_clear(&ibuf.w);
 	log_info("Terminating");
 	return TNT_OK;
 }

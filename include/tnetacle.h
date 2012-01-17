@@ -20,6 +20,19 @@
 #ifndef TNETACLE_H__
 #define TNETACLE_H__
 
+/*
+ * Add this user to your system, with daemon class,
+ * nologin shell and /var/empty for home.
+ */
+#define TNETACLE_USER "_tnetacle"
+
+/*
+ * Definition of types for our imsg.
+ */
+enum imsg_type {
+	IMSG_NONE
+};
+
 char 		*tnt_getprogname(void);
 
 #endif
