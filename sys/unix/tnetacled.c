@@ -62,7 +62,6 @@ main(int argc, char *argv[]) {
 	pid_t chld_pid;
 	struct passwd *pw;
 	int imsg_fds[2];
-	struct imsg imsg;
 	struct imsgbuf ibuf;
 
 	while ((ch = getopt(argc, argv, "dh")) != -1) {
@@ -107,32 +106,8 @@ main(int argc, char *argv[]) {
 	imsg_init(&ibuf, imsg_fds[1]);
 
 	while (quit == 0) {
-		int n = imsg_read(&ibuf);
-		if (n == -1) {
-			log_warnx("[priv] loose some imsgs");
-			imsg_clear(&ibuf);
-			continue;
-		}
-		if (n == 0)
-			log_errx(1, "[priv] pipe closed");
+		select(1, NULL, NULL, NULL, NULL);
 
-		for (;;) {
-			/* Loops through the queue created by imsg_read */
-			n = imsg_get(&ibuf, &imsg);
-			if (n == -1)
-				log_err(1, "[priv] get");
-
-			/* Nothing was ready */
-			if (n == 0)
-				break;
-
-			switch (imsg.hdr.type) {
-			default:
-				break;
-			}
-			imsg_free(&imsg);
-		}
-		
 		if (sigchld == 1) {
 			quit = 1;
 			chld_pid = 0;
@@ -156,5 +131,43 @@ usage(void) {
 
 	(void)fprintf(stderr, "%s: [-dh]\n", progname);
 	exit(TNT_USAGE);
+}
+
+static int
+dispatch_imsg(struct imsgbuf *ibuf) {
+	struct imsg imsg;
+	int n;
+
+	n = imsg_read(ibuf);
+	if (n == -1) {
+		log_warnx("[priv] loose some imsgs");
+		imsg_clear(ibuf);
+		return 0;
+	}
+
+	if (n == 0) {
+		log_warnx("[priv] pipe closed");
+		return -1;
+	}
+
+	for (;;) {
+		/* Loops through the queue created by imsg_read */
+		n = imsg_get(ibuf, &imsg);
+		if (n == -1) {
+			log_warnx("[priv] imsg_get");
+			return -1;
+		}
+
+		/* Nothing was ready */
+		if (n == 0)
+			break;
+
+		switch (imsg.hdr.type) {
+		default:
+			break;
+		}
+		imsg_free(&imsg);
+	}
+	return 0;
 }
 
