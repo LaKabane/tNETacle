@@ -28,6 +28,8 @@
 #include "tnetacle.h"
 #include "log.h"
 
+volatile sig_atomic_t chld_quit;
+
 void
 tnt_priv_drop(struct passwd *pw) {
 	struct stat ss; /* Heil! */
@@ -59,8 +61,6 @@ tnt_priv_drop(struct passwd *pw) {
 int
 tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	pid_t pid;
-	struct imsg imsg;
-	struct imsgbuf ibuf;
 
 	switch ((pid = fork())) {
 	case -1:
@@ -85,37 +85,64 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	if (close(imsg_fds[0]))
 		log_notice("[unpriv] close");
 
-	imsg_init(&ibuf, imsg_fds[1]);
+	/*imsg_init(&ibuf, imsg_fds[1]);*/
 
 	log_info("tnetacle unpriv ready");
 
-	for (;;) {
-		n = imsg_read(&ibuf);
-		if (n == -1) {
-			log_warnx(1, "[unpriv] loose some imsgs");
-			imsg_clear(&ibuf);
-			continue;
-		}
-		if (n == 0)
-			log_errx(1, "[unpriv] pipe closed");
+	while (chld_quit == 0) {
+		/* This is where Mota will put his network code */
+		(void)select(1, NULL, NULL, NULL, NULL);
 
-		for (;;) {
-			/* Loops through the queue created by imsg_read */
-			n = imsg_get(&ibuf, &imsg);
-			if (n == -1)
-				log_err(1, "[unpriv] get");
-
-			/* Nothing was ready */
-			if (n == 0)
-				break;
-
-			switch (imsg.hdr.type) {
-			default:
-				break;
-			}
-			imsg_free(&imsg);
-		}
+		/*
+		 * If there are pending actions from [priv],
+		 * call tnt_dispatch_imsg()
+		 */
 	}
 	exit(TNT_OK);
 }
+
+/*
+ * The purpose of this function is to handle requests sent by the
+ * root level process.
+ * If nothing is to be received, do not compile it.
+ */
+#if 0
+int
+tnt_dispatch_imsg(void) {
+	struct imsg imsg;
+	struct imsgbuf ibuf;
+	int n;
+
+	n = imsg_read(&ibuf);
+	if (n == -1) {
+		log_warnx(1, "[unpriv] loose some imsgs");
+		imsg_clear(&ibuf);
+		return 0;
+	}
+
+	if (n == 0) {
+		log_warnx(1, "[unpriv] pipe closed");
+		return -1;
+	}
+
+	for (;;) {
+		/* Loops through the queue created by imsg_read */
+		n = imsg_get(&ibuf, &imsg);
+		if (n == -1) {
+			log_warnx(1, "[unpriv] imsg_get");
+		}
+
+		/* Nothing was ready */
+		if (n == 0)
+			break;
+
+		switch (imsg.hdr.type) {
+		default:
+			break;
+		}
+		imsg_free(&imsg);
+	}
+	return 0;
+}
+#endif
 
