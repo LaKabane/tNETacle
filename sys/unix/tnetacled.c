@@ -35,6 +35,11 @@ static void usage(void);
 int
 main(int argc, char *argv[]) {
 	int ch;
+	pid_t chld_pid;
+	struct passwd *pw;
+	int imsg_fds[2];
+	struct imsg imsg;
+	struct imsgbuf ibuf;
 
 	while ((ch = getopt(argc, argv, "dh")) != -1) {
 		switch(ch) {
@@ -57,6 +62,49 @@ main(int argc, char *argv[]) {
 	if ((pw = getpwnam(TNETACLE_USER)) == NULL)
 		log_errx(TNT_NOUSER, "unknown user %s", TNETACLE_USER);
 
+	if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1)
+		log_err(1, "socketpair");
+
+	chld_pid = tnt_fork(imsg_fds, pw);
+
+	if (close(imsg_fds[1]))
+		log_notice("[priv] close");
+
+	imsg_init(&ibuf, imsg_fds[1]);
+
+	while (quit == 0)
+		int n = imsg_read(&ibuf);
+		if (n == -1) {
+			log_warnx(1, "[priv] loose some imsgs");
+			imsg_clear(&ibuf);
+			continue;
+		}
+		if (n == 0)
+			log_errx(1, "[priv] pipe closed");
+
+		for (;;) {
+			/* Loops through the queue created by imsg_read */
+			n = imsg_get(&ibuf, &imsg);
+			if (n == -1)
+				log_err(1, "[priv] get");
+
+			/* Nothing was ready */
+			if (n == 0)
+				break;
+
+			switch (imsg.hdr.type) {
+			default:
+				break;
+			}
+			imsg_free(&imsg);
+		}
+	}
+
+	if (chld_pid != 0)
+		kill(chld_pid, SIGTERM)
+
+	msgbuf_clear(*ibuf->w);
+	log_info("Terminating");
 	return TNT_OK;
 }
 
