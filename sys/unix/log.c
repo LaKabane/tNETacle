@@ -62,7 +62,7 @@ log_init(void) {
 	char	*progname = tnt_getprogname();
 
 	if (debug == 0)
-		openlog(progname, LOG_PID | LOG_NDELAY, LOG_DAEMON);
+		openlog(progname, LOG_PID | LOG_NDELAY, LOG_USER);
 
 	tzset();
 }
