@@ -118,28 +118,28 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
  */
 #if 0
 int
-tnt_dispatch_imsg(void) {
+tnt_dispatch_imsg(struct imsgbug *ibuf) {
 	struct imsg imsg;
-	struct imsgbuf ibuf;
 	int n;
 
-	n = imsg_read(&ibuf);
+	n = imsg_read(ibuf);
 	if (n == -1) {
-		log_warnx(1, "[unpriv] loose some imsgs");
-		imsg_clear(&ibuf);
+		log_warnx("[unpriv] loose some imsgs");
+		imsg_clear(ibuf);
 		return 0;
 	}
 
 	if (n == 0) {
-		log_warnx(1, "[unpriv] pipe closed");
+		log_warnx("[unpriv] pipe closed");
 		return -1;
 	}
 
 	for (;;) {
 		/* Loops through the queue created by imsg_read */
-		n = imsg_get(&ibuf, &imsg);
+		n = imsg_get(ibuf, &imsg);
 		if (n == -1) {
-			log_warnx(1, "[unpriv] imsg_get");
+			log_warnx("[unpriv] imsg_get");
+			return -1;
 		}
 
 		/* Nothing was ready */
