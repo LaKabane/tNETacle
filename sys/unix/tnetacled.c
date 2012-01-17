@@ -37,6 +37,7 @@ volatile sig_atomic_t sigchld;
 volatile sig_atomic_t quit;
 
 static void usage(void);
+static int dispatch_imsg(struct imsgbuf *);
 
 void
 sighdlr(int sig) {
@@ -63,6 +64,9 @@ main(int argc, char *argv[]) {
 	struct passwd *pw;
 	int imsg_fds[2];
 	struct imsgbuf ibuf;
+	/* XXX: To remove when Mota will bring his network code */
+	fd_set masterfds;
+	int fd_max;
 
 	while ((ch = getopt(argc, argv, "dh")) != -1) {
 		switch(ch) {
@@ -103,10 +107,21 @@ main(int argc, char *argv[]) {
 	if (close(imsg_fds[1]))
 		log_notice("[priv] close");
 
-	imsg_init(&ibuf, imsg_fds[1]);
+	imsg_init(&ibuf, imsg_fds[0]);
+
+	fd_max = ibuf.fd;
+	FD_ZERO(&masterfds);
+	FD_SET(ibuf.fd, &masterfds);
 
 	while (quit == 0) {
-		select(1, NULL, NULL, NULL, NULL);
+		fd_set readfds = masterfds;
+		if ((select(fd_max + 1, &readfds, NULL, NULL, NULL)) == -1)
+			log_err(1, "[priv] select");
+
+		if (FD_ISSET(ibuf.fd, &readfds)) {
+			if (dispatch_imsg(&ibuf) == -1)	
+				quit = 1;
+		}
 
 		if (sigchld == 1) {
 			quit = 1;

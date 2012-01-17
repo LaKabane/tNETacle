@@ -22,11 +22,17 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "tntexits.h"
 #include "tnetacle.h"
 #include "log.h"
+
+/* imsg specific includes */
+#include <sys/uio.h>
+#include <sys/queue.h>
+#include <imsg.h>
 
 volatile sig_atomic_t chld_quit;
 
@@ -71,6 +77,10 @@ tnt_priv_drop(struct passwd *pw) {
 int
 tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	pid_t pid;
+	struct imsgbuf ibuf;
+	/* XXX: To remove when Mota will bring his network code */
+	fd_set masterfds;
+	int fd_max;
 
 	switch ((pid = fork())) {
 	case -1:
@@ -95,18 +105,23 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	if (close(imsg_fds[0]))
 		log_notice("[unpriv] close");
 
-	/*imsg_init(&ibuf, imsg_fds[1]);*/
+	imsg_init(&ibuf, imsg_fds[1]);
 
 	log_info("tnetacle unpriv ready");
 
-	while (chld_quit == 0) {
-		/* This is where Mota will put his network code */
-		(void)select(1, NULL, NULL, NULL, NULL);
+	fd_max = ibuf.fd;
+	FD_ZERO(&masterfds);
+	FD_SET(ibuf.fd, &masterfds);
 
-		/*
-		 * If there are pending actions from [priv],
-		 * call tnt_dispatch_imsg()
-		 */
+	while (chld_quit == 0) {
+		fd_set readfds = masterfds;
+		if ((select(fd_max + 1, &readfds, NULL, NULL, NULL)) == -1)
+			log_err(1, "[unpriv] select");
+
+		if (FD_ISSET(ibuf.fd, &readfds)) {
+			if (tnt_dispatch_imsg(&ibuf) == -1)	
+				chld_quit = 1;
+		}
 	}
 	exit(TNT_OK);
 }
@@ -116,9 +131,8 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
  * root level process.
  * If nothing is to be received, do not compile it.
  */
-#if 0
 int
-tnt_dispatch_imsg(struct imsgbug *ibuf) {
+tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 	struct imsg imsg;
 	int n;
 
@@ -154,5 +168,4 @@ tnt_dispatch_imsg(struct imsgbug *ibuf) {
 	}
 	return 0;
 }
-#endif
 
