@@ -36,6 +36,7 @@
 #include <imsg.h>
 
 volatile sig_atomic_t chld_quit;
+int tnt_dispatch_imsg(struct imsgbuf *ibuf);
 
 void
 chld_sighdlr(int sig) {

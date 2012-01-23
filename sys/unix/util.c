@@ -18,10 +18,12 @@
 
 #include "tnetacle.h"
 
-__inline void
+void
 tnt_setproctitle(const char *s) {
 #ifdef HAVE_SETPROCTITLE
 	setproctitle(s);
+#else
+  (void)s;
 #endif
 }
 
