@@ -19,6 +19,8 @@
 #include <sys/socket.h>
 #include <sys/param.h>
 
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <net/if.h>
 #include <net/if_types.h>
 #include <net/if_tun.h>
@@ -34,22 +36,75 @@
 
 int
 tnt_tun_set_ip(struct device *dev, const char *addr) {
-	(void)dev;
-	(void)addr;
+	struct sockaddr_in sai;
+	int sock = -1;
+
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+		log_warn("[priv] %s: configuration socket", __func__);
+		return -1;
+	}
+
+	memset(&sai, '\0', sizeof sai);
+	sai.sin_family = AF_INET;
+	sai.sin_port = 0;
+	sai.sin_addr.s_addr = inet_addr(addr);
+	memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
+
+	if (ioctl(sock, SIOCSIFADDR, &(dev->ifr)) == -1) {
+	    log_warn("[priv] %s: ioctl SIOCSIFADDR", __func__);
+	    return -1;
+	}
+
+	close(sock);
+	log_info("[priv] set %s ip to %s", dev->ifr.ifr_name, addr);
 	return 0;
 }
 
 int
 tnt_tun_set_netmask(struct device *dev, const char *mask) {
-	(void)dev;
-	(void)mask;
+	struct sockaddr_in sai;
+	int sock = -1;
+
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+		log_warn("[priv] %s: configuration socket", __func__);
+		return -1;
+	}
+
+	memset(&sai, '\0', sizeof sai);
+	sai.sin_family = AF_INET;
+	sai.sin_port = 0;
+	sai.sin_addr.s_addr = inet_addr(netmask);
+	memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
+
+	if (ioctl(sock, SIOCSIFNETMASK, &(dev->ifr)) == -1) {
+	    log_warn("[priv] %s: ioctl SIOCSIFNETMASK", __func__);
+	    return -1;
+	}
+
+	close(sock);
+	log_info("[priv] set %s netmask to %s", dev->ifr.ifr_name, netmask);
 	return 0;
 }
 
 int
 tnt_tun_set_mac(struct device *dev, const char *mac) {
-	(void)dev;
-	(void)mac;
+	int sock = -1;
+	int i;
+
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+		log_warn("socket");
+		return -1;
+	}
+
+	for (i = 0; i <= 6; ++i)
+		dev->ifr.ifr_hwaddr.sa_data[i] = hwaddr[i];
+
+	if (ioctl(sock, SIOCSIFHWADDR, &(dev->ifr)) == -1) {
+	    log_warn("ioctl SIOCSIFHWADDR");
+	    return -1;
+	}
+
+	log_debug("Set %s mac to %s", dev->ifr.ifr_name, hwaddr);
 	return 0;
 }
 
