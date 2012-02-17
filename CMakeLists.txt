@@ -13,6 +13,7 @@ find_package(Event COMPONENTS core REQUIRED)
 
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 add_definitions(-DHAVE_SETPROCTITLE)
+add_definitions(-DHAVE_SETRESXID)
 
 if(UNIX)
   include_directories(/usr/include/ /usr/local/include)
@@ -42,6 +43,7 @@ endif()
 
 if (Darwin)
   remove_definitions(-DHAVE_SETPROCTITLE)
+  remove_definitions(-DHAVE_SETRESXID)
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tun-macosx.c)
 #macports
   include_directories(/opt/local/include)

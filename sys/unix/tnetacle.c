@@ -107,7 +107,7 @@ tnt_priv_drop(struct passwd *pw) {
 
     if (setgroups(1, &pw->pw_gid) == -1)
 	log_err(1, "[unpriv] can't drop privileges (setgroups)");
-#ifdef HAVE_SETPROCTITLE
+#ifdef HAVE_SETRESXID
     if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1 ||
 	setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
 	log_err(1, "[unpriv] can't drop privileges (setresid)");
