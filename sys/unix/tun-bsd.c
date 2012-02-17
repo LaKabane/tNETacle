@@ -36,143 +36,148 @@
 
 int
 tnt_tun_set_ip(struct device *dev, const char *addr) {
-	struct sockaddr_in sai;
-	int sock = -1;
+    struct sockaddr_in sai;
+    int sock = -1;
 
-	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		log_warn("[priv] %s: configuration socket", __func__);
-		return -1;
-	}
+    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+	log_warn("[priv] %s: configuration socket", __func__);
+	return -1;
+    }
 
-	memset(&sai, '\0', sizeof sai);
-	sai.sin_family = AF_INET;
-	sai.sin_port = 0;
-	sai.sin_addr.s_addr = inet_addr(addr);
-	memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
+    memset(&sai, '\0', sizeof sai);
+    sai.sin_family = AF_INET;
+    sai.sin_port = 0;
+    sai.sin_addr.s_addr = inet_addr(addr);
+    memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
 
-	if (ioctl(sock, SIOCSIFADDR, &(dev->ifr)) == -1) {
-	    log_warn("[priv] %s: ioctl SIOCSIFADDR", __func__);
-	    return -1;
-	}
+    if (ioctl(sock, SIOCSIFADDR, &(dev->ifr)) == -1) {
+	log_warn("[priv] %s: ioctl SIOCSIFADDR", __func__);
+	return -1;
+    }
 
-	close(sock);
-	log_info("[priv] set %s ip to %s", dev->ifr.ifr_name, addr);
-	return 0;
+    close(sock);
+    log_info("[priv] set %s ip to %s", dev->ifr.ifr_name, addr);
+    return 0;
 }
 
 int
 tnt_tun_set_netmask(struct device *dev, const char *netmask) {
-	struct sockaddr_in sai;
-	int sock = -1;
+    struct sockaddr_in sai;
+    int sock = -1;
 
-	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		log_warn("[priv] %s: configuration socket", __func__);
-		return -1;
-	}
+    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+	log_warn("[priv] %s: configuration socket", __func__);
+	return -1;
+    }
 
-	memset(&sai, '\0', sizeof sai);
-	sai.sin_family = AF_INET;
-	sai.sin_port = 0;
-	sai.sin_addr.s_addr = inet_addr(netmask);
-	memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
+    memset(&sai, '\0', sizeof sai);
+    sai.sin_family = AF_INET;
+    sai.sin_port = 0;
+    sai.sin_addr.s_addr = inet_addr(netmask);
+    memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
 
-	if (ioctl(sock, SIOCSIFNETMASK, &(dev->ifr)) == -1) {
-	    log_warn("[priv] %s: ioctl SIOCSIFNETMASK", __func__);
-	    return -1;
-	}
+    if (ioctl(sock, SIOCSIFNETMASK, &(dev->ifr)) == -1) {
+	log_warn("[priv] %s: ioctl SIOCSIFNETMASK", __func__);
+	return -1;
+    }
 
-	close(sock);
-	log_info("[priv] set %s netmask to %s", dev->ifr.ifr_name, netmask);
-	return 0;
+    close(sock);
+    log_info("[priv] set %s netmask to %s", dev->ifr.ifr_name, netmask);
+    return 0;
 }
 
 int
 tnt_tun_set_mac(struct device *dev, const char *mac) {
-	int sock = -1;
-	int i;
+#ifdef OpenBSD
+    log_info("tnt_tun_set_mac is currently not supported on your system");
+    return -1;
+#else
+    int sock = -1;
+    int i;
 
-	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		log_warn("socket");
-		return -1;
-	}
+    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+	log_warn("socket");
+	return -1;
+    }
 
-	for (i = 0; i <= 6; ++i)
-		dev->ifr.ifr_hwaddr.sa_data[i] = hwaddr[i];
+    for (i = 0; i <= 6; ++i)
+	dev->ifr.ifr_hwaddr.sa_data[i] = hwaddr[i];
 
-	if (ioctl(sock, SIOCSIFHWADDR, &(dev->ifr)) == -1) {
-	    log_warn("ioctl SIOCSIFHWADDR");
-	    return -1;
-	}
+    if (ioctl(sock, SIOCSIFHWADDR, &(dev->ifr)) == -1) {
+	log_warn("ioctl SIOCSIFHWADDR");
+	return -1;
+    }
 
-	log_debug("Set %s mac to %s", dev->ifr.ifr_name, hwaddr);
-	return 0;
+    log_debug("Set %s mac to %s", dev->ifr.ifr_name, hwaddr);
+    return 0;
+#endif
 }
 
 struct device *
 tnt_tun_open(void) {
-	struct device *dev = NULL;
-	int fd = -1;
-	int sock = -1;
-	int tun = 0;
-	char path[MAXPATHLEN];
+    struct device *dev = NULL;
+    int fd = -1;
+    int sock = -1;
+    int tun = 0;
+    char path[MAXPATHLEN];
 
-	/* Open the tun interface */
-	for (; tun < 256; ++tun) { /* XXX: magic value */
-		(void)memset(path, '\0', sizeof path);
-		(void)snprintf(path, sizeof path, "%s%i", "/dev/tun", tun);
-		if ((fd = open(path, O_RDWR)) > 0)
-			break;
-		else
-			log_debug("open tun%i", tun);
-	}
-	if (fd == -1 || fd == 256) {
-		log_warn("open failed: %s", path);
-		goto clean;
-	}
+    /* Open the tun interface */
+    for (; tun < 256; ++tun) { /* XXX: magic value */
+	(void)memset(path, '\0', sizeof path);
+	(void)snprintf(path, sizeof path, "%s%i", "/dev/tun", tun);
+	if ((fd = open(path, O_RDWR)) > 0)
+	    break;
+	else
+	    log_debug("open tun%i", tun);
+    }
+    if (fd == -1 || fd == 256) {
+	log_warn("open failed: %s", path);
+	goto clean;
+    }
 
-	if ((dev = malloc(sizeof(*dev))) == NULL) {
-		log_warn("malloc (while allocating device)");
-		goto clean;
-	}
+    if ((dev = malloc(sizeof(*dev))) == NULL) {
+	log_warn("malloc (while allocating device)");
+	goto clean;
+    }
 
-	/* configuration socket */
-	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		log_warn("socket");
-		goto clean;
-	}
+    /* configuration socket */
+    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+	log_warn("socket");
+	goto clean;
+    }
 
-	(void)memset(&(dev->ifr), '\0', sizeof(dev->ifr));
+    (void)memset(&(dev->ifr), '\0', sizeof(dev->ifr));
 
-	/* Get the internal parameters of ifr */
-	snprintf(dev->ifr.ifr_name, sizeof(dev->ifr.ifr_name),
-	    "tun%i", tun);
-	if (ioctl(sock, SIOCGIFFLAGS, &(dev->ifr)) == -1) {
-		log_warn("ioctl SIOCGIFFLAGS");
-		goto clean;
-	}
+    /* Get the internal parameters of ifr */
+    snprintf(dev->ifr.ifr_name, sizeof(dev->ifr.ifr_name),
+      "tun%i", tun);
+    if (ioctl(sock, SIOCGIFFLAGS, &(dev->ifr)) == -1) {
+	log_warn("ioctl SIOCGIFFLAGS");
+	goto clean;
+    }
 
-	/* Bring the interface up */
-	dev->ifr.ifr_flags |= IFF_UP;
-	if (ioctl(sock, SIOCSIFFLAGS, &(dev->ifr)) == -1) {
-		log_warn("ioctl SIOCSIFFLAGS");
-		goto clean;
-	}
+    /* Bring the interface up */
+    dev->ifr.ifr_flags |= IFF_UP;
+    if (ioctl(sock, SIOCSIFFLAGS, &(dev->ifr)) == -1) {
+	log_warn("ioctl SIOCSIFFLAGS");
+	goto clean;
+    }
 
-	dev->fd = fd;
+    dev->fd = fd;
 
-	close(sock);
-	return dev;
+    close(sock);
+    return dev;
 clean:
-	if (fd != -1)
-		close(fd);
-	if (sock != -1)
-		close(sock);
-	free(dev);
-	return NULL;
+    if (fd != -1)
+	close(fd);
+    if (sock != -1)
+	close(sock);
+    free(dev);
+    return NULL;
 }
 
 void
 tnt_tun_close(struct device *dev) {
-	(void)close(dev->fd);
+    (void)close(dev->fd);
 }
 

@@ -16,7 +16,7 @@
 
 #include <stdlib.h>
 #ifdef HAVE_BSD_COMPAT
-#include <bsd/unistd.h>
+# include <bsd/unistd.h>
 #endif
 #include "tnetacle.h"
 #include "log.h"
@@ -24,25 +24,25 @@
 void
 tnt_setproctitle(const char *s) {
 #ifdef HAVE_SETPROCTITLE
-	setproctitle(s);
+    setproctitle(s);
 #else
-	log_info("Your system does not have setproctitle syscall");
-  (void)s;
+    log_info("Your system does not have setproctitle syscall");
+    (void)s;
 #endif
 }
 
 char *
 tnt_getprogname(void) {
 #if defined OpenBSD || Minix
-	extern char *__progname;
-	return __progname;
+    extern char *__progname;
+    return __progname;
 #elif defined NetBSD || FreeBSD || Darwin
-	return (char *)getprogname();
+    return (char *)getprogname();
 #elif defined Linux
-	extern char *program_invocation_short_name;
-	return program_invocation_short_name;
+    extern char *program_invocation_short_name;
+    return program_invocation_short_name;
 #else
-	return "tNETacle";
+    return "tNETacle";
 #endif
 }
 

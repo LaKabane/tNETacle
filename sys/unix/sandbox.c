@@ -25,14 +25,14 @@
  */
 void
 sandbox(void) {
-	struct rlimit rl;
+    struct rlimit rl;
 
-	rl.rlim_cur = rl.rlim_max = 0;
-	if (setrlimit(RLIMIT_FSIZE, &rl) == -1)
-		log_err(1, "setrlimit RLIMIT_FSIZE");
-	if (setrlimit(RLIMIT_NOFILE, &rl) == -1)
-		log_err(1, "setrlimit RLIMIT_NOFILE");
-	if (setrlimit(RLIMIT_NPROC, &rl) == -1)
-		log_err(1, "setrlimit RLIMIT_NPROC");
+    rl.rlim_cur = rl.rlim_max = 0;
+    if (setrlimit(RLIMIT_FSIZE, &rl) == -1)
+	log_err(1, "setrlimit RLIMIT_FSIZE");
+    if (setrlimit(RLIMIT_NOFILE, &rl) == -1)
+	log_err(1, "setrlimit RLIMIT_NOFILE");
+    if (setrlimit(RLIMIT_NPROC, &rl) == -1)
+	log_err(1, "setrlimit RLIMIT_NPROC");
 }
 
