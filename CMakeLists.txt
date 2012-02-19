@@ -12,6 +12,12 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	  )
 endif()
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  set(WINDOWS True)
+endif()
+
+find_package(Zlib)
+
 if(UNIX)
 	set(CMAKE_C_FLAGS "-W -Wall")
 	file(GLOB SOURCES_LIST sys/unix/*.c)
@@ -21,6 +27,18 @@ if(USE_CLANG)
   set(CMAKE_C_COMPILER clang)
 endif(USE_CLANG)
 
+if (WINDOWS)
+	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+
+	file(GLOB SOURCES_LIST src/*.c)
+	list(APPEND SOURCES_LIST sys/wnt/*.c)
+	if (ZLIB_FOUND)
+		include_directories(
+			 "${ZLIB_INCLUDE_DIRS}"
+		)
+	endif()
+endif()
+
 include_directories(
   ${CMAKE_HOME_DIRECTORY}/include
 )
@@ -29,3 +47,6 @@ add_executable(tNETacle
 	${SOURCES_LIST}
 )
 
+if (ZLIB_FOUND)
+	target_link_libraries(tNETacle ${ZLIB_LIBRARIES})
+endif()

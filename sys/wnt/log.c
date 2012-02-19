@@ -7,30 +7,30 @@ log_init(void) {
 }
 
 void
-log_err(int eval, const char *, ...) {
+log_err(int eval, const char *str, ...) {
 }
 
 void
-log_errx(int eval, const char *) {
+log_errx(int eval, const char *str) {
 }
 
 void
-log_warn(const char *, ...) {
+log_warn(const char *str, ...) {
 }
 
 void
-log_warnx(const char *, ...) {
+log_warnx(const char *str, ...) {
 }
 
 void
-log_notice(const char *, ...) {
+log_notice(const char *str, ...) {
 }
 
 void
-log_info(const char *, ...) {
+log_info(const char *str, ...) {
 }
 
 void
-log_debug(const char *, ...) {
+log_debug(const char *str, ...) {
 }
 
