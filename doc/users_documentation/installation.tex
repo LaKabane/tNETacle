@@ -1,1 +1,58 @@
 \section{Installation}
+\subsection{Unix-Like}
+\subsubsection{Gnu/Linux - Fondé sur Debian}
+\textcolor{red}{Non fonctionnel pour le moment}
+
+Un paquet .deb est présent sur le \href{http://eip.epitech.eu/2013/tnetacle/tnetacle.html}{site officiel} du tNETacle.
+
+Une fois ce paquet obtenu, lancez la commande d'installation du paquet.
+
+\begin{lstlisting}
+sudo dpkg -i tNETacle.deb
+\end{lstlisting}
+
+\subsubsection{OpenBSD}
+\textcolor{red}{Non fonctionnel pour le moment}
+
+Pour installer le tNETacle sous OpenBSD, téléchargez le
+paquet fait pour OpenBSD présent sur le \href{http://eip.epitech.eu/2013/tnetacle/tnetacle.html}{site officiel} du tNETacle.
+
+Ensuite, installez ce paquet. Pour cela, référez vous à la documentation de
+\href{http://www.openbsd.org/faq/fr/faq15.html}{pkg\_add(1)}
+
+\begin{lstlisting}
+sudo pkg_add -Ui tNETacle.tgz
+\end{lstlisting}
+
+
+Il est aussi possible de faire une installation à l'aide des \texttt{Ports}.
+Pour cela, allez dans le répertoire contenant les ports.
+Ensuite, il vous faut compiler les sources et les installer à l'aide de la commande make.
+
+\begin{lstlisting}
+cd PORTSDIR
+make
+sudo make install
+\end{lstlisting}
+
+\subsubsection{NetBSD}
+\textcolor{red}{Non fonctionnel pour le moment}
+
+Pour installer le tNETacle sous NetBSD, il faut ajouter le dépôt
+contenant les paquets du tNETacle à votre liste de dépôts.
+Ensuite, il faut mettre à jour votre liste de paquets interne à \texttt{pkgin}.
+Finalement, il faut exécuter une commande afin d'installer le tNETacle.
+Voici les commandes à exécuter :
+
+\begin{lstlisting}
+echo "http://eip.epitech.eu/2013/tnetacle/" > /usr/pkg/etc/pkgin/repositories.conf
+sudo pkgin update
+sudo pkgin install tNETacle
+\end{lstlisting}
+
+Il est aussi possible de faire l'installation à l'aide des ports.
+Pour cela, référez vous à la section "OpenBSD".
+
+\subsection{Windows}
+\textcolor{red}{Non fonctionnel pour le moment}
+Exécutez l'installateur.
