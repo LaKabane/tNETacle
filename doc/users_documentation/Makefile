@@ -1,4 +1,5 @@
-TARGETS			= tNETacle_Documentation_User_FR.pdf
+TARGETS			= 	tNETacle_Documentation_User_FR.pdf \
+				tNETacle_Documentation_User_EN.pdf
 
 RELPATH 		= $(shell pwd)
 
@@ -13,6 +14,12 @@ RESSOURCE_FILES		=	$(RELPATH)/tnetacle.cls	\
 				$(RELPATH)/desinstallation.tex	\
 				$(RELPATH)/faq.tex	\
 				$(RELPATH)/bugs.tex	\
+				$(RELPATH)/description-en.tex	\
+				$(RELPATH)/links.tex	\
+				$(RELPATH)/setup.tex	\
+				$(RELPATH)/uninstall.tex	\
+				$(RELPATH)/faq-en.tex	\
+				$(RELPATH)/bugs-en.tex	\
 
 export TEXINPUTS	:=  .:$(RELPATH):${TEXINPUTS}:
 
