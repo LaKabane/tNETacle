@@ -1,5 +1,0 @@
-dependencies (on debian):
-
-    - texlive
-    - texlive-latex-extra
-    - texlive-fonts-recommended
