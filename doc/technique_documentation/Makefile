@@ -10,6 +10,7 @@ RESSOURCE_FILES		=	$(RELPATH)/tnetacle.cls	\
 				$(RELPATH)/core.tex \
 				$(RELPATH)/share.tex \
 				$(RELPATH)/externe.tex \
+				$(RELPATH)/bugs.tex \
 
 export TEXINPUTS	:=  .:$(RELPATH):${TEXINPUTS}:
 
