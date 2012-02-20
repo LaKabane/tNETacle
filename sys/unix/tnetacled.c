@@ -133,7 +133,7 @@ main(int argc, char *argv[]) {
 		/* Flush our pending imsgs */
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds))
 			/*log_debug("[priv] msgbuf_write");*/
-			if (msgbuf_write(&ibuf.w) == -1) {
+			if (msgbuf_write(&ibuf.w) < 0) {
 				log_warnx("[priv] pipe write error");
 				quit = 1;
 			}

@@ -131,8 +131,8 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 			log_err(1, "[unpriv] select");
 
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds)) {
-			log_debug("[unpriv] msgbuf_write");
-			if (msgbuf_write(&ibuf.w) == -1) {
+			/*log_debug("[unpriv] msgbuf_write");*/
+			if (msgbuf_write(&ibuf.w) < 0) {
 				log_warnx("[unpriv] pipe write error");
 				chld_quit = 1;
 			}
@@ -140,7 +140,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 
 		/* Read what Martin replied to Martine */
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &readfds)) {
-			log_debug("[unpriv] dispatch_imsg");
+			/*log_debug("[unpriv] dispatch_imsg");*/
 			--nfds;
 			if (tnt_dispatch_imsg(&ibuf) == -1)
 				chld_quit = 1;
