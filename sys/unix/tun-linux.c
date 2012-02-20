@@ -31,11 +31,8 @@
 #include <string.h>
 #include <unistd.h>
 
-struct device {
-	int		af;	/* AF_INET || AF_INET6 */
-	int		fd;
-	struct ifreq	ifr;
-};
+#include "log.h"
+#include "tun.h"
 
 static int
 tnt_tun_set_ip(int sock, struct device *dev) {

@@ -28,6 +28,7 @@
 #include "tnetacle.h"
 #include "tntexits.h"
 #include "log.h"
+#include "tun.h"
 
 /* imsg specific includes */
 #include <sys/uio.h>
@@ -55,10 +56,6 @@ sighdlr(int sig) {
 	}
 }
 
-/* 
- * Added here for initial convenience, but the main will
- * move under sys/unix later.
- */
 int
 main(int argc, char *argv[]) {
 	int ch;
@@ -138,7 +135,7 @@ main(int argc, char *argv[]) {
 		kill(chld_pid, SIGTERM);
 
 	msgbuf_clear(&ibuf.w);
-	log_info("Terminating");
+	log_info("[priv] Terminating");
 	return TNT_OK;
 }
 
@@ -168,6 +165,8 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	}
 
 	for (;;) {
+		struct device *dev = NULL;
+
 		/* Loops through the queue created by imsg_read */
 		n = imsg_get(ibuf, &imsg);
 		if (n == -1) {
@@ -180,6 +179,13 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 			break;
 
 		switch (imsg.hdr.type) {
+		case IMSG_CREATE_DEV:
+			dev = tnt_tun_open();
+			imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, -1,
+			    &(dev->fd), sizeof(int));
+			free(dev);
+			dev = NULL;
+			break;
 		default:
 			break;
 		}

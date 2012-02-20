@@ -20,6 +20,10 @@
 #ifndef TNETACLE_H__
 #define TNETACLE_H__
 
+#if defined Linux
+# define _GNU_SOURCE
+#endif
+
 /*
  * Add this user to your system, with daemon class,
  * nologin shell and /var/empty for home.
@@ -30,7 +34,8 @@
  * Definition of types for our imsg.
  */
 enum imsg_type {
-	IMSG_NONE
+	IMSG_NONE,
+	IMSG_CREATE_DEV
 };
 
 char 		*tnt_getprogname(void);

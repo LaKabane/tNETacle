@@ -14,6 +14,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#if defined Linux
+# define _GNU_SOURCE
+#endif
+
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/stat.h>
@@ -136,6 +140,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 int
 tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 	struct imsg imsg;
+	int tun_fd = -1;
 	int n;
 
 	n = imsg_read(ibuf);
@@ -163,6 +168,12 @@ tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 			break;
 
 		switch (imsg.hdr.type) {
+		case IMSG_CREATE_DEV:
+			if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof(tun_fd))
+				log_errx(1, "Invalid IMSG_CREATE_DEV received");
+			(void)memcpy(&tun_fd, imsg.data, sizeof tun_fd);
+			log_info("Receive IMSG_CREATE_DEV: fd %i", tun_fd);
+			break;
 		default:
 			break;
 		}
