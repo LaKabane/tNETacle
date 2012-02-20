@@ -1,5 +1,0 @@
-\select@language {french}
-\contentsline {section}{\numberline {1}Client}{3}{section.1}
-\contentsline {subsection}{\numberline {1.1}Utilit\IeC {\'e}}{3}{subsection.1.1}
-\contentsline {subsection}{\numberline {1.2}Language}{3}{subsection.1.2}
-\contentsline {subsection}{\numberline {1.3}architecture}{3}{subsection.1.3}
