@@ -118,29 +118,29 @@ main(int argc, char *argv[]) {
 	while (quit == 0) {
 		int nfds;
 		fd_set readfds = masterfds;
-		fd_set writefds = masterfds;
+		fd_set writefds;
+
+		/* 
+		 * Activate write monitoring if and only if there is _effectively_
+		 * something to write in the ibuf queue.
+		 * Thanks OpenNTPD !
+		 */
+		FD_ZERO(&writefds);
+		if (ibuf.w.queued > 0)
+			FD_SET(ibuf.fd, &writefds);
+
 		if ((nfds = select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
 			log_err(1, "[priv] select");
 
 		/* Flush our pending imsgs */
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds))
-			/*log_debug("[priv] msgbuf_write");*/
-			switch (msgbuf_write(&ibuf.w)) {
-			case 0:
-				log_warnx("[priv] Ok ?");
-				break;
-			case -1:
+			if (msgbuf_write(&ibuf.w) < 0) {
 				log_warnx("[priv] pipe write error");
 				quit = 1;
-				break;
-			case -2:
-				log_warnx("[priv] pipe eof");
-				break;
 			}
 
 		/* Read what Martine is asking to Martin  */
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &readfds)) {
-			/*log_debug("[priv] dispatch_imsg");*/
 			--nfds;
 			if (dispatch_imsg(&ibuf) == -1)	
 				quit = 1;

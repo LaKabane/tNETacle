@@ -126,29 +126,28 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	while (chld_quit == 0) {
 		int nfds;
 		fd_set readfds = masterfds;
-		fd_set writefds = masterfds;
+		fd_set writefds;
+
+		/* 
+		 * Activate write monitoring if and only if there is _effectively_
+		 * something to write in the ibuf queue.
+		 * Thanks OpenNTPD !
+		 */
+		FD_ZERO(&writefds);
+		if (ibuf.w.queued > 0)
+			FD_SET(ibuf.fd, &writefds);
+
 		if ((nfds = select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
 			log_err(1, "[unpriv] select");
 
-		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds)) {
-			/*log_debug("[unpriv] msgbuf_write");*/
-			switch (msgbuf_write(&ibuf.w)) {
-			case 0:
-				log_warnx("[unpriv] Ok ?");
-				break;
-			case -1:
+		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds))
+			if (msgbuf_write(&ibuf.w) < 0) {
 				log_warnx("[unpriv] pipe write error");
 				chld_quit = 1;
-				break;
-			case -2:
-				log_warnx("[unpriv] pipe eof");
-				break;
 			}
-		}
 
 		/* Read what Martin replied to Martine */
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &readfds)) {
-			/*log_debug("[unpriv] dispatch_imsg");*/
 			--nfds;
 			if (tnt_dispatch_imsg(&ibuf) == -1)
 				chld_quit = 1;
