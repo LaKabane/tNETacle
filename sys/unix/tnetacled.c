@@ -116,7 +116,6 @@ main(int argc, char *argv[]) {
 	FD_SET(ibuf.fd, &masterfds);
 
 	while (quit == 0) {
-		int nfds;
 		fd_set readfds = masterfds;
 		fd_set writefds;
 
@@ -129,19 +128,18 @@ main(int argc, char *argv[]) {
 		if (ibuf.w.queued > 0)
 			FD_SET(ibuf.fd, &writefds);
 
-		if ((nfds = select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
+		if ((select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
 			log_err(1, "[priv] select");
 
 		/* Flush our pending imsgs */
-		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds))
+		if (FD_ISSET(ibuf.fd, &writefds))
 			if (msgbuf_write(&ibuf.w) < 0) {
 				log_warnx("[priv] pipe write error");
 				quit = 1;
 			}
 
 		/* Read what Martine is asking to Martin  */
-		if (nfds > 0 && FD_ISSET(ibuf.fd, &readfds)) {
-			--nfds;
+		if (FD_ISSET(ibuf.fd, &readfds)) {
 			if (dispatch_imsg(&ibuf) == -1)	
 				quit = 1;
 		}
@@ -175,6 +173,8 @@ static int
 dispatch_imsg(struct imsgbuf *ibuf) {
 	struct imsg imsg;
 	int n;
+	ssize_t datalen;
+	char buf[128];
 
 	n = imsg_read(ibuf);
 	if (n == -1) {
@@ -189,8 +189,6 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	}
 
 	for (;;) {
-		char *addr;
-
 		/* Loops through the queue created by imsg_read */
 		n = imsg_get(ibuf, &imsg);
 		if (n == -1) {
@@ -209,15 +207,18 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 			    &(dev->fd), sizeof(int));
 			break;
 		case IMSG_SET_IP:
-			if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof addr)
-				log_errx(1, "[priv] invalid IMSG_SET_IP received");	
-			(void)memcpy(&addr, imsg.data, sizeof addr);
 			if (dev == NULL) {
 				log_warnx("[priv] can't set ip, use IMSG_CREATE_DEV first");
 				break;
 			}
-			tnt_tun_set_ip(dev, addr);
-			log_info("[priv] receive IMSG_SET_IP: %s", addr);
+
+			datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
+			(void)memset(buf, '\0', sizeof buf);
+			(void)memcpy(buf, imsg.data, sizeof buf);
+			buf[datalen] = '\0';
+
+			log_info("[priv] receive IMSG_SET_IP: %s", buf);
+			tnt_tun_set_ip(dev, buf);
 			break;
 		default:
 			break;

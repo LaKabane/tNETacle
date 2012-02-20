@@ -40,7 +40,7 @@ tnt_tun_set_ip(struct device *dev, const char *addr) {
 	int sock = -1;
 
 	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		log_warn("socket");
+		log_warn("[priv] %s: configuration socket", __func__);
 		return -1;
 	}
 
@@ -51,11 +51,11 @@ tnt_tun_set_ip(struct device *dev, const char *addr) {
 	memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
 
 	if (ioctl(sock, SIOCSIFADDR, &(dev->ifr)) == -1) {
-	    log_warn("ioctl SIOCSIFADDR");
+	    log_warn("[priv] %s: ioctl SIOCSIFADDR", __func__);
 	    return -1;
 	}
 
-	log_debug("Set %s ip to %s", dev->ifr.ifr_name, addr);
+	log_info("[priv] set %s ip to %s", dev->ifr.ifr_name, addr);
 	return 0;
 }
 
