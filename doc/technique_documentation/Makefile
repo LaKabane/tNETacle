@@ -7,6 +7,9 @@ RESSOURCE_FILES		=	$(RELPATH)/tnetacle.cls	\
 				$(RELPATH)/tnetacle-fr.cls \
 				$(RELPATH)/back-tnetacle.jpeg \
 				$(RELPATH)/client.tex \
+				$(RELPATH)/core.tex \
+				$(RELPATH)/share.tex \
+				$(RELPATH)/externe.tex \
 
 export TEXINPUTS	:=  .:$(RELPATH):${TEXINPUTS}:
 
