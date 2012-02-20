@@ -62,7 +62,7 @@
 
 % custom tnetacle background that depends of back.png
 \fancyput(-2.54cm,-27.16cm){
-\includegraphics[width=21cm,height=29.7cm]{back-tnetacle-eip.jpeg}
+\includegraphics[width=21cm,height=29.7cm]{back-tnetacle-eip-bw.jpeg}
 }
 
 % Using  roman  numerals  makes  the  TOC  section/subsection  numbers
