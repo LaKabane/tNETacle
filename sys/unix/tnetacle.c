@@ -120,18 +120,23 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	FD_ZERO(&masterfds);
 	FD_SET(ibuf.fd, &masterfds);
 
+	/* Immediately request the creation of a tun interface */
+	imsg_compose(&ibuf, IMSG_CREATE_DEV, 0, 0, -1, NULL, 0);
+
 	while (chld_quit == 0) {
 		fd_set readfds = masterfds;
 		fd_set writefds = masterfds;
 		if ((select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
 			log_err(1, "[unpriv] select");
 
-		if (FD_ISSET(ibuf.fd, &writefds))
-			if (tnt_dispatch_imsg(&ibuf) == -1) {
+		if (FD_ISSET(ibuf.fd, &writefds)) {
+			if (msgbuf_write(&ibuf.w) == -1) {
 				log_warnx("[unpriv] pipe write error");
 				chld_quit = 1;
 			}
+		}
 
+		/* Read what Martin replied to Martine */
 		if (FD_ISSET(ibuf.fd, &readfds)) {
 			if (tnt_dispatch_imsg(&ibuf) == -1)
 				chld_quit = 1;
