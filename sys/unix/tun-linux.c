@@ -99,6 +99,7 @@ tnt_tun_open(void) {
 		goto clean;
 	}
 
+	dev->fd = fd;
 	log_info("tunnel fd %d (%s)\n", dev->fd, dev->ifr.ifr_name);
 
 	close(sock);
