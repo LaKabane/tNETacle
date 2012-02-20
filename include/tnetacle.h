@@ -35,7 +35,8 @@
  */
 enum imsg_type {
 	IMSG_NONE,
-	IMSG_CREATE_DEV
+	IMSG_CREATE_DEV,
+	IMSG_SET_IP
 };
 
 char 		*tnt_getprogname(void);

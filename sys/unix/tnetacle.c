@@ -124,12 +124,14 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	imsg_compose(&ibuf, IMSG_CREATE_DEV, 0, 0, -1, NULL, 0);
 
 	while (chld_quit == 0) {
+		int nfds;
 		fd_set readfds = masterfds;
 		fd_set writefds = masterfds;
-		if ((select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
+		if ((nfds = select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
 			log_err(1, "[unpriv] select");
 
-		if (FD_ISSET(ibuf.fd, &writefds)) {
+		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds)) {
+			log_debug("[unpriv] msgbuf_write");
 			if (msgbuf_write(&ibuf.w) == -1) {
 				log_warnx("[unpriv] pipe write error");
 				chld_quit = 1;
@@ -137,7 +139,9 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 		}
 
 		/* Read what Martin replied to Martine */
-		if (FD_ISSET(ibuf.fd, &readfds)) {
+		if (nfds > 0 && FD_ISSET(ibuf.fd, &readfds)) {
+			log_debug("[unpriv] dispatch_imsg");
+			--nfds;
 			if (tnt_dispatch_imsg(&ibuf) == -1)
 				chld_quit = 1;
 		}
@@ -190,6 +194,9 @@ tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 				log_errx(1, "[unpriv] invalid IMSG_CREATE_DEV received");
 			(void)memcpy(&tun_fd, imsg.data, sizeof tun_fd);
 			log_info("[unpriv] receive IMSG_CREATE_DEV: fd %i", tun_fd);
+			/* directly ask to configure the tun device */
+			/*imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
+			    "192.168.1.42", sizeof(char *));*/
 			break;
 		default:
 			break;

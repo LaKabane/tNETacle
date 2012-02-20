@@ -34,20 +34,50 @@
 #include "log.h"
 #include "tun.h"
 
-static int
-tnt_tun_set_ip(int sock, struct device *dev) {
+int
+tnt_tun_set_ip(struct device *dev, const char *addr) {
 	struct sockaddr_in sai;
+	int sock = -1;
+
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+		log_warn("socket");
+		return -1;
+	}
 
 	memset(&sai, '\0', sizeof sai);
 	sai.sin_family = AF_INET;
 	sai.sin_port = 0;
-	sai.sin_addr.s_addr = inet_addr("192.168.0.42");
+	sai.sin_addr.s_addr = inet_addr(addr);
 	memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
 
 	if (ioctl(sock, SIOCSIFADDR, &(dev->ifr)) == -1) {
 	    log_warn("ioctl SIOCSIFADDR");
 	    return -1;
 	}
+
+	log_debug("Set %s ip to %s", dev->ifr.ifr_name, addr);
+	return 0;
+}
+
+int
+tnt_tun_set_mac(struct device *dev, const char *hwaddr) {
+	int sock = -1;
+	int i;
+
+	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+		log_warn("socket");
+		return -1;
+	}
+
+	for (i = 0; i <= 6; ++i)
+		dev->ifr.ifr_hwaddr.sa_data[i] = hwaddr[i];
+
+	if (ioctl(sock, SIOCSIFHWADDR, &(dev->ifr)) == -1) {
+	    log_warn("ioctl SIOCSIFHWADDR");
+	    return -1;
+	}
+
+	log_debug("Set %s mac to %s", dev->ifr.ifr_name, hwaddr);
 	return 0;
 }
 
@@ -81,8 +111,10 @@ tnt_tun_open(void) {
 		goto clean;
 	}
 
+	/*
 	if (tnt_tun_set_ip(sock, dev) == -1)
 		goto clean;
+	*/
 
 	/* Get the internal parameters of ifr */
 	if (ioctl(sock, SIOCGIFFLAGS, &(dev->ifr)) == -1) {
@@ -97,7 +129,6 @@ tnt_tun_open(void) {
 	}
 
 	dev->fd = fd;
-	log_info("tunnel fd %d (%s)\n", dev->fd, dev->ifr.ifr_name);
 
 	close(sock);
 	return dev;
@@ -122,15 +153,3 @@ tnt_tun_read();
 tnt_tun_write();
 */
 
-/*
-HOW TO USE:
-int
-main(void) {
-	struct device *dev;
-
-	dev = tnt_tun_open();
-	...
-	tnt_tun_close(dev);
-	return 0;
-}
-*/

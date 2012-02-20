@@ -39,6 +39,9 @@ int debug;
 volatile sig_atomic_t sigchld;
 volatile sig_atomic_t quit;
 
+/* XXX: clean that after the TA2 */
+struct device *dev = NULL;
+
 static void usage(void);
 static int dispatch_imsg(struct imsgbuf *);
 
@@ -113,20 +116,24 @@ main(int argc, char *argv[]) {
 	FD_SET(ibuf.fd, &masterfds);
 
 	while (quit == 0) {
+		int nfds;
 		fd_set readfds = masterfds;
 		fd_set writefds = masterfds;
-		if ((select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
+		if ((nfds = select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
 			log_err(1, "[priv] select");
 
 		/* Flush our pending imsgs */
-		if (FD_ISSET(ibuf.fd, &writefds))
+		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds))
+			/*log_debug("[priv] msgbuf_write");*/
 			if (msgbuf_write(&ibuf.w) == -1) {
 				log_warnx("[priv] pipe write error");
 				quit = 1;
 			}
 
 		/* Read what Martine is asking to Martin  */
-		if (FD_ISSET(ibuf.fd, &readfds)) {
+		if (nfds > 0 && FD_ISSET(ibuf.fd, &readfds)) {
+			/*log_debug("[priv] dispatch_imsg");*/
+			--nfds;
 			if (dispatch_imsg(&ibuf) == -1)	
 				quit = 1;
 		}
@@ -174,7 +181,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	}
 
 	for (;;) {
-		struct device *dev = NULL;
+		char *addr;
 
 		/* Loops through the queue created by imsg_read */
 		n = imsg_get(ibuf, &imsg);
@@ -183,7 +190,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 			return -1;
 		}
 
-		/* Nothing was ready */
+		/* Nothing was ready, return to the main loop */
 		if (n == 0)
 			break;
 
@@ -192,8 +199,17 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 			dev = tnt_tun_open();
 			imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, -1,
 			    &(dev->fd), sizeof(int));
-			free(dev);
-			dev = NULL;
+			break;
+		case IMSG_SET_IP:
+			if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof addr)
+				log_errx(1, "[priv] invalid IMSG_SET_IP received");	
+			(void)memcpy(&addr, imsg.data, sizeof addr);
+			if (dev == NULL) {
+				log_warnx("[priv] can't set ip, use IMSG_CREATE_DEV first");
+				break;
+			}
+			tnt_tun_set_ip(dev, addr);
+			log_info("[priv] receive IMSG_SET_IP: %s", addr);
 			break;
 		default:
 			break;
