@@ -125,9 +125,17 @@ main(int argc, char *argv[]) {
 		/* Flush our pending imsgs */
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds))
 			/*log_debug("[priv] msgbuf_write");*/
-			if (msgbuf_write(&ibuf.w) < 0) {
+			switch (msgbuf_write(&ibuf.w)) {
+			case 0:
+				log_warnx("[priv] Ok ?");
+				break;
+			case -1:
 				log_warnx("[priv] pipe write error");
 				quit = 1;
+				break;
+			case -2:
+				log_warnx("[priv] pipe eof");
+				break;
 			}
 
 		/* Read what Martine is asking to Martin  */
