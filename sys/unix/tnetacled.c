@@ -114,9 +114,18 @@ main(int argc, char *argv[]) {
 
 	while (quit == 0) {
 		fd_set readfds = masterfds;
-		if ((select(fd_max + 1, &readfds, NULL, NULL, NULL)) == -1)
+		fd_set writefds = masterfds;
+		if ((select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
 			log_err(1, "[priv] select");
 
+		/* Flush our pending imsgs */
+		if (FD_ISSET(ibuf.fd, &writefds))
+			if (msgbuf_write(&ibuf.w) == -1) {
+				log_warnx("[priv] pipe write error");
+				quit = 1;
+			}
+
+		/* Read what Martine is asking to Martin  */
 		if (FD_ISSET(ibuf.fd, &readfds)) {
 			if (dispatch_imsg(&ibuf) == -1)	
 				quit = 1;
@@ -135,7 +144,7 @@ main(int argc, char *argv[]) {
 		kill(chld_pid, SIGTERM);
 
 	msgbuf_clear(&ibuf.w);
-	log_info("[priv] Terminating");
+	log_info("[priv] tnetacle exiting");
 	return TNT_OK;
 }
 
