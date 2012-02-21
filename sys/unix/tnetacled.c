@@ -206,6 +206,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 			imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, -1,
 			    &(dev->fd), sizeof(int));
 			break;
+
 		case IMSG_SET_IP:
 			if (dev == NULL) {
 				log_warnx("[priv] can't set ip, use IMSG_CREATE_DEV first");
@@ -220,6 +221,22 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 			log_info("[priv] receive IMSG_SET_IP: %s", buf);
 			tnt_tun_set_ip(dev, buf);
 			break;
+
+		case IMSG_SET_NETMASK:
+			if (dev == NULL) {
+				log_warnx("[priv] can't set ip, use IMSG_CREATE_DEV first");
+				break;
+			}
+
+			datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
+			(void)memset(buf, '\0', sizeof buf);
+			(void)memcpy(buf, imsg.data, sizeof buf);
+			buf[datalen] = '\0';
+
+			log_info("[priv] receive IMSG_SET_NETMASK: %s", buf);
+			tnt_tun_set_netmask(dev, buf);
+			break;
+
 		default:
 			break;
 		}

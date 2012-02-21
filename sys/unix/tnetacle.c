@@ -213,6 +213,8 @@ tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 			/* directly ask to configure the tun device */
 			imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
 			    "192.168.1.42", strlen("192.168.1.42")); /* Yes, it's hardcoded. */
+			imsg_compose(ibuf, IMSG_SET_NETMASK, 0, 0, -1,
+			    "255.255.255.0", strlen("255.255.255.0"));
 			break;
 		default:
 			break;
