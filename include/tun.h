@@ -26,6 +26,7 @@ struct device {
 struct device	*tnt_tun_open(void);
 void		 tnt_tun_close(struct device *);
 int		 tnt_tun_set_ip(struct device *, const char *);
+int		 tnt_tun_set_netmask(struct device *, const char *);
 int		 tnt_tun_set_mac(struct device *, const char *);
 
 #endif
