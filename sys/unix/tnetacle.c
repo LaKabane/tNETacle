@@ -203,6 +203,8 @@ tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 
 			imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
 			    TNETACLE_LOCAL_ADDR, strlen(TNETACLE_LOCAL_ADDR));
+			imsg_compose(ibuf, IMSG_SET_NETMASK, 0, 0, -1,
+			    "255.255.255.0", strlen("255.255.255.0"));
 			break;
 		default:
 			break;
