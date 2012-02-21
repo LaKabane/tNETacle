@@ -178,6 +178,8 @@ static int
 dispatch_imsg(struct imsgbuf *ibuf) {
 	struct imsg imsg;
 	int n;
+	ssize_t datalen;
+	char buf[128];
 
 	n = imsg_read(ibuf);
 	if (n == -1) {
