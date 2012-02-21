@@ -39,9 +39,12 @@
 #include <sys/queue.h>
 #include <imsg.h>
 
-int tun_fd = -1;
 volatile sig_atomic_t chld_quit;
 int tnt_dispatch_imsg(struct imsgbuf *ibuf);
+
+/* XXX: Do something better when Mota will import his network code */
+int tun_fd = -1;
+fd_set masterfds;
 
 void
 chld_sighdlr(int sig) {
@@ -86,7 +89,6 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	pid_t pid;
 	struct imsgbuf ibuf;
 	/* XXX: To remove when Mota will bring his network code */
-	fd_set masterfds;
 	int fd_max;
 
 	switch ((pid = fork())) {
@@ -160,7 +162,6 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 /*
  * The purpose of this function is to handle requests sent by the
  * root level process.
- * If nothing is to be received, do not compile it.
  */
 int
 tnt_dispatch_imsg(struct imsgbuf *ibuf) {
@@ -198,6 +199,8 @@ tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 			(void)memcpy(&tun_fd, imsg.data, sizeof tun_fd);
 			log_info("[unpriv] receive IMSG_CREATE_DEV: fd %i", tun_fd);
 			/* directly ask to configure the tun device */
+			FD_SET(tun_fd, &masterfds);
+
 			imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
 			    TNETACLE_LOCAL_ADDR, strlen(TNETACLE_LOCAL_ADDR));
 			break;
