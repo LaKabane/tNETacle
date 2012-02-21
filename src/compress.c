@@ -18,9 +18,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef WIN32
+# define ZLIB_WINAPI
+#endif
 #include <zlib.h>
 
 #include "compress.h"
+#include "log.h"
 
 t_string *
 tnt_compress(t_string *in)
@@ -29,8 +34,8 @@ tnt_compress(t_string *in)
     t_string	*out;
     z_stream	strm;
 
-    out = malloc(sizeof(*out));
-    out->data = malloc((in->size < Z_MIN_SPACE ? Z_MIN_SPACE : in->size));
+    out = (t_string *)malloc(sizeof(*out));
+    out->data = (unsigned char *)malloc((in->size < Z_MIN_SPACE ? Z_MIN_SPACE : in->size));
     if (out == NULL || out->data == NULL)
     {
         log_warn("do_compress");
@@ -60,7 +65,7 @@ tnt_compress(t_string *in)
             break;
 
 	/* In this case, the compressed version is bigger */
-	out->data = realloc(out->data, strm.total_out +
+	out->data = (unsigned char *)realloc(out->data, strm.total_out +
 	  (in->size / 2 < Z_MIN_SPACE ? Z_MIN_SPACE : in->size / 2));
         if (out->data == NULL)
         {
@@ -93,12 +98,13 @@ tnt_compress(t_string *in)
 t_string *
 tnt_uncompress(t_string *in, const size_t orignal_len)
 {
+	int error;
     int		ret;
     t_string	*out;
     z_stream	strm;
 
-    out = malloc(sizeof(*out));
-    out->data = malloc(orignal_len);
+    out = (t_string *)malloc(sizeof(*out));
+    out->data = (unsigned char *)malloc(orignal_len);
     if (out == NULL || out->data == NULL)
     {
         log_warn("do_uncompress");
@@ -129,4 +135,52 @@ tnt_uncompress(t_string *in, const size_t orignal_len)
     (void)inflateEnd(&strm);
     return out;
 }
-
+//
+//int	main(int ac, const char **av)
+//{
+//  HANDLE	fd;
+//  HANDLE map;
+//  int tmp;
+//  t_string original;
+//  t_string *compressed;
+//  t_string *uncompressed;
+//
+//  if (!av[1])
+//    {
+//      log_warn("Usage: ./a.out filename\n");
+//      return (EXIT_FAILURE);
+//    }
+//	fd = CreateFile(av[1], GENERIC_READ,0,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
+//  if (fd == INVALID_HANDLE_VALUE)
+//    {
+//      log_warn("Pas de fichier\n");
+//      return (-1);
+//    }
+//  original.size = GetFileSize(fd, (LPDWORD)(&tmp));
+////  lseek(fd, 0, SEEK_SET);
+//  map = CreateFileMapping(fd, NULL, PAGE_READWRITE, 0, 0, "filemap");
+//  // mmap == mapViewOfFile()
+//  original.data = (unsigned char *)MapViewOfFile(map, FILE_MAP_ALL_ACCESS, 0, 0, original.size);//mmap(NULL, original.size, PROT_READ, MAP_PRIVATE, fd, 0);
+//  CloseHandle(fd);
+//
+//  compressed = tnt_compress(&original); // haaaan il verifie pas la valeur de retour!
+//  if (compressed == NULL)
+//	  printf("mais bordel !\n");
+//  printf("Orginal size was %lu ... new one is %lu\n", original.size, compressed->size);
+//  uncompressed = tnt_uncompress(compressed, original.size);
+//  printf("Orginal size was %lu ... restored size is: %lu difference is %lu\n",
+//	 original.size, uncompressed->size, original.size - uncompressed->size);
+//    if (original.size == uncompressed->size)
+//    printf(memcmp(original.data, uncompressed->data, original.size) ?
+//		  "Diff KO\n": "Diff OK\n");
+//
+//	UnmapViewOfFile(original.data);
+//	CloseHandle(map);
+//	//	munmap(original.data, original.size);
+//  printf("\nRatio is %lf%%\n", ((float)(original.size - compressed->size)) / original.size * 100);
+//  free(compressed->data);
+//  free(compressed);
+//  free(uncompressed->data);
+//  free(uncompressed);
+//  return (EXIT_SUCCESS);
+//}
