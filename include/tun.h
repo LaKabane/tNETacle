@@ -14,8 +14,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <linux/if.h>
-#include <linux/if_tun.h>
+#ifdef Linux
+# include <linux/if.h>
+# include <linux/if_tun.h>
+#endif
 
 #ifndef TNETACLE_TUN_H_
 #define TNETACLE_TUN_H_
