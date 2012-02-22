@@ -126,13 +126,17 @@ main(int argc, char *argv[]) {
 	while (quit == 0) {
 		int nfds;
 		fd_set readfds = masterfds;
-		fd_set writefds = masterfds;
+		fd_set writefds;
+
+		FD_ZERO(&writefds);
+		if (ibuf.w.queued > 0)
+			FD_SET(ibuf.fd, &writefds);
+
 		if ((nfds = select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
 			log_err(1, "[priv] select");
 
 		/* Flush our pending imsgs */
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &writefds))
-			/*log_debug("[priv] msgbuf_write");*/
 			if (msgbuf_write(&ibuf.w) < 0) {
 				log_warnx("[priv] pipe write error");
 				quit = 1;
@@ -140,7 +144,6 @@ main(int argc, char *argv[]) {
 
 		/* Read what Martine is asking to Martin  */
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &readfds)) {
-			/*log_debug("[priv] dispatch_imsg");*/
 			--nfds;
 			if (dispatch_imsg(&ibuf) == -1)	
 				quit = 1;
