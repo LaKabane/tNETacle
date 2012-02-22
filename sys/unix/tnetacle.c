@@ -198,8 +198,8 @@ tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 			(void)memcpy(&tun_fd, imsg.data, sizeof tun_fd);
 			log_info("[unpriv] receive IMSG_CREATE_DEV: fd %i", tun_fd);
 			/* directly ask to configure the tun device */
-			/*imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
-			    "192.168.1.42", sizeof(char *));*/
+			imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
+			    TNETACLE_LOCAL_ADDR, strlen(TNETACLE_LOCAL_ADDR));
 			break;
 		default:
 			break;

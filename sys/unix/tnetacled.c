@@ -192,8 +192,6 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	}
 
 	for (;;) {
-		char *addr;
-
 		/* Loops through the queue created by imsg_read */
 		n = imsg_get(ibuf, &imsg);
 		if (n == -1) {
@@ -212,15 +210,17 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 			    &(dev->fd), sizeof(int));
 			break;
 		case IMSG_SET_IP:
-			if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof addr)
-				log_errx(1, "[priv] invalid IMSG_SET_IP received");	
-			(void)memcpy(&addr, imsg.data, sizeof addr);
 			if (dev == NULL) {
 				log_warnx("[priv] can't set ip, use IMSG_CREATE_DEV first");
 				break;
 			}
-			tnt_tun_set_ip(dev, addr);
-			log_info("[priv] receive IMSG_SET_IP: %s", addr);
+			datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
+			(void)memset(buf, '\0', sizeof buf);
+			(void)memcpy(buf, imsg.data, sizeof buf);
+			buf[datalen] = '\0';
+			
+			log_info("[priv] receive IMSG_SET_IP: %s", buf);
+			tnt_tun_set_ip(dev, buf);
 			break;
 		default:
 			break;
