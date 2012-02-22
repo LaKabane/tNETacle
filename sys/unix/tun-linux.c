@@ -21,7 +21,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
-
 #include <linux/if.h>
 #include <linux/if_tun.h>
 
@@ -31,8 +30,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "log.h"
 #include "tun.h"
+#include "log.h"
 
 int
 tnt_tun_set_ip(struct device *dev, const char *addr) {
@@ -111,11 +110,6 @@ tnt_tun_open(void) {
 		goto clean;
 	}
 
-	/*
-	if (tnt_tun_set_ip(sock, dev) == -1)
-		goto clean;
-	*/
-
 	/* Get the internal parameters of ifr */
 	if (ioctl(sock, SIOCGIFFLAGS, &(dev->ifr)) == -1) {
 		log_warn("ioctl SIOCGIFFLAGS");
@@ -146,10 +140,4 @@ tnt_tun_close(struct device *dev) {
 	close(dev->fd);
     	/* And other stuff later ? */
 }
-
-/*
-TODO:
-tnt_tun_read();
-tnt_tun_write();
-*/
 
