@@ -18,6 +18,14 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 
+#ifdef Linux
+# include <linux/if.h>
+# include <linux/if_tun.h>
+#else
+# include <net/if.h>
+# include <net/if_tun.h>
+#endif
+
 #include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
