@@ -35,7 +35,7 @@ tnt_getprogname(void) {
 	extern char *__progname;
 	return __progname;
 #elif defined NetBSD || FreeBSD || Darwin
-	return getprogname();
+	return (char *)getprogname();
 #elif defined Linux
 	extern char *program_invocation_short_name;
 	return program_invocation_short_name;
