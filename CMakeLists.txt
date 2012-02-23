@@ -41,6 +41,7 @@ endif()
 
 if (Darwin)
   remove_definitions(-DHAVE_SETPROCTITLE)
+  set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tun-macosx.c)
 endif()
 
 include_directories(

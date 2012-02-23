@@ -23,7 +23,11 @@
 # include <linux/if_tun.h>
 #else
 # include <net/if.h>
+
+#ifndef Darwin
 # include <net/if_tun.h>
+#endif
+
 #endif
 
 #include <getopt.h>
@@ -230,7 +234,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 			(void)memset(buf, '\0', sizeof buf);
 			(void)memcpy(buf, imsg.data, sizeof buf);
 			buf[datalen] = '\0';
-			
+
 			log_info("[priv] receive IMSG_SET_IP: %s", buf);
 			tnt_tun_set_ip(dev, buf);
 			break;

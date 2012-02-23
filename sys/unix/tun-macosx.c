@@ -23,7 +23,6 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <net/if_types.h>
-#include <net/if_tun.h>
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -88,24 +87,25 @@ tnt_tun_set_netmask(struct device *dev, const char *netmask) {
 
 int
 tnt_tun_set_mac(struct device *dev, const char *mac) {
-	int sock = -1;
-	int i;
+ 	/* int sock = -1; */
+	/* int i; */
 
-	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-		log_warn("socket");
-		return -1;
-	}
+	/* if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) { */
+	/* 	log_warn("socket"); */
+	/* 	return -1; */
+	/* } */
 
-	for (i = 0; i <= 6; ++i)
-		dev->ifr.ifr_hwaddr.sa_data[i] = hwaddr[i];
+	/* for (i = 0; i <= 6; ++i) */
+	/* 	dev->ifr.ifr_hwaddr.sa_data[i] = hwaddr[i]; */
 
-	if (ioctl(sock, SIOCSIFHWADDR, &(dev->ifr)) == -1) {
-	    log_warn("ioctl SIOCSIFHWADDR");
-	    return -1;
-	}
+	/* if (ioctl(sock, SIOCSIFHWADDR, &(dev->ifr)) == -1) { */
+	/*     log_warn("ioctl SIOCSIFHWADDR"); */
+	/*     return -1; */
+	/* } */
 
-	log_debug("Set %s mac to %s", dev->ifr.ifr_name, hwaddr);
-	return 0;
+	/* log_debug("Set %s mac to %s", dev->ifr.ifr_name, hwaddr); */
+	/* return 0; */
+    return 0;
 }
 
 struct device *
