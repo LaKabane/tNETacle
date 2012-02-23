@@ -15,7 +15,9 @@
  */
 
 #include <stdlib.h>
-
+#if defined(HAVE_BSD_COMPAT)
+#include <bsd/unistd.h>
+#endif
 #include "tnetacle.h"
 
 void
