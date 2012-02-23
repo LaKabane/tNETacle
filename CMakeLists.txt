@@ -43,14 +43,10 @@ if (Darwin)
   remove_definitions(-DHAVE_SETPROCTITLE)
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tun-macosx.c)
 #macports
-  include_directories(
-    ${INCLUDE_DIRECTORIES}
-    /opt/local/include
-    )
+  include_directories(/opt/local/include)
 endif()
 
 include_directories(
-${INCLUDE_DIRECTORIES}
 ${CMAKE_HOME_DIRECTORY}/include
 )
 
