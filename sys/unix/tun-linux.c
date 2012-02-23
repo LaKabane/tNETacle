@@ -113,6 +113,7 @@ tnt_tun_open(void) {
 	int fd = -1;
 	int sock = -1;
 
+	/* Open the tun interface */
 	if ((fd = open("/dev/net/tun", O_RDWR)) == -1) {
 		log_warn("open /dev/net/tun");
 		goto clean;
@@ -143,6 +144,7 @@ tnt_tun_open(void) {
 		goto clean;
 	}
 
+	/* Bring the interface up */
 	dev->ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
 	if (ioctl(sock, SIOCSIFFLAGS, &(dev->ifr)) == -1) {
 		log_warn("ioctl SIOCSIFFLAGS");
