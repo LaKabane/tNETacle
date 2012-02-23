@@ -61,7 +61,7 @@ tnt_tun_set_ip(struct device *dev, const char *addr) {
 }
 
 int
-tnt_tun_set_netmask(struct device *dev, const char *mask) {
+tnt_tun_set_netmask(struct device *dev, const char *netmask) {
 	struct sockaddr_in sai;
 	int sock = -1;
 
@@ -141,7 +141,7 @@ tnt_tun_open(void) {
 		goto clean;
 	}
 
-	(void)memset(&(dev->ifr), '\0', sizeof(dev->ifr));	
+	(void)memset(&(dev->ifr), '\0', sizeof(dev->ifr));
 
 	/* Get the internal parameters of ifr */
 	snprintf(dev->ifr.ifr_name, sizeof(dev->ifr.ifr_name),
