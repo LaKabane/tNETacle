@@ -18,6 +18,14 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 
+#ifdef Linux
+# include <linux/if.h>
+# include <linux/if_tun.h>
+#else
+# include <net/if.h>
+# include <net/if_tun.h>
+#endif
+
 #include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
@@ -218,12 +226,11 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 				log_warnx("[priv] can't set ip, use IMSG_CREATE_DEV first");
 				break;
 			}
-
 			datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
 			(void)memset(buf, '\0', sizeof buf);
 			(void)memcpy(buf, imsg.data, sizeof buf);
 			buf[datalen] = '\0';
-
+			
 			log_info("[priv] receive IMSG_SET_IP: %s", buf);
 			tnt_tun_set_ip(dev, buf);
 			break;

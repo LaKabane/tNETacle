@@ -19,12 +19,14 @@
 #include <bsd/unistd.h>
 #endif
 #include "tnetacle.h"
+#include "log.h"
 
 void
 tnt_setproctitle(const char *s) {
 #ifdef HAVE_SETPROCTITLE
 	setproctitle(s);
 #else
+	log_info("Your system does not have setproctitle syscall");
   (void)s;
 #endif
 }

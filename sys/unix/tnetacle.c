@@ -57,10 +57,6 @@ tnt_imsg_callback(evutil_socket_t fd, short events, void *args)
   }
 }
 
-/* XXX: To clean after TA2 */
-fd_set masterfds;
-int tun_fd = -1;
-
 static void
 chld_sighdlr(evutil_socket_t sig, short events, void *args) {
   (void)events;
@@ -107,7 +103,6 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	pid_t pid;
 	struct imsgbuf ibuf;
 	/* XXX: To remove when Mota will bring his network code */
-	/* fd_set masterfds; */
   struct event_base *evbase = NULL;
   struct event *evimsg = NULL;
   struct event *sigterm = NULL;
@@ -160,7 +155,6 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	imsg_compose(&ibuf, IMSG_CREATE_DEV, 0, 0, -1, NULL, 0);
 
   event_base_dispatch(evbase);
-
 	/* cleanely exit */
 	msgbuf_write(&ibuf.w);
 	msgbuf_clear(&ibuf.w);
@@ -186,6 +180,7 @@ int
 tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 	struct imsg imsg;
 	ssize_t n;
+  int tun_fd;
 
 	n = imsg_read(ibuf);
 	if (n == -1) {
@@ -219,8 +214,9 @@ tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 			log_info("[unpriv] receive IMSG_CREATE_DEV: fd %i", tun_fd);
 
 			/* directly ask to configure the tun device */
+
 			imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
-			    "192.168.1.42", strlen("192.168.1.42")); /* Yes, it's hardcoded. */
+			    TNETACLE_LOCAL_ADDR, strlen(TNETACLE_LOCAL_ADDR));
 			imsg_compose(ibuf, IMSG_SET_NETMASK, 0, 0, -1,
 			    "255.255.255.0", strlen("255.255.255.0"));
 			break;

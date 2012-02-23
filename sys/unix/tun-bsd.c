@@ -17,12 +17,13 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/param.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netinet/ip.h>
-#include <linux/if.h>
-#include <linux/if_tun.h>
+#include <net/if.h>
+#include <net/if_types.h>
+#include <net/if_tun.h>
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -30,8 +31,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "tun.h"
 #include "log.h"
+#include "tun.h"
 
 int
 tnt_tun_set_ip(struct device *dev, const char *addr) {
@@ -60,7 +61,7 @@ tnt_tun_set_ip(struct device *dev, const char *addr) {
 }
 
 int
-tnt_tun_set_netmask(struct device *dev, const char *netmask) {
+tnt_tun_set_netmask(struct device *dev, const char *mask) {
 	struct sockaddr_in sai;
 	int sock = -1;
 
@@ -86,7 +87,7 @@ tnt_tun_set_netmask(struct device *dev, const char *netmask) {
 }
 
 int
-tnt_tun_set_mac(struct device *dev, const char *hwaddr) {
+tnt_tun_set_mac(struct device *dev, const char *mac) {
 	int sock = -1;
 	int i;
 
@@ -112,10 +113,20 @@ tnt_tun_open(void) {
 	struct device *dev = NULL;
 	int fd = -1;
 	int sock = -1;
+	int tun = 0;
+	char path[MAXPATHLEN];
 
 	/* Open the tun interface */
-	if ((fd = open("/dev/net/tun", O_RDWR)) == -1) {
-		log_warn("open /dev/net/tun");
+	for (; tun < 256; ++tun) { /* XXX: magic value */
+		(void)memset(path, '\0', sizeof path);
+		(void)snprintf(path, sizeof path, "%s%i", "/dev/tun", tun);
+		if ((fd = open(path, O_RDWR)) > 0)
+			break;
+		else
+			log_debug("open tun%i", tun);
+	}
+	if (fd == -1 || fd == 256) {
+		log_warn("open failed: %s", path);
 		goto clean;
 	}
 
@@ -132,20 +143,16 @@ tnt_tun_open(void) {
 
 	(void)memset(&(dev->ifr), '\0', sizeof(dev->ifr));	
 
-	dev->ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
-	if (ioctl(fd, TUNSETIFF, &(dev->ifr)) == -1) {
-		log_warn("ioctl TUNSETIFF");
-		goto clean;
-	}
-
 	/* Get the internal parameters of ifr */
+	snprintf(dev->ifr.ifr_name, sizeof(dev->ifr.ifr_name),
+	    "tun%i", tun);
 	if (ioctl(sock, SIOCGIFFLAGS, &(dev->ifr)) == -1) {
 		log_warn("ioctl SIOCGIFFLAGS");
 		goto clean;
 	}
 
 	/* Bring the interface up */
-	dev->ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
+	dev->ifr.ifr_flags |= IFF_UP;
 	if (ioctl(sock, SIOCSIFFLAGS, &(dev->ifr)) == -1) {
 		log_warn("ioctl SIOCSIFFLAGS");
 		goto clean;
@@ -166,7 +173,6 @@ clean:
 
 void
 tnt_tun_close(struct device *dev) {
-	close(dev->fd);
-    	/* And other stuff later ? */
+	(void)close(dev->fd);
 }
 
