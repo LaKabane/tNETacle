@@ -24,7 +24,7 @@
  * Add this user to your system, with daemon class,
  * nologin shell and /var/empty for home.
  */
-#define TNETACLE_USER "_tnetacle"
+#define TNETACLE_USER "tnetacle"
 
 /*
  * Definition of types for our imsg.
