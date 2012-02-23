@@ -17,6 +17,7 @@ if(UNIX)
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tnetacle.c)
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tnetacled.c)
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/util.c)
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g3")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -31,6 +32,7 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   remove_definitions(-DHAVE_SETPROCTITLE)
+  set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tun-macosx.c)
 endif()
 
 if(USE_CLANG)
@@ -45,3 +47,4 @@ add_executable(tNETacle
 	${SOURCES_LIST}
 )
 
+set(CMAKE_BUILD_TYPE Debug)
