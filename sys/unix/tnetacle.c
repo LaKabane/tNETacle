@@ -69,7 +69,7 @@ tnt_priv_drop(struct passwd *pw) {
 
 	if (setgroups(1, &pw->pw_gid) == -1)
 		log_err(1, "[unpriv] can't drop privileges");
-#ifdef _POSIX_SAVED_IDS
+#ifdef HAVE_SETPROCTITLE
 	if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1 ||
 	  setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
 		log_err(1, "[unpriv] can't drop privileges");
@@ -150,7 +150,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	/* cleanely exit */
 	msgbuf_write(&ibuf.w);
 	msgbuf_clear(&ibuf.w);
-	
+
 	log_info("[unpriv] tnetacle exiting");
 	exit(TNT_OK);
 }
