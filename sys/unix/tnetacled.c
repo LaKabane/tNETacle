@@ -23,7 +23,11 @@
 # include <linux/if_tun.h>
 #else
 # include <net/if.h>
+
+#ifndef Darwin
 # include <net/if_tun.h>
+#endif
+
 #endif
 
 #include <getopt.h>
@@ -145,7 +149,7 @@ main(int argc, char *argv[]) {
 		/* Read what Martine is asking to Martin  */
 		if (nfds > 0 && FD_ISSET(ibuf.fd, &readfds)) {
 			--nfds;
-			if (dispatch_imsg(&ibuf) == -1)	
+			if (dispatch_imsg(&ibuf) == -1)
 				quit = 1;
 		}
 
@@ -221,7 +225,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 			(void)memset(buf, '\0', sizeof buf);
 			(void)memcpy(buf, imsg.data, sizeof buf);
 			buf[datalen] = '\0';
-			
+
 			log_info("[priv] receive IMSG_SET_IP: %s", buf);
 			tnt_tun_set_ip(dev, buf);
 			break;
