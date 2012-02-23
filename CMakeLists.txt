@@ -1,4 +1,4 @@
-project(tNETacle)
+#xxproject(tNETacle)
 cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MODULE_PATH ${CMAME_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/Modules/)
@@ -42,9 +42,15 @@ endif()
 if (Darwin)
   remove_definitions(-DHAVE_SETPROCTITLE)
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tun-macosx.c)
+#macports
+  include_directories(
+    ${INCLUDE_DIRECTORIES}
+    /opt/local/include
+    )
 endif()
 
 include_directories(
+${INCLUDE_DIRECTORIES}
 ${CMAKE_HOME_DIRECTORY}/include
 )
 
