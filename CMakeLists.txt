@@ -47,6 +47,7 @@ if (Darwin)
 endif()
 
 include_directories(
+${EVENT_INCLUDE_DIRS}
 ${CMAKE_HOME_DIRECTORY}/include
 )
 
