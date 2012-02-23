@@ -16,10 +16,6 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#if defined Linux
-# define _GNU_SOURCE
-#endif
-
 #include <sys/types.h>
 
 #include <errno.h>
