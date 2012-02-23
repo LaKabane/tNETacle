@@ -72,11 +72,11 @@ tnt_priv_drop(struct passwd *pw) {
 #ifdef HAVE_SETPROCTITLE
 	if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1 ||
 	  setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
-		log_err(1, "[unpriv] can't drop privileges (setres?id)");
+		log_err(1, "[unpriv] can't drop privileges (setresid)");
 #else
 	/* Fallback to setuid, but it might not work properly */
 	if (setuid(pw->pw_uid) == -1 || setgid(pw->pw_gid) == -1)
-		log_err(1, "[unpriv] can't drop privileges (setuid)");
+        log_err(1, "[unpriv] can't drop privileges (setuid||setgid)");
 #endif
 }
 
