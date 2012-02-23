@@ -35,6 +35,8 @@
 #include <sys/queue.h>
 #include <imsg.h>
 
+#include <event2/event.h>
+
 int debug;
 volatile sig_atomic_t sigchld;
 volatile sig_atomic_t quit;
@@ -45,18 +47,45 @@ struct device *dev = NULL;
 static void usage(void);
 static int dispatch_imsg(struct imsgbuf *);
 
-void
-sighdlr(int sig) {
+static void
+_sighdlr(int sig)
+{
+  if (sig == SIGCHLD)
+    sigchld = 1;
+}
+
+static void
+sighdlr(evutil_socket_t sig, short events, void *args) {
+  struct event_base *evbase = args;
+  (void)events;
+
 	switch (sig) {
 	case SIGTERM:
 	case SIGINT:
-		quit = 1;
+    event_base_loopbreak(evbase);
 		break;
 	case SIGCHLD:
 		sigchld = 1;
 		break;
 	/* TODO: SIGHUP */
 	}
+}
+
+static void
+imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
+  (void)fd;
+  struct imsgbuf *ibuf = args;
+
+  if (events & EV_READ) {
+    dispatch_imsg(ibuf);
+  }
+
+  if (events & EV_WRITE) {
+    if (ibuf->w.queued > 0) {
+			msgbuf_write(&ibuf->w);
+    }
+  }
+  return ;
 }
 
 int
@@ -66,9 +95,10 @@ main(int argc, char *argv[]) {
 	struct passwd *pw;
 	int imsg_fds[2];
 	struct imsgbuf ibuf;
-	/* XXX: To remove when Mota will bring his network code */
-	fd_set masterfds;
-	int fd_max;
+  struct event_base *evbase;
+  struct event *event = NULL;
+  struct event *sigint = NULL;
+  struct event *sigterm = NULL;
 
 	while ((ch = getopt(argc, argv, "dh")) != -1) {
 		switch(ch) {
@@ -99,57 +129,29 @@ main(int argc, char *argv[]) {
 		perror("socketpair");
 		return 1;
 	}
-
-	signal(SIGCHLD, sighdlr);
+	signal(SIGCHLD, _sighdlr);
 	chld_pid = tnt_fork(imsg_fds, pw);
 
-	signal(SIGTERM, sighdlr);
-	signal(SIGINT, sighdlr);
+  if ((evbase = event_base_new()) == NULL) {
+    log_err(-1, "[priv] Failed to init the event library");
+  }
+
+  sigint = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
+  sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
 
 	if (close(imsg_fds[1]))
 		log_notice("[priv] close");
 
 	imsg_init(&ibuf, imsg_fds[0]);
+  event = event_new(evbase, imsg_fds[0],
+                     EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
+                     &imsg_callback_handler, &ibuf);
 
-	fd_max = ibuf.fd;
-	FD_ZERO(&masterfds);
-	FD_SET(ibuf.fd, &masterfds);
+  event_add(event, NULL);
+  event_add(sigint, NULL);
+  event_add(sigterm, NULL);
 
-	while (quit == 0) {
-		fd_set readfds = masterfds;
-		fd_set writefds;
-
-		/* 
-		 * Activate write monitoring if and only if there is _effectively_
-		 * something to write in the ibuf queue.
-		 * Thanks OpenNTPD !
-		 */
-		FD_ZERO(&writefds);
-		if (ibuf.w.queued > 0)
-			FD_SET(ibuf.fd, &writefds);
-
-		if ((select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
-			log_err(1, "[priv] select");
-
-		/* Flush our pending imsgs */
-		if (FD_ISSET(ibuf.fd, &writefds))
-			if (msgbuf_write(&ibuf.w) < 0) {
-				log_warnx("[priv] pipe write error");
-				quit = 1;
-			}
-
-		/* Read what Martine is asking to Martin  */
-		if (FD_ISSET(ibuf.fd, &readfds)) {
-			if (dispatch_imsg(&ibuf) == -1)	
-				quit = 1;
-		}
-
-		if (sigchld == 1) {
-			quit = 1;
-			chld_pid = 0;
-			sigchld = 0;
-		}
-	}
+  event_base_dispatch(evbase);
 
 	signal(SIGCHLD, SIG_DFL);
 
@@ -157,6 +159,10 @@ main(int argc, char *argv[]) {
 		kill(chld_pid, SIGTERM);
 
 	msgbuf_clear(&ibuf.w);
+  event_base_free(evbase);
+  event_free(event);
+  event_free(sigint);
+  event_free(sigterm);
 	log_info("[priv] tnetacle exiting");
 	return TNT_OK;
 }
@@ -172,7 +178,7 @@ usage(void) {
 static int
 dispatch_imsg(struct imsgbuf *ibuf) {
 	struct imsg imsg;
-	int n;
+	ssize_t n;
 	ssize_t datalen;
 	char buf[128];
 

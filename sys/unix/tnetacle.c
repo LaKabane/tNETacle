@@ -35,24 +35,46 @@
 #include <sys/queue.h>
 #include <imsg.h>
 
+#include <event2/event.h>
+
 volatile sig_atomic_t chld_quit;
 int tnt_dispatch_imsg(struct imsgbuf *ibuf);
+
+static void
+tnt_imsg_callback(evutil_socket_t fd, short events, void *args)
+{
+  (void)fd;
+  struct imsgbuf *ibuf = args;
+
+  if (events & EV_READ) {
+    tnt_dispatch_imsg(ibuf);
+  }
+
+  if (events & EV_WRITE) {
+    if (ibuf->w.queued > 0) {
+      msgbuf_write(&ibuf->w);
+    }
+  }
+}
 
 /* XXX: To clean after TA2 */
 fd_set masterfds;
 int tun_fd = -1;
 
-void
-chld_sighdlr(int sig) {
+static void
+chld_sighdlr(evutil_socket_t sig, short events, void *args) {
+  (void)events;
+  struct event_base *evbase = args;
+
 	switch (sig) {
 	case SIGTERM:
 	case SIGINT:
-		chld_quit = 1;
+    event_base_loopbreak(evbase);
 		break;
 	}
 }
 
-void
+static void
 tnt_priv_drop(struct passwd *pw) {
 	struct stat ss; /* Heil! */
 
@@ -86,7 +108,10 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	struct imsgbuf ibuf;
 	/* XXX: To remove when Mota will bring his network code */
 	/* fd_set masterfds; */
-	int fd_max;
+  struct event_base *evbase = NULL;
+  struct event *evimsg = NULL;
+  struct event *sigterm = NULL;
+  struct event *sigint = NULL;
 
 	switch ((pid = fork())) {
 	case -1:
@@ -102,8 +127,17 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 
 	tnt_priv_drop(pw);
 
+  if ((evbase = event_base_new()) == NULL) {
+    log_err(-1, "[unpriv] Failed to init the event library");
+  }
+
+  /*
 	signal(SIGTERM, chld_sighdlr);
 	signal(SIGINT, chld_sighdlr);
+  */
+  sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
+  sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);
+
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGHUP, SIG_IGN);
 	signal(SIGCHLD, SIG_DFL);
@@ -112,52 +146,33 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 		log_notice("[unpriv] close");
 
 	imsg_init(&ibuf, imsg_fds[1]);
+  evimsg = event_new(evbase, imsg_fds[1],
+                     EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
+                     &tnt_imsg_callback, &ibuf);
+
+  event_add(evimsg, NULL);
+  event_add(sigterm, NULL);
+  event_add(sigint, NULL);
 
 	log_info("[unpriv] tnetacle ready");
-
-	fd_max = ibuf.fd;
-	FD_ZERO(&masterfds);
-	FD_SET(ibuf.fd, &masterfds);
 
 	/* Immediately request the creation of a tun interface */
 	imsg_compose(&ibuf, IMSG_CREATE_DEV, 0, 0, -1, NULL, 0);
 
-	while (chld_quit == 0) {
-		fd_set readfds = masterfds;
-		fd_set writefds;
+  event_base_dispatch(evbase);
 
-		/* 
-		 * Activate write monitoring if and only if there is _effectively_
-		 * something to write in the ibuf queue.
-		 * Thanks OpenNTPD !
-		 */
-		FD_ZERO(&writefds);
-		if (ibuf.w.queued > 0)
-			FD_SET(ibuf.fd, &writefds);
-
-		if ((select(fd_max + 1, &readfds, &writefds, NULL, NULL)) == -1)
-			log_err(1, "[unpriv] select");
-
-		if (FD_ISSET(ibuf.fd, &writefds))
-			if (msgbuf_write(&ibuf.w) < 0) {
-				log_warnx("[unpriv] pipe write error");
-				chld_quit = 1;
-			}
-
-		/* Read what Martin replied to Martine */
-		if (FD_ISSET(ibuf.fd, &readfds)) {
-			if (tnt_dispatch_imsg(&ibuf) == -1)
-				chld_quit = 1;
-		}
-
-		/* Is there something on tun ? */
-		if (tun_fd != -1 && FD_ISSET(tun_fd, &readfds)) {
-			log_debug("Something appeared on tun :O");
-		}
-	}
 	/* cleanely exit */
 	msgbuf_write(&ibuf.w);
 	msgbuf_clear(&ibuf.w);
+
+  /*
+   * It may look like we freed this one twice, once here and once in tnetacled.c
+   * but this is not the case. Please don't erase this !
+   */
+  event_base_free(evbase);
+  event_free(evimsg);
+  event_free(sigterm);
+  event_free(sigint);
 	
 	log_info("[unpriv] tnetacle exiting");
 	exit(TNT_OK);
@@ -170,7 +185,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 int
 tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 	struct imsg imsg;
-	int n;
+	ssize_t n;
 
 	n = imsg_read(ibuf);
 	if (n == -1) {
@@ -202,9 +217,6 @@ tnt_dispatch_imsg(struct imsgbuf *ibuf) {
 				log_errx(1, "[unpriv] invalid IMSG_CREATE_DEV received");
 			(void)memcpy(&tun_fd, imsg.data, sizeof tun_fd);
 			log_info("[unpriv] receive IMSG_CREATE_DEV: fd %i", tun_fd);
-
-			/* XXX: This is CRAP */
-			FD_SET(tun_fd, &masterfds);
 
 			/* directly ask to configure the tun device */
 			imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
