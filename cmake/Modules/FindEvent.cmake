@@ -28,36 +28,44 @@ if (${EVENT_USE_CORE})
 	find_library(EVENT_CORE_LIBRARY
 		NAMES event_core)
 	if (${EVENT_CORE_LIBRARY} MATCHES "EVENT_CORE_LIBRARY-NOTFOUND" AND Event_FIND_REQUIRED)
-		message(FATAL_ERROR "Event core not found.")
+		message(STATUS "Event core not found.")
 	endif()
+	if (NOT ${EVENT_FIND_QUIETLY})
 	message(STATUS "Event core found at ${EVENT_CORE_LIBRARY}.")
+	endif()
 endif()
 
 if (${EVENT_USE_OPENSSL})
 	find_library(EVENT_OPENSSL_LIBRARY
 		NAMES event_openssl)
 	if (${EVENT_OPENSSL_LIBRARY} MATCHES "EVENT_OPENSSL_LIBRARY-NOTFOUND" AND Event_FIND_REQUIRED)
-		message(FATAL_ERROR "Event openssl module not found.")
+		message(STATUS "Event openssl module not found.")
 	endif()
+	if (NOT ${EVENT_FIND_QUIETLY})
 	message(STATUS "Event openssl module found at ${EVENT_OPENSSL_LIBRARY}.")
+	endif()
 endif()
 
 if (${EVENT_USE_PTHREADS})
 	find_library(EVENT_PTHREADS_LIBRARY
 		NAMES event_pthreads)
 	if (${EVENT_PTHREADS_LIBRARY} MATCHES "EVENT_PTHREADS_LIBRARY-NOTFOUND" AND Event_FIND_REQUIRED)
-		message(FATAL_ERROR "Event pthreads module not found.")
+		message(STATUS "Event pthreads module not found.")
 	endif()
+	if (NOT ${EVENT_FIND_QUIETLY})
 	message(STATUS "Event pthreads module found at ${EVENT_PTHREADS_LIBRARY}.")
+	endif()
 endif()
 
 if (${EVENT_USE_EXTRA})
 	find_library(EVENT_EXTRA_LIBRARY
 		NAMES event_extra)
 	if (${EVENT_EXTRA_LIBRARY} MATCHES "EVENT_EXTRA_LIBRARY-NOTFOUND" AND Event_FIND_REQUIRED)
-		message(FATAL_ERROR "Event extra module not found.")
+		message(STATUS "Event extra module not found.")
 	endif()
+	if (NOT ${EVENT_FIND_QUIETLY})
 	message(STATUS "Event extra module found at ${EVENT_EXTRA_LIBRARY}.")
+	endif()
 endif()
 
 
