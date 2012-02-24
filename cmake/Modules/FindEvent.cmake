@@ -14,16 +14,57 @@ if (EVENT_INCLUDE_DIR AND EVENT_LIBRARY)
 endif (EVENT_INCLUDE_DIR AND EVENT_LIBRARY)
 
 find_path(EVENT_INCLUDE_DIR event.h
-  PATHS /usr/include /usr/local/include
   PATH_SUFFIXES event2
 )
 
-find_library(EVENT_LIBRARY
-  NAMES event
-  PATHS /usr/lib /usr/local/lib
-)
+if (Event_FIND_COMPONENTS)
+	foreach( component ${Event_FIND_COMPONENTS})
+		string( TOUPPER ${component} _COMPONENT)
+		set(EVENT_USE_${_COMPONENT} True)
+	endforeach(component)
+endif()
 
-set(EVENT_LIBRARIES ${EVENT_LIBRARY})
+if (${EVENT_USE_CORE})
+	find_library(EVENT_CORE_LIBRARY
+		NAMES event_core)
+	if (${EVENT_CORE_LIBRARY} MATCHES "EVENT_CORE_LIBRARY-NOTFOUND" AND Event_FIND_REQUIRED)
+		message(FATAL_ERROR "Event core not found.")
+	endif()
+	message(STATUS "Event core found at ${EVENT_CORE_LIBRARY}.")
+endif()
+
+if (${EVENT_USE_OPENSSL})
+	find_library(EVENT_OPENSSL_LIBRARY
+		NAMES event_openssl)
+	if (${EVENT_OPENSSL_LIBRARY} MATCHES "EVENT_OPENSSL_LIBRARY-NOTFOUND" AND Event_FIND_REQUIRED)
+		message(FATAL_ERROR "Event openssl module not found.")
+	endif()
+	message(STATUS "Event openssl module found at ${EVENT_OPENSSL_LIBRARY}.")
+endif()
+
+if (${EVENT_USE_PTHREADS})
+	find_library(EVENT_PTHREADS_LIBRARY
+		NAMES event_pthreads)
+	if (${EVENT_PTHREADS_LIBRARY} MATCHES "EVENT_PTHREADS_LIBRARY-NOTFOUND" AND Event_FIND_REQUIRED)
+		message(FATAL_ERROR "Event pthreads module not found.")
+	endif()
+	message(STATUS "Event pthreads module found at ${EVENT_PTHREADS_LIBRARY}.")
+endif()
+
+if (${EVENT_USE_EXTRA})
+	find_library(EVENT_EXTRA_LIBRARY
+		NAMES event_extra)
+	if (${EVENT_EXTRA_LIBRARY} MATCHES "EVENT_EXTRA_LIBRARY-NOTFOUND" AND Event_FIND_REQUIRED)
+		message(FATAL_ERROR "Event extra module not found.")
+	endif()
+	message(STATUS "Event extra module found at ${EVENT_EXTRA_LIBRARY}.")
+endif()
+
+
+set(EVENT_LIBRARIES 	${EVENT_OPENSSL_LIBRARY} 
+			${EVENT_CORE_LIBRARY}
+			${EVENT_PTHREADS_LIBRARY}
+			${EVENT_EXTRA_LIBRARY})
 set(EVENT_INCLUDE_DIRS ${EVENT_INCLUDE_DIR})
 
 include(FindPackageHandleStandardArgs)

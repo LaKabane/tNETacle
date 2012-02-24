@@ -9,12 +9,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set(${CMAKE_SYSTEM_NAME} True)
 
 #find_package(ZLIB REQUIRED)
-find_package(Event REQUIRED)
+find_package(Event COMPONENTS openssl core REQUIRED)
 
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 add_definitions(-DHAVE_SETPROCTITLE)
 
 if(UNIX)
+  include_directories(/usr/include/ /usr/local/include)
   add_definitions(-DTNETACLE_LOCAL_ADDR=\"1.2.3.4\")
   set(CMAKE_C_FLAGS "-W -Wall")
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/log.c
@@ -47,7 +48,6 @@ if (Darwin)
 endif()
 
 include_directories(
-${EVENT_INCLUDE_DIRS}
 ${CMAKE_HOME_DIRECTORY}/include
 )
 
