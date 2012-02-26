@@ -48,8 +48,7 @@
 #include <event2/event.h>
 
 int debug;
-volatile sig_atomic_t sigchld;
-volatile sig_atomic_t quit;
+volatile sig_atomic_t sigchld_recv;
 
 /* XXX: clean that after the TA2 */
 struct device *dev = NULL;
@@ -58,10 +57,10 @@ static void usage(void);
 static int dispatch_imsg(struct imsgbuf *);
 
 static void
-_sighdlr(int sig)
-{
+_sighdlr(int sig) {
+    printf("%s\n", __PRETTY_FUNCTION__);
     if (sig == SIGCHLD)
-	sigchld = 1;
+	sigchld_recv = 1;
 }
 
 static void
@@ -70,14 +69,13 @@ sighdlr(evutil_socket_t sig, short events, void *args) {
     (void)events;
 
     switch (sig) {
+    case SIGCHLD:
     case SIGTERM:
     case SIGINT:
-        event_base_loopbreak(evbase);
-        break;
-    case SIGCHLD:
-        sigchld = 1;
-        break;
-        /* TODO: SIGHUP */
+	log_warn("Received signal %d, stoping.\n", sig);
+	event_base_loopbreak(evbase);
+	break;
+    /* TODO: SIGHUP */
     }
 }
 
@@ -109,16 +107,17 @@ main(int argc, char *argv[]) {
     struct event *event = NULL;
     struct event *sigint = NULL;
     struct event *sigterm = NULL;
+    struct event *sigchld = NULL;
 
     while ((ch = getopt(argc, argv, "dh")) != -1) {
-    	switch(ch) {
-    	case 'd':
-    	    debug = 1;
-    	    break;
-    	case 'h':
-    	default:
-    	    usage();
-    	}
+	switch(ch) {
+	    case 'd':
+		debug = 1;
+		break;
+	    case 'h':
+	    default:
+		usage();
+	}
     }
     argc -= optind;
     argv += optind;
@@ -139,6 +138,9 @@ main(int argc, char *argv[]) {
 	perror("socketpair");
 	return 1;
     }
+    /* The child can die while we are still in the init phase. So we need to
+     * monitor for SIGCHLD by signal
+     */
     signal(SIGCHLD, _sighdlr);
     chld_pid = tnt_fork(imsg_fds, pw);
 
@@ -148,6 +150,7 @@ main(int argc, char *argv[]) {
 
     sigint = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
+    sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sighdlr, evbase);
 
     if (close(imsg_fds[1]))
 	log_notice("close");
@@ -160,9 +163,17 @@ main(int argc, char *argv[]) {
     event_add(event, NULL);
     event_add(sigint, NULL);
     event_add(sigterm, NULL);
+    event_add(sigchld, NULL);
 
-    event_base_dispatch(evbase);
-
+    /* if we received a sigchild from here, we don't need to start the event loop
+     * as the child is stillborn.. :(
+     */
+    if (sigchld_recv != 1)
+	event_base_dispatch(evbase);
+    else
+	fprintf(stderr, "The tNETalce initialisation phase failed."
+		" Check the logs to find out why.");
+    
     signal(SIGCHLD, SIG_DFL);
 
     if (chld_pid != 0)
@@ -173,6 +184,7 @@ main(int argc, char *argv[]) {
     event_free(event);
     event_free(sigint);
     event_free(sigterm);
+    event_free(sigchld);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
