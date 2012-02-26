@@ -40,7 +40,7 @@ tnt_tun_set_ip(struct device *dev, const char *addr) {
     int sock = -1;
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-	log_warn("[priv] %s: configuration socket", __func__);
+	log_warn("%s: configuration socket", __func__);
 	return -1;
     }
 
@@ -51,12 +51,12 @@ tnt_tun_set_ip(struct device *dev, const char *addr) {
     memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
 
     if (ioctl(sock, SIOCSIFADDR, &(dev->ifr)) == -1) {
-	log_warn("[priv] %s: ioctl SIOCSIFADDR", __func__);
+	log_warn("%s: ioctl SIOCSIFADDR", __func__);
 	return -1;
     }
 
     close(sock);
-    log_info("[priv] set %s ip to %s", dev->ifr.ifr_name, addr);
+    log_info("set %s ip to %s", dev->ifr.ifr_name, addr);
     return 0;
 }
 
@@ -66,7 +66,7 @@ tnt_tun_set_netmask(struct device *dev, const char *netmask) {
     int sock = -1;
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
-	log_warn("[priv] %s: configuration socket", __func__);
+	log_warn("%s: configuration socket", __func__);
 	return -1;
     }
 
@@ -77,12 +77,12 @@ tnt_tun_set_netmask(struct device *dev, const char *netmask) {
     memcpy(&(dev->ifr.ifr_addr), &sai, sizeof(struct sockaddr));
 
     if (ioctl(sock, SIOCSIFNETMASK, &(dev->ifr)) == -1) {
-	log_warn("[priv] %s: ioctl SIOCSIFNETMASK", __func__);
+	log_warn("%s: ioctl SIOCSIFNETMASK", __func__);
 	return -1;
     }
 
     close(sock);
-    log_info("[priv] set %s netmask to %s", dev->ifr.ifr_name, netmask);
+    log_info("set %s netmask to %s", dev->ifr.ifr_name, netmask);
     return 0;
 }
 

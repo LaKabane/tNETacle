@@ -143,14 +143,14 @@ main(int argc, char *argv[]) {
     chld_pid = tnt_fork(imsg_fds, pw);
 
     if ((evbase = event_base_new()) == NULL) {
-	log_err(-1, "[priv] Failed to init the event library");
+	log_err(-1, "Failed to init the event library");
     }
 
     sigint = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
 
     if (close(imsg_fds[1]))
-	log_notice("[priv] close");
+	log_notice("close");
 
     imsg_init(&ibuf, imsg_fds[0]);
     event = event_new(evbase, imsg_fds[0],
@@ -173,7 +173,7 @@ main(int argc, char *argv[]) {
     event_free(event);
     event_free(sigint);
     event_free(sigterm);
-    log_info("[priv] tnetacle exiting");
+    log_info("tnetacle exiting");
     return TNT_OK;
 }
 
@@ -194,13 +194,13 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 
     n = imsg_read(ibuf);
     if (n == -1) {
-	log_warnx("[priv] loose some imsgs");
+	log_warnx("loose some imsgs");
 	imsg_clear(ibuf);
 	return 0;
     }
 
     if (n == 0) {
-	log_warnx("[priv] pipe closed");
+	log_warnx("pipe closed");
 	return -1;
     }
 
@@ -208,7 +208,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	/* Loops through the queue created by imsg_read */
 	n = imsg_get(ibuf, &imsg);
 	if (n == -1) {
-	    log_warnx("[priv] imsg_get");
+	    log_warnx("imsg_get");
 	    return -1;
 	}
 
@@ -224,7 +224,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    break;
 	case IMSG_SET_IP:
 	    if (dev == NULL) {
-	        log_warnx("[priv] can't set ip, use IMSG_CREATE_DEV first");
+	        log_warnx("can't set ip, use IMSG_CREATE_DEV first");
 	        break;
 	    }
 	    datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
@@ -232,12 +232,12 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    (void)memcpy(buf, imsg.data, sizeof buf);
 	    buf[datalen] = '\0';
 	    
-	    log_info("[priv] receive IMSG_SET_IP: %s", buf);
+	    log_info("receive IMSG_SET_IP: %s", buf);
 	    tnt_tun_set_ip(dev, buf);
 	    break;
 	case IMSG_SET_NETMASK:
 	    if (dev == NULL) {
-	        log_warnx("[priv] can't set ip, use IMSG_CREATE_DEV first");
+	        log_warnx("can't set ip, use IMSG_CREATE_DEV first");
 	        break;
 	    }
 	
@@ -246,7 +246,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    (void)memcpy(buf, imsg.data, sizeof buf);
 	    buf[datalen] = '\0';
 	    
-	    log_info("[priv] receive IMSG_SET_NETMASK: %s", buf);
+	    log_info("receive IMSG_SET_NETMASK: %s", buf);
 	    tnt_tun_set_netmask(dev, buf);
 	    break;
 	default:

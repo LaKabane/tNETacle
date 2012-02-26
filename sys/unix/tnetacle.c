@@ -106,15 +106,15 @@ tnt_priv_drop(struct passwd *pw) {
     /* TODO: dup stdin, stdout and stdlog_err to /dev/null */
 
     if (setgroups(1, &pw->pw_gid) == -1)
-	log_err(1, "[unpriv] can't drop privileges (setgroups)");
+	log_err(1, "can't drop privileges (setgroups)");
 #ifdef HAVE_SETRESXID
     if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1 ||
 	setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
-	log_err(1, "[unpriv] can't drop privileges (setresid)");
+	log_err(1, "can't drop privileges (setresid)");
 #else
     /* Fallback to setuid, but it might not work properly */
     if (setuid(pw->pw_uid) == -1 || setgid(pw->pw_gid) == -1)
-	log_err(1, "[unpriv] can't drop privileges (setuid||setgid)");
+	log_err(1, "can't drop privileges (setuid||setgid)");
 #endif
 }
 
@@ -134,16 +134,18 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
         break;
     case 0:
         tnt_setproctitle("[unpriv]");
+        log_set_prefix("unpriv");
         break;
     default:
         tnt_setproctitle("[priv]");
+        log_set_prefix("priv");
         return pid;
     }
 
     tnt_priv_drop(pw);
 
     if ((cb_data.evbase = event_base_new()) == NULL) {
-	log_err(-1, "[unpriv] Failed to init the event library");
+	log_err(-1, "Failed to init the event library");
     }
 
     /*
@@ -160,7 +162,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
     signal(SIGCHLD, SIG_DFL);
 
     if (close(imsg_fds[0]))
-	log_notice("[unpriv] close");
+	log_notice("close");
 
     imsg_init(&ibuf, imsg_fds[1]);
     cb_data.ibuf = &ibuf;
@@ -172,7 +174,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
     event_add(sigterm, NULL);
     event_add(sigint, NULL);
 
-    log_info("[unpriv] tnetacle ready");
+    log_info("tnetacle ready");
 
     /* Immediately request the creation of a tun interface */
     imsg_compose(&ibuf, IMSG_CREATE_DEV, 0, 0, -1, NULL, 0);
@@ -191,7 +193,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
     event_free(sigterm);
     event_free(sigint);
 
-    log_info("[unpriv] tnetacle exiting");
+    log_info("tnetacle exiting");
     exit(TNT_OK);
 }
 
@@ -208,13 +210,13 @@ tnt_dispatch_imsg(struct imsg_cb_data *data) {
 
     n = imsg_read(ibuf);
     if (n == -1) {
-	log_warnx("[unpriv] loose some imsgs");
+	log_warnx("loose some imsgs");
 	imsg_clear(ibuf);
 	return 0;
     }
 
     if (n == 0) {
-	log_warnx("[unpriv] pipe closed");
+	log_warnx("pipe closed");
 	return -1;
     }
 
@@ -223,9 +225,9 @@ tnt_dispatch_imsg(struct imsg_cb_data *data) {
 	switch (imsg.hdr.type) {
         case IMSG_CREATE_DEV:
             if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof(tun_fd))
-                log_errx(1, "[unpriv] invalid IMSG_CREATE_DEV received");
+                log_errx(1, "invalid IMSG_CREATE_DEV received");
             (void)memcpy(&tun_fd, imsg.data, sizeof tun_fd);
-            log_info("[unpriv] receive IMSG_CREATE_DEV: fd %i", tun_fd);
+            log_info("receive IMSG_CREATE_DEV: fd %i", tun_fd);
             data->ievent = event_new(data->evbase, tun_fd,
             			 EV_WRITE | EV_READ | EV_ET | EV_PERSIST,
             			 &device_cb, &data);
@@ -244,7 +246,7 @@ tnt_dispatch_imsg(struct imsg_cb_data *data) {
 	imsg_free(&imsg);
     }
     if (n == -1) {
-	log_warnx("[unpriv] imsg_get");
+	log_warnx("imsg_get");
 	return -1;
     }
     return 0;

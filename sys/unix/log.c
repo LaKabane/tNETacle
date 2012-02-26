@@ -29,6 +29,7 @@
 #include "log.h"
 
 extern unsigned int debug;
+static char *prefix = "";
 
 static void
 vlog(int pri, const char *fmt, va_list ap) {
@@ -36,7 +37,7 @@ vlog(int pri, const char *fmt, va_list ap) {
 
 	if (debug == 1) {
 		/* best effort in out of mem situations */
-		if (asprintf(&nfmt, "%s\n", fmt) == -1) {
+		if (asprintf(&nfmt, "[%s] %s\n", prefix, fmt) == -1) {
 			vfprintf(stderr, fmt, ap);
 			fprintf(stderr, "\n");
 		} else {
@@ -44,8 +45,14 @@ vlog(int pri, const char *fmt, va_list ap) {
 			free(nfmt);
 		}
 		fflush(stderr);
-	} else
-		vsyslog(pri, fmt, ap);
+	} else {
+		if (asprintf(&nfmt, "[%s] %s\n", prefix, fmt) == -1)
+			vsyslog(pri, fmt, ap);
+		else {
+			vsyslog(pri, nfmt, ap);
+			free(nfmt);
+		}
+	}
 }
 
 static void
@@ -55,6 +62,11 @@ flog(int pri, const char *fmt, ...) {
 	va_start(ap, fmt);
 	vlog(pri, fmt, ap);
 	va_end(ap);
+}
+
+void
+log_set_prefix(char *s) {
+	prefix = s;
 }
 
 void
