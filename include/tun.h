@@ -21,6 +21,12 @@ struct device {
 	int		af;	/* AF_INET || AF_INET6 */
 	int		fd;
 	struct ifreq	ifr;
+#ifdef HAVE_NETLINK
+  struct nl_sock *sk;
+  struct rtnl_link *link;
+  struct nl_cache *cache;
+  struct rtnl_addr *addr;
+#endif
 };
 
 struct device	*tnt_tun_open(void);

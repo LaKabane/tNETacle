@@ -33,6 +33,50 @@
 #include "tun.h"
 #include "log.h"
 
+#ifdef HAVE_NETLINK
+
+#include <netlink/netlink.h>
+#include <netlink/route/link.h>
+#include <netlink/route/addr.h>
+
+int
+tnt_tun_set_ip(struct device *dev, const char *addr) {
+    struct nl_addr *local;
+
+    nl_addr_parse(addr, AF_UNSPEC, &local);
+    rtnl_addr_set_local(dev->addr, local);
+    if (rtnl_addr_add(dev->sk, dev->addr, 0) == -1)
+	return -1;
+    return 0;
+}
+
+int
+tnt_tun_set_netmask(struct device *dev, const char *netmask) {
+    struct nl_addr *local;
+    (void)netmask;
+
+    local = rtnl_addr_get_local(dev->addr);
+    rtnl_addr_delete(dev->sk, dev->addr, 0);
+    rtnl_addr_set_local(dev->addr, local);
+    rtnl_addr_set_prefixlen(dev->addr, 24);
+    if (rtnl_addr_add(dev->sk, dev->addr, 0) == -1)
+	return -1;
+    return 0;
+}
+
+int
+tnt_tun_set_mac(struct device *dev, const char *hwaddr) {
+    struct nl_addr *hwlocal;
+
+    if (nl_addr_parse(hwaddr, AF_UNSPEC, &hwlocal) == -1)
+	return -1;
+    rtnl_link_set_addr(dev->link, hwlocal);
+    if (rtnl_link_add(dev->sk, dev->link, 0) == -1)
+	return -1;
+    return 0;
+}
+
+#else
 int
 tnt_tun_set_ip(struct device *dev, const char *addr) {
     struct sockaddr_in sai;
@@ -106,7 +150,7 @@ tnt_tun_set_mac(struct device *dev, const char *hwaddr) {
     log_debug("Set %s mac to %s", dev->ifr.ifr_name, hwaddr);
     return 0;
 }
-
+#endif
 struct device *
 tnt_tun_open(void) {
     struct device *dev = NULL;
@@ -152,6 +196,14 @@ tnt_tun_open(void) {
     }
 
     dev->fd = fd;
+#ifdef HAVE_NETLINK
+    dev->sk = nl_socket_alloc();
+    dev->addr = rtnl_addr_alloc();
+    nl_connect(dev->sk, NETLINK_ROUTE);
+    rtnl_link_alloc_cache(dev->sk, AF_UNSPEC, &dev->cache);
+    dev->link = rtnl_link_get_by_name(dev->cache, "tun0"); /* Need the real name !*/
+    rtnl_addr_set_ifindex(dev->addr, rtnl_link_get_ifindex(dev->link));
+#endif
 
     close(sock);
     return dev;
@@ -166,6 +218,11 @@ clean:
 
 void
 tnt_tun_close(struct device *dev) {
+#ifdef HAVE_NETLINK
+    nl_close(dev->sk);
+    nl_cache_free(dev->cache);
+    rtnl_addr_put(dev->addr);
+#endif
     close(dev->fd);
     /* And other stuff later ? */
 }
