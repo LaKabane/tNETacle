@@ -183,7 +183,8 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
     signal(SIGHUP, SIG_IGN);
     signal(SIGCHLD, SIG_DFL);
 
-    server_init(&server, evbase);
+    if (server_init(&server, evbase) == -1)
+	log_err(-1, "Failed to init the server socket");
 
     data.ibuf = &ibuf;
     data.evbase = evbase;
