@@ -56,6 +56,14 @@ struct device *dev = NULL;
 static void usage(void);
 static int dispatch_imsg(struct imsgbuf *);
 
+struct imsg_data {
+    struct imsgbuf *ibuf;
+    struct event *event;
+    struct event_base *evbase;
+    int is_ready_read;
+    int is_ready_write;
+};
+
 static void
 _sighdlr(int sig) {
     printf("%s\n", __PRETTY_FUNCTION__);
@@ -82,15 +90,19 @@ sighdlr(evutil_socket_t sig, short events, void *args) {
 static void
 imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
     (void)fd;
-    struct imsgbuf *ibuf = args;
+    struct imsg_data *data = args;
 
-    if (events & EV_READ) {
-	dispatch_imsg(ibuf);
+    if (events & EV_READ || data->is_ready_read == 1) {
+	data->is_ready_read = 1;
+	if (dispatch_imsg(data->ibuf) == -1)
+	    data->is_ready_read = 0;
     }
 
-    if (events & EV_WRITE) {
-	if (ibuf->w.queued > 0) {
-	    msgbuf_write(&ibuf->w);
+    if (events & EV_WRITE || data->is_ready_write == 1) {
+	data->is_ready_write = 1;
+	if (data->ibuf->w.queued > 0) {
+	    if (msgbuf_write(&data->ibuf->w) == -1)
+		data->is_ready_write = 0;
 	}
     }
     return ;
@@ -103,6 +115,7 @@ main(int argc, char *argv[]) {
     struct passwd *pw;
     int imsg_fds[2];
     struct imsgbuf ibuf;
+    struct imsg_data data = {};
     struct event_base *evbase;
     struct event *event = NULL;
     struct event *sigint = NULL;
@@ -155,10 +168,16 @@ main(int argc, char *argv[]) {
     if (close(imsg_fds[1]))
 	log_notice("close");
 
+    data.evbase = evbase;
+    data.is_ready_write = 0;
+    data.is_ready_read = 0;
+    data.ibuf = &ibuf;
     imsg_init(&ibuf, imsg_fds[0]);
+    evutil_make_socket_nonblocking(imsg_fds[0]);
     event = event_new(evbase, imsg_fds[0],
 		      EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
-		      &imsg_callback_handler, &ibuf);
+		      &imsg_callback_handler, &data);
+    data.event = event;
 
     event_add(event, NULL);
     event_add(sigint, NULL);
@@ -208,7 +227,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
     if (n == -1) {
 	log_warnx("loose some imsgs");
 	imsg_clear(ibuf);
-	return 0;
+	return -1;
     }
 
     if (n == 0) {

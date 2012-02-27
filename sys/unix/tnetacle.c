@@ -42,6 +42,8 @@ struct imsg_data {
     struct imsgbuf *ibuf;
     struct event_base *evbase;
     struct server *server;
+    int is_ready_read;
+    int is_ready_write;
 };
 
 volatile sig_atomic_t chld_quit;
@@ -54,12 +56,16 @@ tnt_imsg_callback(evutil_socket_t fd, short events, void *args) {
     struct imsg_data *data = args; 
     struct imsgbuf *ibuf = data->ibuf;
 
-    if (events & EV_READ) {
-	tnt_dispatch_imsg(data);
+    if (events & EV_READ || data->is_ready_read == 1) {
+	data->is_ready_read = 1;
+	if (tnt_dispatch_imsg(data) == -1)
+	    data->is_ready_read = 0;
     }
-    if (events & EV_WRITE) {
+    if (events & EV_WRITE || data->is_ready_write == 1) {
+	data->is_ready_write = 1;
 	if (ibuf->w.queued > 0) {
-	    msgbuf_write(&ibuf->w);
+	    if (msgbuf_write(&ibuf->w) == -1)
+		data->is_ready_write = 0;
 	}
     }
 }
@@ -126,8 +132,10 @@ init_pipe_endpoint(int imsg_fds[2],
     struct event *event = NULL;
 
     if (close(imsg_fds[0]))
-	log_notice("[unpriv] close");
+	log_notice("close");
 
+    data->is_ready_write = 0;
+    data->is_ready_read = 0;
     imsg_init(data->ibuf, imsg_fds[1]);
     evutil_make_socket_nonblocking(imsg_fds[1]);
     event = event_new(data->evbase, imsg_fds[1],
@@ -191,6 +199,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
     /* Immediately request the creation of a tun interface */
     imsg_compose(&ibuf, IMSG_CREATE_DEV, 0, 0, -1, NULL, 0);
 
+    log_info("Starting event loop");
     event_base_dispatch(evbase);
 
     /* cleanely exit */
@@ -228,7 +237,7 @@ tnt_dispatch_imsg(struct imsg_data *data) {
     if (n == -1) {
 	log_warnx("loose some imsgs");
 	imsg_clear(ibuf);
-	return 0;
+	return -1;
     }
 
     if (n == 0) {
