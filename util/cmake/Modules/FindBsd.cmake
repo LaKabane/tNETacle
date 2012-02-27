@@ -7,28 +7,25 @@
 #  Bsd_LIBRARIES - link these to use Bsd compat
 #
 
+include(LibFindMacros)
+
 if (BSD_INCLUDE_DIR AND BSD_LIBRARY)
   # Already in cache, be silent
   set(BSD_FIND_QUIETLY TRUE)
-endif (BSD_INCLUDE_DIR AND BSD_LIBRARY)
+endif ()
+
+libfind_pkg_check_modules(BSD_PKGCONF libbsd)
 
 find_path(BSD_INCLUDE_DIR bsd.h
-  PATHS /usr/include /usr/local/include
+  PATH ${BSD_PKGCONF_INCLUDE_DIRS}
   PATH_SUFFIXES bsd
 )
 
 find_library(BSD_LIBRARY
   NAMES bsd
-  PATHS /usr/lib /usr/local/lib
+  PATHS ${BSD_PKGCONF_LIBRARY_DIRS}
 )
 
-set(BSD_LIBRARIES ${BSD_LIBRARY} )
-
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(BSD
-  DEFAULT_MSG
-  BSD_INCLUDE_DIR
-  BSD_LIBRARIES
-)
-
-mark_as_advanced(BSD_INCLUDE_DIR BSD_LIBRARY)
+set(BSD_PROCESS_INCLUDES BSD_INCLUDE_DIR)
+set(BSD_PROCESS_LIBS BSD_LIBRARY)
+libfind_process(BSD)

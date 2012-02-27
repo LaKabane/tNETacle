@@ -15,6 +15,12 @@ add_definitions(-D${CMAKE_SYSTEM_NAME})
 add_definitions(-DHAVE_SETPROCTITLE)
 add_definitions(-DHAVE_SETRESXID)
 
+if (Linux)
+	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
+	option(ENABLE_NETLINK "Enable the use of libnl to configure the
+	interfaces" ON)
+endif()
+
 if(UNIX)
   include_directories(/usr/include/ /usr/local/include)
   add_definitions(-DTNETACLE_LOCAL_ADDR=\"1.2.3.4\")
@@ -33,6 +39,25 @@ if (WINDOWS)
 endif()
 
 if(Linux)
+  if (ENABLE_BSDCOMPAT)
+    find_package(Bsd)
+    if (BSD_FOUND)
+      add_definitions(-DHAVE_BSD_COMPAT)
+    else()
+      remove_definitions(-DHAVE_SETPROCTITLE)
+    endif()
+  else()
+    remove_definitions(-DHAVE_SETPROCTITLE)
+  endif()
+
+  if (ENABLE_NETLINK)
+    find_package(Netlink COMPONENTS route)
+    if (NETLINK_FOUND)
+      include_directories(${NETLINK_INCLUDE_DIRS})
+      add_definitions(-DHAVE_NETLINK)
+    endif()
+  endif()
+
   add_definitions(-D_GNU_SOURCE)
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tun-linux.c)
 endif()
@@ -57,24 +82,14 @@ add_executable(tNETacle
 	${SOURCES_LIST}
 )
 
-# If we are on Linux, try to find libbsd-compat and add it the the link
-# dependencies. The ENABLE_BSDCOMPAT is here to prevent from automagic
-# dependencies.
-if (Linux)
-	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
-endif()
 
 if (Linux)
-  if (ENABLE_BSDCOMPAT)
-    find_package(Bsd)
-    if (BSD_FOUND)
+  if (ENABLE_BSDCOMPAT AND BSD_FOUND)
       target_link_libraries(tNETacle ${BSD_LIBRARIES})
-      add_definitions(-DHAVE_BSD_COMPAT)
-    else()
-      remove_definitions(-DHAVE_SETPROCTITLE)
-    endif()
-  else()
-    remove_definitions(-DHAVE_SETPROCTITLE)
+  endif()
+
+  if (ENABLE_NETLINK AND NETLINK_FOUND)
+      target_link_libraries(tNETacle ${NETLINK_LIBRARIES})
   endif()
 endif()
 
