@@ -39,6 +39,41 @@
 #include <netlink/route/link.h>
 #include <netlink/route/addr.h>
 
+union ip_u {
+    unsigned int ip;
+    unsigned char bits[4];
+};
+
+/* This function convert the human readable notation of an netmask to it's CIDR
+ * notation, it's only usefull on linux because the netlink interface allow only
+ * for cidr notation.*/
+int ipv4_prefix_from_netmask(const char *netmask) {
+    union ip_u uip;
+    char *copy_netmask;
+    char *ptr;
+    size_t len;
+    size_t i;
+    size_t ip_prefix = 0;
+    size_t number_of_bits = 0;
+
+    len = strlen(netmask);
+    copy_netmask = malloc(len + 1);
+    copy_netmask[len] = '\0';
+    strncpy(copy_netmask, netmask, len);
+
+    for (i = 0, ptr = strtok(copy_netmask, ":.");
+	 ptr != NULL;
+	 ++i, ptr = strtok(NULL, "."), number_of_bits += 8) {
+	uip.bits[i] = (unsigned char)strtol(ptr, NULL, 10);
+    }
+
+    for (i = 0, ip_prefix = 0; i < number_of_bits; ++i)
+	if ((uip.ip & (1 << i)))
+	    ip_prefix++;
+    free(copy_netmask);
+    return ip_prefix;
+}
+
 int
 tnt_tun_set_ip(struct device *dev, const char *addr) {
     struct nl_addr *local;
@@ -58,7 +93,7 @@ tnt_tun_set_netmask(struct device *dev, const char *netmask) {
     local = rtnl_addr_get_local(dev->addr);
     rtnl_addr_delete(dev->sk, dev->addr, 0);
     rtnl_addr_set_local(dev->addr, local);
-    rtnl_addr_set_prefixlen(dev->addr, 24);
+    rtnl_addr_set_prefixlen(dev->addr, ipv4_prefix_from_netmask(netmask));
     if (rtnl_addr_add(dev->sk, dev->addr, 0) == -1)
 	return -1;
     return 0;
