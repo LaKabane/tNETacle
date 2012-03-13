@@ -151,6 +151,13 @@ main(int argc, char *argv[]) {
 	perror("socketpair");
 	return 1;
     }
+
+    if (debug == 0) {
+	if (tnt_daemonize() == -1) {
+		fprintf(stderr, "can't daemonize\n");
+		return 1;
+	}
+    }
     /* The child can die while we are still in the init phase. So we need to
      * monitor for SIGCHLD by signal
      */

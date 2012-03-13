@@ -15,6 +15,8 @@
  */
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #ifdef HAVE_BSD_COMPAT
 # include <bsd/unistd.h>
 #endif
@@ -44,5 +46,32 @@ tnt_getprogname(void) {
 #else
     return "tNETacle";
 #endif
+}
+
+/* Come from the BSD daemon() */
+int
+tnt_daemonize(void) {
+    int fd;
+    
+    switch (fork()) {
+    case -1:
+        return -1;
+    case 0:
+        break;
+    default:
+        exit(0);
+    }
+    
+    if (setsid() == -1)
+        return -1;
+    
+    if ((fd = open("/dev/null", O_RDWR, 0)) != -1) {
+        (void)dup2(fd, STDIN_FILENO);
+        (void)dup2(fd, STDOUT_FILENO);
+        (void)dup2(fd, STDERR_FILENO);
+        if (fd > 2)
+            (void)close(fd);
+    }
+    return 0;
 }
 
