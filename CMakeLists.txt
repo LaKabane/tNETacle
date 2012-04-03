@@ -18,6 +18,7 @@ add_definitions(-DHAVE_SETRESXID)
 
 # Portable source files
 set(SOURCES_LIST src/conf.c)
+set(SOURCES_LIST src/tun-compat.c)
 
 if (Linux)
 	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
