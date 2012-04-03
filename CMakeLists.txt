@@ -38,6 +38,8 @@ if(UNIX)
 endif()
 
 if (WINDOWS)
+  add_definitions(-DUSE_TAPCFG)
+
   set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 
   file(GLOB WIN_SOURCES_LIST sys/wnt/*.c)
@@ -65,18 +67,27 @@ if(Linux)
     endif()
   endif()
 
+  add_definitions(-DUSE_LIBTUNTAP)
+
   add_definitions(-D_GNU_SOURCE)
-  set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tun-linux.c)
 endif()
 
-if (OpenBSD OR FreeBSD OR NetBSD)
-  set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tun-bsd.c)
+if (OpenBSD)
+  add_definitions(-DUSE_LIBTUNTAP)
+endif()
+
+if (NetBSD)
+  add_definitions(-DUSE_TAPCFG)
+endif()
+
+if (FreeBSD)
+  add_definitions(-DUSE_TAPCFG)
 endif()
 
 if (Darwin)
+  add_definitions(-DUSE_TAPCFG)
   remove_definitions(-DHAVE_SETPROCTITLE)
   remove_definitions(-DHAVE_SETRESXID)
-  set(SOURCES_LIST ${SOURCES_LIST} sys/unix/tun-macosx.c)
 #macports
   include_directories(/opt/local/include)
 endif()
