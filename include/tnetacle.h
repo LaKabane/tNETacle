@@ -41,5 +41,10 @@ __inline void    tnt_setproctitle(const char *);
 int		 tnt_fork(int [2], struct passwd *);
 int		 tnt_daemonize(void);
 
+/* src/conf.c */
+char		*tnt_parse_line(char *);
+/* and sys/ specific call */
+void		 tnt_conf(void);
+
 #endif
 
