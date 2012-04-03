@@ -149,7 +149,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
     pid_t pid;
     struct imsgbuf ibuf;
     /* XXX: To remove when Mota will bring his network code */
-    struct imsg_data data = {};
+    struct imsg_data data;
     struct event_base *evbase = NULL;
     struct event *sigterm = NULL;
     struct event *sigint = NULL;

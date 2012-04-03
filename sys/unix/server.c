@@ -1,10 +1,28 @@
-#include <unistd.h>
+/*
+ * Copyright (c) 2012, PICHOT Fabien Paul Leonard <pichot.fabien@gmail.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include <stdio.h>
+#include <netinet/in.h>
 
 #include <event2/event.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "server.h"
 
@@ -46,8 +64,9 @@ int
 server_init(struct server *s, struct event_base *evbase)
 {
   int fd;
-  struct sockaddr_in addr = {};
+  struct sockaddr_in addr;
 
+  (void)memset(&addr, '\0', sizeof addr);
   if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1)
     return -1;
 

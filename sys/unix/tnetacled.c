@@ -115,7 +115,7 @@ main(int argc, char *argv[]) {
     struct passwd *pw;
     int imsg_fds[2];
     struct imsgbuf ibuf;
-    struct imsg_data data = {};
+    struct imsg_data data;
     struct event_base *evbase;
     struct event *event = NULL;
     struct event *sigint = NULL;
