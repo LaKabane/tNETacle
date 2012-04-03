@@ -17,23 +17,14 @@
 #ifndef TNETACLE_TUN_H_
 #define TNETACLE_TUN_H_
 
-struct device {
-	int		af;	/* AF_INET || AF_INET6 */
-	int		fd;
-	struct ifreq	ifr;
-#ifdef HAVE_NETLINK
-  struct nl_sock *sk;
-  struct rtnl_link *link;
-  struct nl_cache *cache;
-  struct rtnl_addr *addr;
-#endif
-};
+# if defined USE_LIBTUNTAP
+#  include <tuntap.h>
+# elif defined USE_TAPCFG
+#  include <tapcfg.h>
+# endif
 
-struct device	*tnt_tun_open(void);
-void		 tnt_tun_close(struct device *);
-int		 tnt_tun_set_ip(struct device *, const char *);
-int		 tnt_tun_set_netmask(struct device *, const char *);
-int		 tnt_tun_set_mac(struct device *, const char *);
+struct device *tnt_ttc_open(void);
+int tnt_ttc_set_ip(struct device *, const char *, const char *);
 
 #endif
 
