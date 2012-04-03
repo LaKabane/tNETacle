@@ -27,9 +27,9 @@
 
 #include "log.h"
 
-int 	conf_debug;
-char	conf_tunnel[25] = "ethernet";
-int	conf_tunneldevice;
+extern int 	conf_debug;
+char		conf_tunnel[25] = "ethernet";
+int		conf_tunneldevice = -1;
 
 struct kwvar {
 	char *	kw;
@@ -69,7 +69,6 @@ static char *
 parse_bool(char *p, struct kwvar *kvp) {
 	char *valuestart;
 	char buf[25];
-	int newval;
 
 	valuestart = p;
 	while (isalpha(*p))

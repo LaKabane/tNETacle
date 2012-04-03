@@ -11,9 +11,13 @@ set(${CMAKE_SYSTEM_NAME} True)
 #find_package(ZLIB REQUIRED)
 find_package(Event COMPONENTS core REQUIRED)
 
+# Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 add_definitions(-DHAVE_SETPROCTITLE)
 add_definitions(-DHAVE_SETRESXID)
+
+# Portable source files
+set(SOURCES_LIST src/conf.c)
 
 if (Linux)
 	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
@@ -28,7 +32,8 @@ if(UNIX)
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/log.c
 	  sys/unix/imsg.c sys/unix/imsg-buffer.c
 	  sys/unix/tnetacle.c sys/unix/tnetacled.c
-	  sys/unix/util.c sys/unix/server.c)
+	  sys/unix/util.c sys/unix/server.c
+	  sys/unix/conf.c)
 endif()
 
 if (WINDOWS)

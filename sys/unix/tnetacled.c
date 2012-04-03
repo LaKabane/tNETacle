@@ -47,7 +47,7 @@
 
 #include <event2/event.h>
 
-int debug;
+int conf_debug;
 volatile sig_atomic_t sigchld_recv;
 
 /* XXX: clean that after the TA2 */
@@ -122,10 +122,13 @@ main(int argc, char *argv[]) {
     struct event *sigterm = NULL;
     struct event *sigchld = NULL;
 
+    /* Parse configuration files and then command line switches */
+    tnt_conf();
+
     while ((ch = getopt(argc, argv, "dh")) != -1) {
 	switch(ch) {
 	    case 'd':
-		debug = 1;
+		conf_debug = 1;
 		break;
 	    case 'h':
 	    default:
@@ -152,7 +155,7 @@ main(int argc, char *argv[]) {
 	return 1;
     }
 
-    if (debug == 0) {
+    if (conf_debug == 0) {
 	if (tnt_daemonize() == -1) {
 		fprintf(stderr, "can't daemonize\n");
 		return 1;
