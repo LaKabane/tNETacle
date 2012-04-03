@@ -41,6 +41,7 @@ if (WINDOWS)
 
   file(GLOB WIN_SOURCES_LIST sys/wnt/*.c)
   set(SOURCES_LIST ${SOURCES_LIST} ${WIN_SOURCES_LIST})
+  set(SOURCES_LIST ${SOURCES_LIST} share/inet_net_pton.c)
 endif()
 
 if(Linux)
