@@ -21,10 +21,17 @@
 #  include <tuntap.h>
 # elif defined USE_TAPCFG
 #  include <tapcfg.h>
+#  define device tapcfg_t
+# else
+#  error "You must define USE_LIBTUNTAP or USE_TAPCFG"
 # endif
 
-struct device *tnt_ttc_open(void);
-int tnt_ttc_set_ip(struct device *, const char *, const char *);
+struct device	*tnt_ttc_open(void);
+void		 tnt_ttc_close(struct device *);
+int		 tnt_ttc_set_ip(struct device *, const char *);
+int		 tnt_ttc_up(struct device *);
+int		 tnt_ttc_down(struct device *);
+int		 tnt_ttc_get_fd(struct device *);
 
 #endif
 

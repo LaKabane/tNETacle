@@ -16,18 +16,17 @@
 
 /*
  * Functions from this file are prefixed with the namespace
- * ttc_, for tNETacle tun compat.
+ * ttc_, for "tNETacle tun compat".
+ *
+ * Part of this work come from Nizox's virtual hub project:
+ *    - https://github.com/nizox/hub
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-#if defined USE_LIBTUNTAP
-	/* Lucky you ! */
-#elif defined USE_TAPCFG
-#	define device tapcfg_t
-#else
-# error "You must define USE_LIBTUNTAP or USE_TAPCFG"
-#endif
+#include "tun.h"
 
 /* Will search the first available tap device with both libraries */
 struct device *
@@ -52,18 +51,68 @@ tnt_ttc_open(void) {
 	return dev;
 }
 
-int
-tnt_ttc_set_ip(struct device *dev, const char *ip, const char *mask) {
+void
+tnt_ttc_close(struct device *dev) {
 #if defined USE_LIBTUNTAP
-	return tnt_tt_set_ip(dev, ip, mask);
+	tnt_tt_destroy(dev);
 #elif defined USE_TAPCFG
-	char buf[50];
-	int bits;
+	tapcfg_destroy(dev);
+#endif
+}
 
-	(void)memset(buf, '\0', sizeof buf);
-	bits = inet_net_pton(AF_INET, mask, buf, sizeof buf);
+int
+tnt_ttc_set_ip(struct device *dev, const char *addr) {
+	char *ip, *mask;
+	short netbits;
 
-	return tapcfg_iface_set_ipv4(dev, ip, bits);
+	ip = strdup(addr);
+	if (ip == NULL)
+		return -1;
+
+	mask = strchr(ip, '/');
+	if (mask == NULL)
+		return -1;
+
+#if defined USE_LIBTUNTAP
+	*mask= '\0';
+	++mask;
+	tnt_tt_set_ip(dev, ip, mask);
+	(void)netbits;
+#elif defined USE_TAPCFG
+	netbits = (short)evutil_strtoll(mask + 1, NULL, 10);
+	if (netbits >= 1 && netbits <= 32) {
+		*mask= '\0';
+		tapcfg_iface_set_ipv4(dev, ip, netbits);
+	}
+#endif
+	free(ip);
+	return 0;
+}
+
+int
+tnt_ttc_up(struct device *dev) {
+#if defined USE_LIBTUNTAP
+	return tnt_tt_up(dev);
+#elif defined USE_TAPCFG
+	return tapcfg_iface_set_status(dev, TAPCFG_STATUS_ALL_UP);
+#endif
+}
+
+int
+tnt_ttc_down(struct device *dev) {
+#if defined USE_LIBTUNTAP
+	return tnt_tt_down(dev);
+#elif defined USE_TAPCFG
+	return tapcfg_iface_set_status(dev, TAPCFG_STATUS_ALL_DOWN);
+#endif
+}
+
+int
+tnt_ttc_get_fd(struct device *dev) {
+#if defined USE_LIBTUNTAP
+	return TNT_TT_GET_FD(dev);
+#elif defined USE_TAPCFG
+	return tapcfg_get_fd(dev);
 #endif
 }
 

@@ -38,6 +38,8 @@
 
 #include <event2/event.h>
 
+extern char conf_address[25];
+
 struct imsg_data {
     struct imsgbuf *ibuf;
     struct event_base *evbase;
@@ -264,9 +266,7 @@ tnt_dispatch_imsg(struct imsg_data *data) {
 	    /* directly ask to configure the tun device */
 
 	    imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
-			 TNETACLE_LOCAL_ADDR, strlen(TNETACLE_LOCAL_ADDR));
-	    imsg_compose(ibuf, IMSG_SET_NETMASK, 0, 0, -1,
-			 "255.255.255.0", strlen("255.255.255.0"));
+			 conf_address, strlen(conf_address));
 	    break;
 	default:
 	    break;

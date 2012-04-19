@@ -33,7 +33,6 @@ enum imsg_type {
 	IMSG_NONE,
 	IMSG_CREATE_DEV,
 	IMSG_SET_IP,
-	IMSG_SET_NETMASK
 };
 
 char 		*tnt_getprogname(void);

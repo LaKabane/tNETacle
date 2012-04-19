@@ -10,6 +10,8 @@ set(${CMAKE_SYSTEM_NAME} True)
 
 #find_package(ZLIB REQUIRED)
 find_package(Event COMPONENTS core REQUIRED)
+find_package(Tapcfg REQUIRED)
+find_package(Tuntap REQUIRED)
 
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
@@ -17,8 +19,9 @@ add_definitions(-DHAVE_SETPROCTITLE)
 add_definitions(-DHAVE_SETRESXID)
 
 # Portable source files
-set(SOURCES_LIST src/conf.c)
-set(SOURCES_LIST src/tun-compat.c)
+set(SOURCES_LIST
+  src/conf.c
+  src/tun-compat.c)
 
 if (Linux)
 	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
@@ -28,7 +31,6 @@ endif()
 
 if(UNIX)
   include_directories(/usr/include/ /usr/local/include)
-  add_definitions(-DTNETACLE_LOCAL_ADDR=\"1.2.3.4\")
   set(CMAKE_C_FLAGS "-W -Wall")
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/log.c
 	  sys/unix/imsg.c sys/unix/imsg-buffer.c
@@ -44,7 +46,6 @@ if (WINDOWS)
 
   file(GLOB WIN_SOURCES_LIST sys/wnt/*.c)
   set(SOURCES_LIST ${SOURCES_LIST} ${WIN_SOURCES_LIST})
-  set(SOURCES_LIST ${SOURCES_LIST} share/inet_net_pton.c)
 endif()
 
 if(Linux)
@@ -100,6 +101,11 @@ add_executable(tNETacle
 	${SOURCES_LIST}
 )
 
+if (TAPCFG_FOUND)
+  target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
+elseif(TUNTAP_FOUND)
+  target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
+endif()
 
 if (Linux)
   if (ENABLE_BSDCOMPAT AND BSD_FOUND)

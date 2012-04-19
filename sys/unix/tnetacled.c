@@ -231,6 +231,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
     struct imsg imsg;
     ssize_t n;
     ssize_t datalen;
+    int fd;
     char buf[128];
 
     n = imsg_read(ibuf);
@@ -259,9 +260,10 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
-	    dev = tnt_tun_open();
+	    dev = tnt_ttc_open();
+	    fd = tnt_ttc_get_fd(dev);
 	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, -1,
-	      &(dev->fd), sizeof(int));
+	      &fd, sizeof(int));
 	    break;
 	case IMSG_SET_IP:
 	    if (dev == NULL) {
@@ -274,21 +276,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    buf[datalen] = '\0';
 	    
 	    log_info("receive IMSG_SET_IP: %s", buf);
-	    tnt_tun_set_ip(dev, buf);
-	    break;
-	case IMSG_SET_NETMASK:
-	    if (dev == NULL) {
-	        log_warnx("can't set ip, use IMSG_CREATE_DEV first");
-	        break;
-	    }
-	
-	    datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
-	    (void)memset(buf, '\0', sizeof buf);
-	    (void)memcpy(buf, imsg.data, sizeof buf);
-	    buf[datalen] = '\0';
-	    
-	    log_info("receive IMSG_SET_NETMASK: %s", buf);
-	    tnt_tun_set_netmask(dev, buf);
+	    tnt_ttc_set_ip(dev, buf);
 	    break;
 	default:
 	    break;

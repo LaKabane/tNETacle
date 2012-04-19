@@ -30,6 +30,7 @@
 extern int 	conf_debug;
 char		conf_tunnel[25] = "ethernet";
 int		conf_tunneldevice = -1;
+char		conf_address[25] = "127.0.0.1/255.0.0.0";
 
 struct kwvar {
 	char *	kw;
@@ -41,6 +42,7 @@ static const struct kwvar keywords[] = {
 	{"Debug", &conf_debug, Vbool},
 	{"Tunnel", &conf_tunnel, Vstring},
 	{"TunnelDevice", &conf_tunneldevice, Vint},
+	{"Address", &conf_address, Vstring},
 	{NULL, NULL, Vint}
 };
 
