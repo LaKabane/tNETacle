@@ -10,8 +10,16 @@ set(${CMAKE_SYSTEM_NAME} True)
 
 #find_package(ZLIB REQUIRED)
 find_package(Event COMPONENTS core REQUIRED)
-find_package(Tapcfg REQUIRED)
-find_package(Tuntap REQUIRED)
+find_package(Tapcfg)
+
+if (${TAPCFG_FOUND})
+	include_directories(${TAPCFG_INCLUDE_DIRS})
+else()
+	find_package(Tuntap REQUIRED)
+	if (${TUNTAP_FOUND})
+		include_directories(${TUNTAP_INCLUDE_DIRS})
+	endif()
+endif()
 
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
@@ -22,6 +30,7 @@ add_definitions(-DHAVE_SETRESXID)
 set(SOURCES_LIST
   src/conf.c
   src/tun-compat.c)
+
 
 if (Linux)
 	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
