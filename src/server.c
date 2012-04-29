@@ -8,7 +8,7 @@
 #include <errno.h>
 #endif /* !windows */
 
-#include "mc-endpoint.h"
+#include "mc.h"
 #include "tntsocket.h"
 #include "server.h"
 #include "log.h"

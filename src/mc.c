@@ -1,4 +1,4 @@
-#include "mc-endpoint.h"
+#include "mc.h"
 #include "log.h"
 
 #include <event2/bufferevent.h>

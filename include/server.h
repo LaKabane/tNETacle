@@ -2,7 +2,7 @@
 #ifndef SERVER_KW2DIKER
 #define SERVER_KW2DIKER
 
-#include "mc-endpoint.h"
+#include "mc.h"
 
 struct evconnlistener;
 struct sockaddr;
