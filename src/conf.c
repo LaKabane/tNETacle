@@ -23,9 +23,8 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
-
-#include "log.h"
 
 extern int 	conf_debug;
 char		conf_tunnel[25] = "ethernet";
@@ -57,11 +56,12 @@ parse_string(char *p, struct kwvar *kvp) {
 	if ((*p == '\0' || isspace(*p) || *p == '#') && valuestart != p) {
 		(void)memset(buf, '\0', sizeof buf);
 		(void)strncpy(buf, valuestart, (size_t)(p - valuestart));
-		log_info("%s: %s -> %s", kvp->kw, kvp->var, buf);
+		(void)fprintf(stdin, "%s: %s -> %s\n", kvp->kw,
+		    (char *)kvp->var, buf);
 		(void)strlcpy(kvp->var, buf, sizeof kvp->var);
 		return p;
 	} else {
-		log_errx(1, "invalid string value");
+		(void)fprintf(stderr, "invalid string value\n");
 		return NULL;
 	}
 	return NULL;
@@ -79,17 +79,17 @@ parse_bool(char *p, struct kwvar *kvp) {
 		(void)memset(buf, '\0', sizeof buf);
 		(void)strncpy(buf, valuestart, (size_t)(p - valuestart));
 		if (strcasecmp(buf, "yes") == 0) {
-			log_info("%s: %d -> %d",
+			(void)fprintf(stdin, "%s: %d -> %d\n",
 			    kvp->kw, *(int *)kvp->var, 1);
 			*(int *)kvp->var = 1;
 		} else {
-			log_info("%s: %d -> %d",
+			(void)fprintf(stdin, "%s: %d -> %d\n",
 			    kvp->kw, *(int *)kvp->var, 0);
 			*(int *)kvp->var = 0;
 		}
 		return p;
 	} else {
-		log_errx(1, "invalid boolean value");
+		(void)fprintf(stderr, "invalid boolean value\n");
 		return NULL;
 	}
 	return NULL;
@@ -111,11 +111,12 @@ parse_int(char *p, struct kwvar *kvp) {
 	if ((*p == '\0' || isspace(*p) || *p == '#') && digitstart != p) {
 		(void)strncpy(buf, valuestart, (size_t)(p - valuestart));
 		newval = atoi(valuestart);
-		log_info("%s: %d -> %d", kvp->kw, *(int *)kvp->var, newval);
+		(void)fprintf(stdin, "%s: %d -> %d\n", kvp->kw,
+		    *(int *)kvp->var, newval);
 		*(int *)kvp->var = newval;
 		return p;
 	} else {
-		log_errx(1, "invalid integer value");
+		(void)fprintf(stderr, "invalid integer value\n");
 		return NULL;
 	}
 	return NULL;
@@ -133,7 +134,7 @@ parse_value(char *p, struct kwvar *kvp) {
 	case Vchar:
 	case Vdouble:
 	default:
-		log_errx(1, "type not implemented");
+		(void)fprintf(stderr, "type not implemented\n");
 	}
 	return NULL;
 }
@@ -171,7 +172,7 @@ tnt_parse_line(char *p) {
 	endword = p;
 
 	if (endword == word) {
-		log_errx(1 ,"expected variable name");
+		(void)fprintf(stderr ,"expected variable name\n");
 		return NULL;
 	}
 
@@ -183,7 +184,7 @@ tnt_parse_line(char *p) {
 			break;
 
 	if (kvp->kw == NULL) {
-		log_errx(1, "unrecognised variable");
+		(void)fprintf(stderr, "unrecognised variable\n");
 		return NULL;
 	}
 
@@ -192,7 +193,7 @@ tnt_parse_line(char *p) {
 		p++;
 
 	if (*p++ != '=') {
-		log_errx(1, "expected `='");
+		(void)fprintf(stderr, "expected `='\n");
 		return NULL;
 	}
 
