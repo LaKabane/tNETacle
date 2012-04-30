@@ -125,11 +125,14 @@ main(int argc, char *argv[]) {
     /* Parse configuration files and then command line switches */
     tnt_conf();
 
-    while ((ch = getopt(argc, argv, "dh")) != -1) {
+    while ((ch = getopt(argc, argv, "dhD:")) != -1) {
 	switch(ch) {
 	    case 'd':
 		conf_debug = 1;
 		break;
+	    case 'D':
+	    	tnt_parse_line(optarg);
+	    	break;
 	    case 'h':
 	    default:
 		usage();
