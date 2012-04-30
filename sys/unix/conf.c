@@ -43,8 +43,10 @@ load_config(int fd, unsigned long int len) {
 	char *p;
 
 	buf = mmap(0, len, PROT_READ, MAP_FILE, fd, 0);
-	if (buf == MAP_FAILED)
-		log_err(1, "mmap");
+	if (buf == MAP_FAILED) {
+		perror("mmap");
+		return;
+	}
 
 	p = (char *)buf;
 	while (p != NULL && *p != '\0') {
@@ -52,7 +54,7 @@ load_config(int fd, unsigned long int len) {
 	}
 
 	if (munmap(buf, len) == -1)
-		log_warn("munmap");
+		perror("munmap");
 }
 
 /*
@@ -81,13 +83,13 @@ tnt_conf(void) {
 		(void)snprintf(nm, sizeof nm, fnms[fn], home);
 		if ((fd = open(nm, O_RDONLY)) != -1) {
 			if (stat(nm, &st) == -1)
-				log_err(1, "stat");
+				perror(nm);
 
 			load_config(fd, st.st_size);
 			(void)close(fd);
 		} 
 		else if (errno != ENOENT)
-			log_notice("config: %s", nm);
+			(void)fprintf(stderr, "config: %s", nm);
 	}
 }
 
