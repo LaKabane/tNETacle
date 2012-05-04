@@ -8,10 +8,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 set(${CMAKE_SYSTEM_NAME} True)
 
-#find_package(ZLIB REQUIRED)
+find_package(Zlib REQUIRED)
 find_package(Event COMPONENTS core REQUIRED)
 find_package(Tapcfg REQUIRED)
 find_package(Tuntap REQUIRED)
+
+
 
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
@@ -21,6 +23,8 @@ add_definitions(-DHAVE_SETRESXID)
 # Portable source files
 set(SOURCES_LIST
   src/conf.c
+  src/compress.c
+  #src/pipeline.c
   src/tun-compat.c)
 
 if (Linux)
@@ -102,6 +106,7 @@ add_executable(tNETacle
 )
 
 if (TAPCFG_FOUND)
+  include_directories(${TAPCFG_INCLUDE_DIR})
   target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
 elseif(TUNTAP_FOUND)
   target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
@@ -118,4 +123,5 @@ if (Linux)
 endif()
 
 target_link_libraries(tNETacle
-	${EVENT_LIBRARIES})
+	${EVENT_LIBRARIES} ${ZLIB_LIBRARY})
+
