@@ -70,6 +70,7 @@ if(UNIX)
 	# Unix specific definitions
 	# ------------------
 	set(CMAKE_C_FLAGS "-W -Wall")
+  	add_definitions(-DUnix)
 
 	# Unix specific source files
 	# ------------------
@@ -84,6 +85,7 @@ if (Windows)
 	# CMake windows Configuration
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+  	add_definitions(-DWnt)
 
 	# Windows source files
 	# ------------------
