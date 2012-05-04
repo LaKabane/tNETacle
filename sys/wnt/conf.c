@@ -14,61 +14,44 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * Original copyright notice :
- * David Leonard <d@openbsd.org>, 1999. Public domain.
- */
-
 #include <Winbase.h> 
 
 #include "tnetacle.h"
 #include "log.h"
 
 /*
- * MapViewOfFile the given config file and start the parsing
+ * Load the configuration file given in argument.
+ * If file is NULL, tnt_parse_config_file() will load the default
+ * configuration file.
  */
-static void
-load_config(HANDLE hdl) {
-	void *buf;
-	char *p;
+int
+tnt_parse_file(const char *file) {
+    void *buf;
+    char *p;
+    HANDLE hdl;
 
-	buf = MapViewOfFile(hdl, FILE_MAP_READ, 0, 0, 0);
-	if (buf == NULL)
-		log_err(1, "MapViewOfFile");
+    if (file == NULL) {
+        file = _PATH_DEFAULT_CONFIG_FILE;
+    }
 
-	p = (char *)buf;
-	while (p != NULL && *p != '\0') {
-		p = tnt_parse_line(p);
-	}
+    if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, nm)) != -1) {
+        buf = MapViewOfFile(hdl, FILE_MAP_READ, 0, 0, 0);
 
-	if (UnMapViewOfFile(buf) == 0)
-		log_warn("UnMapViewOfFile");
-}
+        if (buf == NULL)
+            log_err(1, "MapViewOfFile");
 
-/*
- * load various config file, allowing later ones to 
- * overwrite earlier values
- */
-void
-config(void) {
-	char nm[MAXNAMLEN + 1];
-	/* TODO: Get normal path to store config file */
-	char *fnms[] = { 
-		"...",
-		NULL
-	};
-	int fn;
-	HANDLE hdl;
-	struct stat st;
+        p = (char *)buf;
+        while (p != NULL && *p != '\0') {
+            p = tnt_parse_line(p);
+        }
 
-	for (fn = 0; fnms[fn]; fn++) {
-		(void)snprintf(nm, sizeof nm, fnms[fn], home);
-		if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, nm)) != -1) {
-			load_config(hdl);
-			(void)CloseHandle(hdl);
-		} 
-		else if (errno != ENOENT)
-			log_notice("config: %s", nm);
-	}
+        if (UnMapViewOfFile(buf) == 0)
+            log_warn("UnMapViewOfFile");
+        (void)CloseHandle(hdl);
+    } else {
+        log_notice("config: %s", nm);
+        return -1;
+    }
+    return 0;
 }
 

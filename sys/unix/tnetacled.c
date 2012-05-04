@@ -122,21 +122,24 @@ main(int argc, char *argv[]) {
     struct event *sigterm = NULL;
     struct event *sigchld = NULL;
 
-    /* Parse configuration files and then command line switches */
-    tnt_conf();
+    /* Parse configuration file and then command line switches */
+    tnt_parse_file(NULL);
 
-    while ((ch = getopt(argc, argv, "dhD:")) != -1) {
-	switch(ch) {
-	    case 'd':
-		conf_debug = 1;
-		break;
-	    case 'D':
-	    	tnt_parse_line(optarg);
-	    	break;
-	    case 'h':
-	    default:
-		usage();
-	}
+    while ((ch = getopt(argc, argv, "dhD:f:")) != -1) {
+        switch(ch) {
+        case 'd':
+            conf_debug = 1;
+        break;
+        case 'D':
+            tnt_parse_line(optarg);
+        break;
+        case 'f':
+            tnt_parse_file(optarg);
+        break;
+        case 'h':
+        default:
+            usage();
+        }
     }
     argc -= optind;
     argv += optind;
