@@ -22,18 +22,21 @@
 
 typedef unsigned char uchar;
 
-/* Return a compressed string or NULL in case of error. */
-/* First parameter is data to compress */
-/* Second parameter is size of the data to compress */
-/* Third parameter is size of the returned string. */
+/*
+ * Return a compressed string or NULL in case of error.
+ * First parameter is data to compress
+ * Second parameter is size of the data to compress
+ * Third parameter is size of the returned string.
+ */
 
 uchar *tnt_compress(uchar *, const size_t, size_t *);
 
-/* Return an uncompressed string or NULL in case of error. */
-/* First parameter is data to uncompress */
-/* Second parameter is size of the data to uncompress */
-/* Third parameter is size of the orginal string */
-
+/*
+ * Return an uncompressed string or NULL in case of error.
+ * First parameter is data to uncompress
+ * Second parameter is size of the data to uncompress
+ * Third parameter is size of the orginal string
+*/
 
 uchar *tnt_uncompress(uchar *, const size_t, const size_t);
 
