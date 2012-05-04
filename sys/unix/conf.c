@@ -42,7 +42,7 @@ load_config(int fd, unsigned long int len) {
 	void *buf;
 	char *p;
 
-	buf = mmap(0, len, PROT_READ, MAP_FILE, fd, 0);
+	buf = mmap(0, len, PROT_READ, MAP_PRIVATE | MAP_FILE, fd, 0);
 	if (buf == MAP_FAILED)
 		log_err(1, "mmap");
 

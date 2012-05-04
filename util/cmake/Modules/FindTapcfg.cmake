@@ -9,10 +9,9 @@
 
 include(LibFindMacros)
 
-if (TAPCFG_INCLUDE_DIR AND TAPCFG_LIBRARY)
-  # Already in cache, be silent
-  set(TAPCFG_FIND_QUIETLY TRUE)
-endif ()
+if (Tapcfg_FIND_REQUIRED)
+	set(TAPCFG_FIND_REQUIRED)
+endif()
 
 libfind_pkg_check_modules(TAPCFG_PKGCONF libtapcfg)
 
@@ -20,10 +19,7 @@ find_path(TAPCFG_INCLUDE_DIR tapcfg.h
   PATH ${TAPCFG_PKGCONF_INCLUDE_DIRS}
 )
 
-find_library(TAPCFG_LIBRARY
-  NAMES tapcfg
-  PATHS ${TAPCFG_PKGCONF_LIBRARY_DIRS}
-)
+find_library(TAPCFG_LIBRARY tapcfg)
 
 set(TAPCFG_PROCESS_INCLUDES TAPCFG_INCLUDE_DIR)
 set(TAPCFG_PROCESS_LIBS TAPCFG_LIBRARY)
