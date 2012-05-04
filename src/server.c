@@ -3,6 +3,9 @@
 #include <event2/buffer.h>
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
 
 #ifndef Windows
 #include <errno.h>
@@ -14,6 +17,39 @@
 #include "log.h"
 
 static void
+server_mc_read_cb(struct bufferevent *bev, void *ctx)
+{
+    struct server *s = ctx;
+    char buf[4096];
+    int n;
+
+    /*Pour le moment c'est nase ce que je fais*/
+    n = bufferevent_read(bev, buf, sizeof(buf));
+    log_debug("%s", __PRETTY_FUNCTION__);
+    if (n != -1)
+    {
+        n = write(event_get_fd(s->device), buf, n);
+        if (n == -1)
+            log_warn("Error while writing on the device");
+        else
+            log_debug("Write %n on the device", n);
+    }
+}
+
+static void
+server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
+{
+    struct server *s = ctx;
+
+    (void)bev;
+    (void)s;
+    if (events & BEV_EVENT_CONNECTED)
+        log_debug("Connected !!");
+    if (events & BEV_EVENT_ERROR)
+        log_debug("Error ! %p", EVUTIL_SOCKET_ERROR());
+}
+
+static void
 listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
                 struct sockaddr *sock, int len, void *ctx)
 {
@@ -21,6 +57,7 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
     struct event_base *base = evconnlistener_get_base(evl);
     struct bufferevent *bev = bufferevent_socket_new(base, fd,
                                                      BEV_OPT_CLOSE_ON_FREE);
+    log_debug("New connection !");
     if (bev != NULL)
     {
         struct mc mctx;
@@ -30,7 +67,13 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
          * bufferevent_setcb.
          */
         mc_init(&mctx, sock, len, bev);
+        bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
         v_mc_push(&s->peers, &mctx);
+        log_debug("v_mc_push");
+    }
+    else
+    {
+        log_debug("Failed to allocate bufferevent");
     }
 }
 
@@ -46,13 +89,46 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
 }
 
 static void
+broadcast_to_peers(struct server *s, char *buf, int n)
+{
+    struct mc *it;
+    struct mc *ite;
+    int err;
+
+    log_debug("%s", __PRETTY_FUNCTION__);
+    for (it = v_mc_begin(&s->peers),
+         ite = v_mc_end(&s->peers);
+         it != ite;
+         it = v_mc_next(it))
+    {
+        log_debug("Broadcasting to %p", it);
+        err = bufferevent_write(it->bev, buf, n);
+        if (err == -1)
+            log_warn("An error occured while broadcast");
+    }
+}
+
+static void
 server_device_cb(evutil_socket_t fd, short events, void *ctx)
 {
     struct server *s = ctx;
-    switch (events)
+
+    if (events & EV_READ)
     {
-        case EV_READ:
-            log_debug("%s::EV_READ", __func__);
+        int n;
+        char buf[1500];
+
+        n = read(fd, buf, sizeof(buf));
+        if (n > 0)
+        {
+            log_debug("Read %n bytes from device", n);
+            broadcast_to_peers(s, buf, n);
+        }
+        else
+        {
+            log_debug("Error while reading on the device: %s",
+                      strerror(errno));
+        }
     }
 }
 
@@ -60,8 +136,8 @@ void
 server_set_device(struct server *s, int fd)
 {
     struct event_base *evbase = evconnlistener_get_base(s->srv);
-    struct event *ev = event_new(evbase, fd, EV_READ, server_device_cb, s);
-    
+    struct event *ev = event_new(evbase, fd, EV_READ | EV_PERSIST, server_device_cb, s);
+
     if (ev == NULL)
     {
         log_warn("Failed to allocate the event handler for the device");
@@ -109,7 +185,9 @@ void server_establish_mc_hostname(struct server *s, char *hostname)
         return;
     }
     mc_init(&mctx, (struct sockaddr*)&paddr, plen, bev);
+    bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
     v_mc_push(&s->peers, &mctx);
+    log_debug("v_mc_push");
     log_notice("Connected to %s", hostname);
 }
 
@@ -156,7 +234,8 @@ server_init(struct server *s, struct event_base *evbase)
     evconnlistener_set_error_cb(evl, accept_error_cb);
     evconnlistener_disable(evl);
     s->srv = evl;
-    server_establish_mc_hostname(s, conf_peer_address);
+    if (strcmp(conf_peer_address, "") != 0)
+        server_establish_mc_hostname(s, conf_peer_address);
     return 0;
 }
 

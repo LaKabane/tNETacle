@@ -233,8 +233,6 @@ tnt_dispatch_imsg(struct imsg_data *data) {
     ssize_t n;
     int device_fd;
     struct imsgbuf *ibuf = data->ibuf;
-    struct event_base *evbase = data->evbase;
-    struct event *ievent = NULL;
 
     n = imsg_read(ibuf);
     if (n == -1) {

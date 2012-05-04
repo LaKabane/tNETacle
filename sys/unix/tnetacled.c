@@ -277,6 +277,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    
 	    log_info("receive IMSG_SET_IP: %s", buf);
 	    tnt_ttc_set_ip(dev, buf);
+            tnt_ttc_up(dev);
 	    break;
 	default:
 	    break;
