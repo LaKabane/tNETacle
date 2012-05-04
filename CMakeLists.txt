@@ -30,6 +30,7 @@ if (Linux)
 endif()
 
 if(UNIX)
+  add_definitions(-DUnix)
   include_directories(/usr/include/ /usr/local/include)
   set(CMAKE_C_FLAGS "-W -Wall")
   set(SOURCES_LIST ${SOURCES_LIST} sys/unix/log.c
@@ -40,6 +41,7 @@ if(UNIX)
 endif()
 
 if (WINDOWS)
+  add_definitions(-DWnt)
   add_definitions(-DUSE_TAPCFG)
 
   set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
