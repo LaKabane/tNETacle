@@ -9,10 +9,9 @@
 
 include(LibFindMacros)
 
-if (TUNTAP_INCLUDE_DIR AND TUNTAP_LIBRARY)
-  # Already in cache, be silent
-  set(TUNTAP_FIND_QUIETLY TRUE)
-endif ()
+if (Tuntap_FIND_REQUIRED)
+	set(TUNTAP_FIND_REQUIRED)
+endif()
 
 libfind_pkg_check_modules(TUNTAP_PKGCONF libtuntap)
 
@@ -20,10 +19,7 @@ find_path(TUNTAP_INCLUDE_DIR tuntap.h
   PATH ${TUNTAP_PKGCONF_INCLUDE_DIRS}
 )
 
-find_library(TUNTAP_LIBRARY
-  NAMES tuntap
-  PATHS ${TUNTAP_PKGCONF_LIBRARY_DIRS}
-)
+libfind_library(TUNTAP tuntap)
 
 set(TUNTAP_PROCESS_INCLUDES TUNTAP_INCLUDE_DIR)
 set(TUNTAP_PROCESS_LIBS TUNTAP_LIBRARY)
