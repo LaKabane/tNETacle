@@ -15,5 +15,6 @@ struct mc
 };
 
 void mc_init(struct mc *, struct sockaddr *, int len, struct bufferevent *bev);
+void mc_close(struct mc *);
 
 #endif /* end of include guard: MC_ENDPOINT_JU2N66SJ */

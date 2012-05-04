@@ -231,7 +231,7 @@ int
 tnt_dispatch_imsg(struct imsg_data *data) {
     struct imsg imsg;
     ssize_t n;
-    int tun_fd;
+    int device_fd;
     struct imsgbuf *ibuf = data->ibuf;
     struct event_base *evbase = data->evbase;
     struct event *ievent = NULL;
@@ -252,19 +252,14 @@ tnt_dispatch_imsg(struct imsg_data *data) {
     while ((n = imsg_get(ibuf, &imsg)) != 0 && n != -1) {
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
-	    if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof(tun_fd))
+	    if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof(device_fd))
 		log_errx(1, "invalid IMSG_CREATE_DEV received");
-	    (void)memcpy(&tun_fd, imsg.data, sizeof tun_fd);
-	    log_info("receive IMSG_CREATE_DEV: fd %i", tun_fd);
-	    ievent = event_new(evbase, tun_fd,
-			       EV_READ | EV_PERSIST,
-			       &device_cb, &data);
-	    event_add(ievent, NULL);
+	    (void)memcpy(&device_fd, imsg.data, sizeof device_fd);
+	    log_info("receive IMSG_CREATE_DEV: fd %i", device_fd);
 
-	    server_set_device(data->server, ievent);
+	    server_set_device(data->server, device_fd);
 
 	    /* directly ask to configure the tun device */
-
 	    imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
 			 conf_address, strlen(conf_address));
 	    break;
