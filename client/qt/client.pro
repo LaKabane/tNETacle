@@ -1,9 +1,9 @@
 SOURCES += \
     main.cpp \
-    ../cli/controler.cpp \
-    ../cli/contactsList.cpp \
-    ../cli/contact.cpp \
-    ../cli/config.cpp \
+    ../share/controler.cpp \
+    ../share/contactsList.cpp \
+    ../share/contact.cpp \
+    ../share/config.cpp \
     clientgui.cpp \
     addcontactgui.cpp \
     contactgui.cpp
@@ -13,15 +13,15 @@ FORMS += \
     addContact.ui
 
 RESOURCES += \
-    ../share/client.qrc
+    ../share/img/client.qrc
 
 HEADERS += \
     clientgui.h \
-    ../cli/controler.h \
-    ../cli/contactsList.h \
-    ../cli/contact.h \
-    ../cli/config.h \
+    ../share/controler.h \
+    ../share/contactsList.h \
+    ../share/contact.h \
+    ../share/config.h \
     addcontactgui.h \
     contactgui.h
 
-INCLUDEPATH += ../cli/
+INCLUDEPATH += ../share/
