@@ -18,7 +18,8 @@ struct server {
   struct evconnlistener *srv;
   struct event *udp_endpoint;
   struct event *device;
-  struct vector_mc peers;
+  struct vector_mc peers; /* The actual list of peers */
+  struct vector_mc pending_peers; /* list of peers waiting for the connexion to finish */
 };
 
 #define UDPPORT 8989

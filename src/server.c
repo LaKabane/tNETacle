@@ -36,6 +36,12 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     }
 }
 
+static int
+_server_match_bev(struct mc const *a, struct mc const *b)
+{
+    return a->bev == b->bev;
+}
+
 static void
 server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
@@ -44,9 +50,47 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
     (void)bev;
     (void)s;
     if (events & BEV_EVENT_CONNECTED)
-        log_debug("Connected !!");
+    {
+        struct mc *mc;
+        struct mc tmp;
+
+        tmp.bev = bev;
+        log_debug("Moving the state form pending to connected.");
+        mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
+        if (mc != v_mc_end(&s->pending_peers))
+        {
+            memcpy(&tmp, mc, sizeof(tmp));
+            v_mc_erase(&s->pending_peers, mc);
+            v_mc_push(&s->peers, &tmp);
+            log_debug("State moved");
+        }
+    }
     if (events & BEV_EVENT_ERROR)
-        log_debug("Error ! %p", EVUTIL_SOCKET_ERROR());
+    {
+        struct mc *mc;
+        struct mc tmp;
+
+        tmp.bev = bev;
+        log_debug("The socket closed with error. "
+                  "Closing the meta-connexion.");
+        mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
+        if (mc != v_mc_end(&s->pending_peers))
+        {
+            mc_close(mc);
+            v_mc_erase(&s->pending_peers, mc);
+            log_debug("Socket removed");
+        }
+        else
+        {
+            mc = v_mc_find_if(&s->peers, &tmp, _server_match_bev);
+            if (mc != v_mc_end(&s->peers))
+            {
+                mc_close(mc);
+                v_mc_erase(&s->peers, mc);
+                log_debug("Socket removed");
+            }
+        }
+    }
 }
 
 static void
@@ -69,7 +113,6 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
         mc_init(&mctx, sock, len, bev);
         bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
         v_mc_push(&s->peers, &mctx);
-        log_debug("v_mc_push");
     }
     else
     {
@@ -95,7 +138,6 @@ broadcast_to_peers(struct server *s, char *buf, int n)
     struct mc *ite;
     int err;
 
-    log_debug("%s", __PRETTY_FUNCTION__);
     for (it = v_mc_begin(&s->peers),
          ite = v_mc_end(&s->peers);
          it != ite;
@@ -186,9 +228,7 @@ void server_establish_mc_hostname(struct server *s, char *hostname)
     }
     mc_init(&mctx, (struct sockaddr*)&paddr, plen, bev);
     bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
-    v_mc_push(&s->peers, &mctx);
-    log_debug("v_mc_push");
-    log_notice("Connected to %s", hostname);
+    v_mc_push(&s->pending_peers, &mctx);
 }
 
 int
@@ -204,6 +244,7 @@ server_init(struct server *s, struct event_base *evbase)
     memset(&uaddr, 0, sizeof(uaddr));
 
     v_mc_init(&s->peers);
+    v_mc_init(&s->pending_peers);
     addr.sin_family = AF_INET;
     addr.sin_port = htons(MCPORT);
     addr.sin_addr.s_addr = INADDR_ANY;
