@@ -250,9 +250,7 @@ tnt_dispatch_imsg(struct imsg_data *data) {
     while ((n = imsg_get(ibuf, &imsg)) != 0 && n != -1) {
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
-	    if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof(device_fd))
-		log_errx(1, "invalid IMSG_CREATE_DEV received");
-	    (void)memcpy(&device_fd, imsg.data, sizeof device_fd);
+            device_fd = imsg.fd;
 	    log_info("receive IMSG_CREATE_DEV: fd %i", device_fd);
 
 	    server_set_device(data->server, device_fd);

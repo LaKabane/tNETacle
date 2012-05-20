@@ -32,7 +32,7 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
         if (n == -1)
             log_warn("Error while writing on the device");
         else
-            log_debug("Write %n on the device", n);
+            log_debug("Write %d on the device", n);
     }
 }
 
@@ -121,7 +121,7 @@ server_device_cb(evutil_socket_t fd, short events, void *ctx)
         n = read(fd, buf, sizeof(buf));
         if (n > 0)
         {
-            log_debug("Read %n bytes from device", n);
+            log_debug("Read %d bytes from device", n);
             broadcast_to_peers(s, buf, n);
         }
         else
