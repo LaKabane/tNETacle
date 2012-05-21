@@ -21,7 +21,7 @@ set(${CMAKE_SYSTEM_NAME} True)
 # ------------------
 find_package(Event COMPONENTS core REQUIRED)
 find_package(Tuntap)
-find_package(Zlib REQUIRED)
+find_package(ZLIB REQUIRED)
 
 # Global definitions
 # ------------------
@@ -50,9 +50,11 @@ endif()
 # ------------------
 set(SOURCES_LIST
   src/conf.c
+  src/tun-compat.c
   src/compress.c
   #src/pipeline.c
-  src/tun-compat.c)
+  src/mc.c
+  src/server.c)
 
 # OS families specific things
 # ---------------------------
