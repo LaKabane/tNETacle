@@ -1,4 +1,4 @@
-# tNETacle CMakeLists.txt 
+# tNETacle CMakeLists.txt
 # ========================
 
 project(tNETacle)
@@ -21,6 +21,7 @@ set(${CMAKE_SYSTEM_NAME} True)
 # ------------------
 find_package(Event COMPONENTS core REQUIRED)
 find_package(Tuntap)
+find_package(ZLIB REQUIRED)
 
 # Global definitions
 # ------------------
@@ -49,7 +50,11 @@ endif()
 # ------------------
 set(SOURCES_LIST
   src/conf.c
-  src/tun-compat.c)
+  src/tun-compat.c
+  src/compress.c
+  #src/pipeline.c
+  src/mc.c
+  src/server.c)
 
 # OS families specific things
 # ---------------------------
@@ -67,8 +72,8 @@ if(UNIX)
 	set(SOURCES_LIST ${SOURCES_LIST} sys/unix/log.c
 		sys/unix/imsg.c sys/unix/imsg-buffer.c
 		sys/unix/tnetacle.c sys/unix/tnetacled.c
-		sys/unix/util.c sys/unix/server.c
-		sys/unix/conf.c)
+		sys/unix/util.c sys/unix/conf.c
+		sys/unix/tntsocket.c)
 endif()
 
 if (WINDOWS)
@@ -130,17 +135,18 @@ endif()
 # ------------------
 add_executable(tNETacle ${SOURCES_LIST})
 
+
 # Global linked libraries
 # ------------------
-target_link_libraries(tNETacle ${EVENT_LIBRARIES})
+
+target_link_libraries(tNETacle ${EVENT_LIBRARIES} ${ZLIB_LIBRARY})
 
 if (TUNTAP_FOUND)
-	target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
+  target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
 elseif(TAPCFG_FOUND)
-	target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
+  target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
 endif()
 
 if (ENABLE_BSDCOMPAT AND BSD_FOUND)
-	target_link_libraries(tNETacle ${BSD_LIBRARIES})
+  target_link_libraries(tNETacle ${BSD_LIBRARIES})
 endif()
-

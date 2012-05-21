@@ -30,7 +30,8 @@
 extern int 	conf_debug;
 char		conf_tunnel[25] = "ethernet";
 int		conf_tunneldevice = -1;
-char		conf_address[25] = "127.0.0.1/255.0.0.0";
+char		conf_address[] = "10.0.0.22/255.255.255.0";
+char		conf_peer_address[] = "";
 
 struct kwvar {
 	char *	kw;
