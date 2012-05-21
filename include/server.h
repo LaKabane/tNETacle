@@ -29,12 +29,24 @@ struct event_base;
 #undef VECTOR_PREFIX
 #undef VECTOR_TYPE
 
+struct frame {
+  unsigned short size;
+  char frame[1542]; /*Max size of a frame with a 1500 MTU (payload + header size)*/
+};
+
+#define VECTOR_TYPE struct frame
+#define VECTOR_PREFIX frame
+#include "vector.h"
+#undef VECTOR_PREFIX
+#undef VECTOR_TYPE
+
 struct server {
   struct evconnlistener *srv;
   struct event *udp_endpoint;
   struct event *device;
   struct vector_mc peers; /* The actual list of peers */
   struct vector_mc pending_peers; /* Pending in connection peers*/
+  struct vector_frame frames_to_send;
 };
 
 #define UDPPORT 8989

@@ -51,7 +51,7 @@ mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 }
 
 void
-mc_init(struct mc *this, struct sockaddr *s, int len, struct bufferevent *bev)
+mc_init(struct mc *this, struct sockaddr *s, socklen_t len, struct bufferevent *bev)
 {
     struct sockaddr *tmp = malloc(len);
 

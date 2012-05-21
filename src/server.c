@@ -26,23 +26,48 @@
 #include "server.h"
 #include "log.h"
 
+union chartoshort {
+    unsigned char *cptr;
+    unsigned short *sptr;
+}; /* The goal of this union is to properly convert uchar* to ushort* */
+
 static void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = ctx;
-    char buf[4096];
     ssize_t n;
+    struct evbuffer *buf = NULL;
+    unsigned short size;
 
-    /*Pour le moment c'est nase ce que je fais*/
-    n = bufferevent_read(bev, buf, sizeof(buf));
-    if (n != -1)
+    buf = bufferevent_get_input(bev);
+    while (evbuffer_get_length(buf) != 0)
     {
-        n = write(event_get_fd(s->device), buf, n);
-        if (n == -1)
-            log_warn("Error while writing on the device");
-        else
-            log_debug("Write %d on the device", n);
+        /*
+         * Using chartoshort union to explicitly convert form uchar* to ushort*
+         * without warings.
+         */
+        union chartoshort u;
+        log_debug("=====================");
+        log_debug("Length of buffer = %d", evbuffer_get_length(buf));
+        u.cptr = evbuffer_pullup(buf, sizeof(size));
+        size = ntohs(*u.sptr);
+        if (size > evbuffer_get_length(buf))
+        {
+            log_debug("Receive an incomplete frame of %d(%-#2x) bytes but "
+                      "only %d bytes are available.", size, *(u.sptr),
+                      evbuffer_get_length(buf));
+            break;
+        }
+        log_debug("Receive a frame of %d(%-#2x) bytes", size, *(u.sptr));
+        evbuffer_drain(buf, sizeof(size));
+        log_debug("Length of buffer = %d", evbuffer_get_length(buf));
+        n = write(event_get_fd(s->device),
+                  evbuffer_pullup(buf, size),
+                  size);
+        evbuffer_drain(buf, size);
+        log_debug("Length of buffer = %d", evbuffer_get_length(buf));
     }
+    log_debug("=====================");
 }
 
 static int
@@ -119,7 +144,7 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
          * Set a callback to bev using 
          * bufferevent_setcb.
          */
-        mc_init(&mctx, sock, len, bev);
+        mc_init(&mctx, sock, (socklen_t)len, bev);
         bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
         v_mc_push(&s->peers, &mctx);
     }
@@ -135,50 +160,70 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
     (void)evl;
     (void)ctx;
     int err = EVUTIL_SOCKET_ERROR();
-    fprintf(stderr, "Got an error %d (%s) on the listener. "
+    log_notice("Got an error %d (%s) on the listener. "
             "Shutting down.\n", err, evutil_socket_error_to_string(err));
 }
 
 static void
-broadcast_to_peers(struct server *s, char *buf, size_t n)
+broadcast_to_peers(struct server *s)
 {
-    struct mc *it;
-    struct mc *ite;
-    int err;
+    struct frame *fit = v_frame_begin(&s->frames_to_send);
+    struct frame *fite = v_frame_end(&s->frames_to_send);
 
-    for (it = v_mc_begin(&s->peers),
-         ite = v_mc_end(&s->peers);
-         it != ite;
-         it = v_mc_next(it))
+    for (;fit != fite; fit = v_frame_next(fit))
     {
-        log_debug("Broadcasting to %p", it);
-        err = bufferevent_write(it->bev, buf, n);
-        if (err == -1)
-            log_warn("An error occured while broadcast");
+        unsigned short size_networked = htons(fit->size);
+        for (struct mc *it = v_mc_begin(&s->peers),
+             *ite = v_mc_end(&s->peers);
+             it != ite;
+             it = v_mc_next(it))
+        {
+            int err;
+            log_debug("Size %d, %-#2x", fit->size, size_networked);
+            err = bufferevent_write(it->bev, &size_networked, sizeof(size_networked));
+            if (err == -1)
+            {
+                log_debug("error while crafting the buffer to send to %p", it);
+                break;
+            }
+            err = bufferevent_write(it->bev, fit->frame, fit->size);
+            if (err == -1)
+            {
+                log_debug("error while crafting the buffer to send to %p", it);
+                break;
+            }
+            log_debug("Sending %d bytes to %p", fit->size, it);
+        }
     }
+    v_frame_erase_range(&s->frames_to_send,
+                        v_frame_begin(&s->frames_to_send), fite);
 }
 
 static void
-server_device_cb(evutil_socket_t fd, short events, void *ctx)
+server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
 {
     struct server *s = ctx;
 
     if (events & EV_READ)
     {
+        int _n = 0;
         ssize_t n;
-        char buf[1500];
+        struct frame tmp;
 
-        n = read(fd, buf, sizeof(buf));
-        if (n > 0)
+        while ((n = read(device_fd, &tmp.frame, sizeof(tmp.frame))) > 0)
         {
-            log_debug("Read %d bytes from device", n);
-            broadcast_to_peers(s, buf, (size_t)n);
+            tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
+            v_frame_push(&s->frames_to_send, &tmp);
+            log_debug("Addin a new Frame to be sent. (%d bytes)", n);
+            _n++;
+        }
+        if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
+        {
+            log_debug("Read %d frames", _n);
+            broadcast_to_peers(s);
         }
         else
-        {
-            log_debug("Error while reading on the device: %s",
-                      strerror(errno));
-        }
+            log_debug("Error");
     }
 }
 
@@ -187,7 +232,11 @@ server_set_device(struct server *s, int fd)
 {
     struct event_base *evbase = evconnlistener_get_base(s->srv);
     struct event *ev = event_new(evbase, fd, EV_READ | EV_PERSIST, server_device_cb, s);
+    int err;
 
+    err = evutil_make_socket_nonblocking(fd);
+    if (err == -1)
+        log_debug("Fuck !");
     if (ev == NULL)
     {
         log_warn("Failed to allocate the event handler for the device");
@@ -228,7 +277,7 @@ void server_establish_mc_hostname(struct server *s, char *hostname)
         log_warn("Unable to allocate a socket for connecting to the peer.");
         return;
     }
-    err = bufferevent_socket_connect(bev, (struct sockaddr *)&paddr, plen);
+    err = bufferevent_socket_connect(bev, (struct sockaddr *)&paddr, (int)plen);
     if (err == -1)
     {
         log_warn("Unable to connect to the peer.");
@@ -253,6 +302,7 @@ server_init(struct server *s, struct event_base *evbase)
 
     v_mc_init(&s->peers);
     v_mc_init(&s->pending_peers);
+    v_frame_init(&s->frames_to_send);
     addr.sin_family = AF_INET;
     addr.sin_port = htons(MCPORT);
     addr.sin_addr.s_addr = INADDR_ANY;
