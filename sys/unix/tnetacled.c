@@ -74,17 +74,22 @@ _sighdlr(int sig) {
 static void
 sighdlr(evutil_socket_t sig, short events, void *args) {
     struct event_base *evbase = args;
+    char *name = "unknow";
     (void)events;
 
     switch (sig) {
     case SIGCHLD:
-    case SIGTERM:
-    case SIGINT:
-	log_warn("Received signal %d, stoping.\n", sig);
-	event_base_loopbreak(evbase);
+        name = "sigchld";
 	break;
-    /* TODO: SIGHUP */
+    case SIGTERM:
+        name = "sigterm";
+	break;
+    case SIGINT:
+        name = "sigint";
+	break;
     }
+    log_warn("Received signal %d(%s) stoping.\n", sig, name);
+    event_base_loopbreak(evbase);
 }
 
 static void
