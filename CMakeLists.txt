@@ -8,7 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 set(${CMAKE_SYSTEM_NAME} True)
 
-find_package(Zlib REQUIRED)
+find_package(ZLIB REQUIRED)
 find_package(Event COMPONENTS core REQUIRED)
 find_package(Tapcfg REQUIRED)
 find_package(Tuntap REQUIRED)
