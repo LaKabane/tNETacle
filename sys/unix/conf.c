@@ -32,7 +32,7 @@
 
 /*
  * Load the configuration file given in argument.
- * If file is NULL, tnt_parse_config_file() will load the default
+ * If file is NULL, tnt_parse_file() will load the default
  * configuration file.
  */
 int
@@ -47,11 +47,17 @@ tnt_parse_file(const char *file) {
     }
 
     if ((fd = open(file, O_RDONLY)) != -1) {
-        if (stat(file, &st) != -1)
-            perror(file);
+        if (stat(file, &st) == -1) {
+	    (void)close(fd);
+	    (void)fprintf(stderr, "%s: can't stat\n", file);
+	    return -1;
+	}
 
-        if (st.st_mode & (S_IRUSR|S_IWUSR)) {
-            (void)fprintf(stderr, "bad file permission: %s\n", file);
+        if (st.st_mode & S_IRGRP || st.st_mode & S_IWGRP ||
+	    st.st_mode & S_IXGRP || st.st_mode & S_IROTH ||
+	    st.st_mode & S_IWOTH || st.st_mode & S_IXOTH) {
+            (void)fprintf(stderr, "%s: insecure file permission\n", file);
+	    (void)fchmod(fd, S_IRUSR|S_IWUSR);
         }
 
         buf = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE | MAP_FILE, fd, 0);
@@ -69,9 +75,8 @@ tnt_parse_file(const char *file) {
             perror("munmap");
 
         (void)close(fd);
-    } 
-    else if (errno != ENOENT) {
-        (void)fprintf(stderr, "config: %s\n", file);
+    } else if (errno != ENOENT) {
+        (void)fprintf(stderr, "%s: can't open\n", file);
         return -1;
     }
     return 0;
