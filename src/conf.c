@@ -180,7 +180,7 @@ tnt_parse_line(char *p) {
 	(void)strncpy(varname, word, (size_t)(endword - word));
 
 	for (kvp = (struct kwvar *)keywords; kvp->kw; kvp++) 
-		if (strcmp(kvp->kw, varname) == 0)
+		if (strncmp(kvp->kw, varname, (size_t)(endword - word)) == 0)
 			break;
 
 	if (kvp->kw == NULL) {

@@ -37,7 +37,7 @@ enum imsg_type {
 
 char 		*tnt_getprogname(void);
 __inline void    tnt_setproctitle(const char *);
-int		 tnt_fork(int [2], struct passwd *);
+int		 tnt_fork(int [2]);
 int		 tnt_daemonize(void);
 
 /* src/conf.c */
