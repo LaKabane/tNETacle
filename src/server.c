@@ -47,8 +47,6 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
          * without warings.
          */
         union chartoshort u;
-        log_debug("=====================");
-        log_debug("Length of buffer = %d", evbuffer_get_length(buf));
         u.cptr = evbuffer_pullup(buf, sizeof(size));
         size = ntohs(*u.sptr);
         if (size > evbuffer_get_length(buf))
@@ -58,16 +56,13 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
                       evbuffer_get_length(buf));
             break;
         }
-        log_debug("Receive a frame of %d(%-#2x) bytes", size, *(u.sptr));
+        log_debug("Receive a frame of %d(%-#2x) bytes.", size, *(u.sptr));
         evbuffer_drain(buf, sizeof(size));
-        log_debug("Length of buffer = %d", evbuffer_get_length(buf));
         n = write(event_get_fd(s->device),
                   evbuffer_pullup(buf, size),
                   size);
         evbuffer_drain(buf, size);
-        log_debug("Length of buffer = %d", evbuffer_get_length(buf));
     }
-    log_debug("=====================");
 }
 
 static int
@@ -105,14 +100,14 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         struct mc tmp;
 
         tmp.bev = bev;
-        log_debug("The socket closed with error. "
-                  "Closing the meta-connexion.");
+        log_notice("The socket closed with error. "
+                   "Closing the meta-connexion.");
         mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
         if (mc != v_mc_end(&s->pending_peers))
         {
             mc_close(mc);
             v_mc_erase(&s->pending_peers, mc);
-            log_debug("Socket removed");
+            log_debug("Socket removed from the pending list.");
         }
         else
         {
@@ -121,7 +116,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             {
                 mc_close(mc);
                 v_mc_erase(&s->peers, mc);
-                log_debug("Socket removed");
+                log_debug("Socket removed from the peer list.");
             }
         }
     }
@@ -135,7 +130,7 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
     struct event_base *base = evconnlistener_get_base(evl);
     struct bufferevent *bev = bufferevent_socket_new(base, fd,
                                                      BEV_OPT_CLOSE_ON_FREE);
-    log_debug("New connection !");
+    log_debug("New connection.");
     if (bev != NULL)
     {
         struct mc mctx;
@@ -160,8 +155,7 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
     (void)evl;
     (void)ctx;
     int err = EVUTIL_SOCKET_ERROR();
-    log_notice("Got an error %d (%s) on the listener. "
-            "Shutting down.\n", err, evutil_socket_error_to_string(err));
+    log_notice("Listener error(%d): %s", err, evutil_socket_error_to_string(err));
 }
 
 static void
@@ -179,20 +173,20 @@ broadcast_to_peers(struct server *s)
              it = v_mc_next(it))
         {
             int err;
-            log_debug("Size %d, %-#2x", fit->size, size_networked);
             err = bufferevent_write(it->bev, &size_networked, sizeof(size_networked));
             if (err == -1)
             {
-                log_debug("error while crafting the buffer to send to %p", it);
+                log_notice("Error while crafting the buffer to send to %p.", it);
                 break;
             }
             err = bufferevent_write(it->bev, fit->frame, fit->size);
             if (err == -1)
             {
-                log_debug("error while crafting the buffer to send to %p", it);
+                log_notice("Error while crafting the buffer to send to %p.", it);
                 break;
             }
-            log_debug("Sending %d bytes to %p", fit->size, it);
+            log_debug("Adding %d(%-#2x) bytes to %p's output buffer.",
+                      fit->size, it);
         }
     }
     v_frame_erase_range(&s->frames_to_send,
@@ -214,16 +208,16 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
         {
             tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
             v_frame_push(&s->frames_to_send, &tmp);
-            log_debug("Addin a new Frame to be sent. (%d bytes)", n);
+            log_debug("Read a new frame of %d bytes.", n);
             _n++;
         }
         if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
         {
-            log_debug("Read %d frames", _n);
+            log_debug("Read %d frames in this pass.", _n);
             broadcast_to_peers(s);
         }
         else
-            log_debug("Error");
+            log_warn("Read on the device failed:");
     }
 }
 
@@ -239,15 +233,15 @@ server_set_device(struct server *s, int fd)
         log_debug("Fuck !");
     if (ev == NULL)
     {
-        log_warn("Failed to allocate the event handler for the device");
+        log_warn("Failed to allocate the event handler for the device:");
         return;
     }
     s->device = ev;
     event_add(s->device, NULL);
-    log_debug("Event handler for the device sucessfully configured. Starting "
-              "the listener..");
+    log_notice("Event handler for the device sucessfully configured. Starting "
+              "the listener...");
     evconnlistener_enable(s->srv);
-    log_debug("Listener started.");
+    log_notice("Listener started.");
 }
 
 extern char conf_peer_address[];
@@ -267,20 +261,20 @@ void server_establish_mc_hostname(struct server *s, char *hostname)
                                      (int*)&plen);
     if (err == -1)
     {
-        log_warn("Syntax error with the peer address given in the conf.");
+        log_notice("Syntax error with the peer address given in the conf.");
         return;
     }
 
     bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
     if (bev == NULL)
     {
-        log_warn("Unable to allocate a socket for connecting to the peer.");
+        log_warn("Unable to allocate a socket for connecting to the peer:");
         return;
     }
     err = bufferevent_socket_connect(bev, (struct sockaddr *)&paddr, (int)plen);
     if (err == -1)
     {
-        log_warn("Unable to connect to the peer.");
+        log_warn("Unable to connect to the peer:");
         return;
     }
     mc_init(&mctx, (struct sockaddr*)&paddr, plen, bev);
@@ -320,20 +314,20 @@ server_init(struct server *s, struct event_base *evbase)
     udpsocket = tnt_udp_socket(IPv4);
     errcode = evutil_make_listen_socket_reuseable(udpsocket);
     if (errcode < 0)
-        log_warn("Failed to make the listen UDP socket reusable");
+        log_warn("Failed to make the listen UDP socket reusable:");
 
     errcode = evutil_make_socket_nonblocking(udpsocket);
     if (errcode < 0)
-        log_warn("Failed to make the listen UDP socket non blocking");
+        log_warn("Failed to make the listen UDP socket non blocking:");
 
     errcode = bind(udpsocket, (struct sockaddr *)&uaddr, sizeof(uaddr));
     if (errcode < 0)
-        log_warn("Failed to bind the listen UDP socket");
+        log_warn("Failed to bind the listen UDP socket:");
 
     evconnlistener_set_error_cb(evl, accept_error_cb);
     evconnlistener_disable(evl);
     s->srv = evl;
-    if (strcmp(conf_peer_address, "") != 0)
+    if (strcmp(conf_peer_address, "") != 0) /*XXX Dirty hack*/
         server_establish_mc_hostname(s, conf_peer_address);
     return 0;
 }
