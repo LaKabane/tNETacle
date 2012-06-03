@@ -1,3 +1,17 @@
+/**
+ * Copyright (c) 2012, PICHOT Fabien Paul Leonard <pichot.fabien@gmail.com>
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+**/
 #include <stdio.h>
 #include <event2/event.h>
 #include <event2/buffer.h>
@@ -6,10 +20,6 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-
-#ifndef Windows
-#include <errno.h>
-#endif /* !windows */
 
 #include "mc.h"
 #include "tntsocket.h"
@@ -21,11 +31,10 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = ctx;
     char buf[4096];
-    int n;
+    ssize_t n;
 
     /*Pour le moment c'est nase ce que je fais*/
     n = bufferevent_read(bev, buf, sizeof(buf));
-    log_debug("%s", __PRETTY_FUNCTION__);
     if (n != -1)
     {
         n = write(event_get_fd(s->device), buf, n);
@@ -125,14 +134,13 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
 {
     (void)evl;
     (void)ctx;
-    log_debug("%s", __PRETTY_FUNCTION__);
     int err = EVUTIL_SOCKET_ERROR();
     fprintf(stderr, "Got an error %d (%s) on the listener. "
             "Shutting down.\n", err, evutil_socket_error_to_string(err));
 }
 
 static void
-broadcast_to_peers(struct server *s, char *buf, int n)
+broadcast_to_peers(struct server *s, char *buf, size_t n)
 {
     struct mc *it;
     struct mc *ite;
@@ -157,14 +165,14 @@ server_device_cb(evutil_socket_t fd, short events, void *ctx)
 
     if (events & EV_READ)
     {
-        int n;
+        ssize_t n;
         char buf[1500];
 
         n = read(fd, buf, sizeof(buf));
         if (n > 0)
         {
             log_debug("Read %d bytes from device", n);
-            broadcast_to_peers(s, buf, n);
+            broadcast_to_peers(s, buf, (size_t)n);
         }
         else
         {
