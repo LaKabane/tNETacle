@@ -72,20 +72,6 @@ tnt_imsg_callback(evutil_socket_t fd, short events, void *args) {
     }
 }
 
-void
-device_cb(evutil_socket_t fd, short events, void *args)
-{
-    (void)fd;
-    (void)args;
-    printf("%s\n", __PRETTY_FUNCTION__);
-    if (events & EV_READ) {
-	printf("%s::[READ EVENTS]\n", __PRETTY_FUNCTION__);
-    }
-    if (events & EV_WRITE) {
-	printf("%s::[WRITE EVENTS]\n", __PRETTY_FUNCTION__);
-    }
-}
-
 static void
 chld_sighdlr(evutil_socket_t sig, short events, void *args) {
     (void)events;
