@@ -29,6 +29,7 @@ main(int argc, char *argv[]) {
 	int errcode;
     struct event_base *evbase = NULL;
     struct server server;
+	struct device *interfce;
 
 	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
 	log_err(-1, "Failed to init WSA.");
@@ -36,13 +37,28 @@ main(int argc, char *argv[]) {
 	if ((evbase = event_base_new()) == NULL) {
 	log_err(-1, "Failed to init the event library");
     }
-
+	if ((interfce = tnt_ttc_open()) == NULL) {
+		log_err(-1, "Failed to open a tap interface");
+	}
+	/*
+	Arty: There's definitely a workaround for those signals on windows, we'll
+	see that later.
+	*/
     //sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     //sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);
 
     if (server_init(&server, evbase) == -1)
 	log_err(-1, "Failed to init the server socket");
 
+	if (tnt_ttc_set_ip(interfce, "192.168.10.2/24") == -1){
+		log_err(-1, "Failed to set interface's ip");
+	}
+	if (tnt_ttc_up(interfce) != 0) {
+		log_err(-1, "For some reason, the interface couldn't be up'd");
+	}
+
+	/*Arty: This fails... Badly.*/
+	server_set_device(&server, tnt_ttc_get_fd(interfce));
 
     //event_add(sigterm, NULL);
     //event_add(sigint, NULL);
@@ -62,6 +78,7 @@ main(int argc, char *argv[]) {
      */
     event_base_free(evbase);
 
+	tnt_ttc_close(interfce);
     //event_free(sigterm);
     //event_free(sigint);
 
