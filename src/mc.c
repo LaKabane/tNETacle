@@ -30,7 +30,7 @@ mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     (void)bev;
     (void)ctx;
-    log_debug("No callback set for %s", __func__);
+    log_debug("No callback set for read");
 }
 
 void
@@ -38,7 +38,7 @@ mc_write_cb(struct bufferevent *bev, void *ctx)
 {
     (void)bev;
     (void)ctx;
-    log_debug("No callback set for %s", __func__);
+    log_debug("No callback set for write");
 }
 
 void
@@ -47,11 +47,11 @@ mc_event_cb(struct bufferevent *bev, short events, void *ctx)
     (void)bev;
     (void)events;
     (void)ctx;
-    log_debug("No callback set for %s", __func__);
+    log_debug("No callback set for special events");
 }
 
 void
-mc_init(struct mc *this, struct sockaddr *s, socklen_t len, struct bufferevent *bev)
+mc_init(struct mc *self, struct sockaddr *s, int len, struct bufferevent *bev)
 {
     struct sockaddr *tmp = malloc(len);
 
@@ -62,16 +62,16 @@ mc_init(struct mc *this, struct sockaddr *s, socklen_t len, struct bufferevent *
         return;
     }
     memcpy(tmp, s, len);
-    this->bev = bev;
-    this->p.address = tmp;
-    this->p.len = len;
-    bufferevent_setcb(bev, mc_read_cb, mc_write_cb, mc_event_cb, this);
+    self->bev = bev;
+    self->p.address = tmp;
+    self->p.len = len;
+    bufferevent_setcb(bev, mc_read_cb, mc_write_cb, mc_event_cb, self);
     bufferevent_enable(bev, EV_READ | EV_WRITE);
 }
 
 void
-mc_close(struct mc *this)
+mc_close(struct mc *self)
 {
-    free(this->p.address);
-    bufferevent_free(this->bev);
+    free(self->p.address);
+    bufferevent_free(self->bev);
 }

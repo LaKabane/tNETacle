@@ -19,7 +19,14 @@
 #include <event2/bufferevent.h>
 #include <errno.h>
 #include <string.h>
+#if !defined Windows
 #include <unistd.h>
+#else
+#include <io.h>
+#include <WS2tcpip.h>
+#define write _write
+#define ssize_t SSIZE_T
+#endif
 
 #include "mc.h"
 #include "tntsocket.h"
@@ -34,7 +41,7 @@ union chartoshort {
 static void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
-    struct server *s = ctx;
+    struct server *s = (struct server *)ctx;
     ssize_t n;
     struct evbuffer *buf = NULL;
     unsigned short size;
@@ -74,7 +81,7 @@ _server_match_bev(struct mc const *a, struct mc const *b)
 static void
 server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
-    struct server *s = ctx;
+    struct server *s = (struct server *)ctx;
 
     (void)bev;
     (void)s;
@@ -126,7 +133,7 @@ static void
 listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
                 struct sockaddr *sock, int len, void *ctx)
 {
-    struct server *s = ctx;
+    struct server *s = (struct server *)ctx;
     struct event_base *base = evconnlistener_get_base(evl);
     struct bufferevent *bev = bufferevent_socket_new(base, fd,
                                                      BEV_OPT_CLOSE_ON_FREE);
@@ -154,8 +161,6 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
 {
     (void)evl;
     (void)ctx;
-    int err = EVUTIL_SOCKET_ERROR();
-    log_notice("Listener error(%d): %s", err, evutil_socket_error_to_string(err));
 }
 
 static void
@@ -163,12 +168,14 @@ broadcast_to_peers(struct server *s)
 {
     struct frame *fit = v_frame_begin(&s->frames_to_send);
     struct frame *fite = v_frame_end(&s->frames_to_send);
+	struct mc *it = NULL;
+	struct mc *ite = NULL;
 
     for (;fit != fite; fit = v_frame_next(fit))
     {
         unsigned short size_networked = htons(fit->size);
-        for (struct mc *it = v_mc_begin(&s->peers),
-             *ite = v_mc_end(&s->peers);
+        for (it = v_mc_begin(&s->peers),
+             ite = v_mc_end(&s->peers);
              it != ite;
              it = v_mc_next(it))
         {
@@ -189,14 +196,13 @@ broadcast_to_peers(struct server *s)
                       fit->size, it);
         }
     }
-    v_frame_erase_range(&s->frames_to_send,
-                        v_frame_begin(&s->frames_to_send), fite);
+    v_frame_erase_range(&s->frames_to_send, v_frame_begin(&s->frames_to_send), fite);
 }
 
 static void
 server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
 {
-    struct server *s = ctx;
+    struct server *s = (struct server *)ctx;
 
     if (events & EV_READ)
     {

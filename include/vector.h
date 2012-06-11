@@ -137,6 +137,7 @@ specifier void vector_(insert)(struct vector_name *v, type *at, type *val)
   if ((at) <= (v->vec + v->size)
     && (at >= v->vec))
     {
+      size_t number_to_move;
       if (v->alloc_size - v->size == 0)
       {
         /*Fuck ! We need to resize for only one element...*/
@@ -148,7 +149,7 @@ specifier void vector_(insert)(struct vector_name *v, type *at, type *val)
           return ;
         at = &v->vec[offset];
       }
-      size_t number_to_move = vector_(end)(v) - at;
+      number_to_move = vector_(end)(v) - at;
       memmove(at + 1, at, number_to_move * sizeof(type));
       *at = *val;
       v->size++;
@@ -162,6 +163,7 @@ specifier void vector_(insert_range)(struct vector_name *v, type *at,
       && (at >= v->vec))
   {
     size_t inserted_size = (to - from);
+	size_t number_to_move;
     if ((v->size + inserted_size) > v->alloc_size)
     {
       /*we need to resize*/
@@ -172,7 +174,7 @@ specifier void vector_(insert_range)(struct vector_name *v, type *at,
         return ;
       at = &v->vec[offset];
     }
-    size_t number_to_move = vector_(end)(v) - at;
+    number_to_move = vector_(end)(v) - at;
     if (number_to_move != 0)
     {
       memmove(at + inserted_size, at, number_to_move * sizeof(type));

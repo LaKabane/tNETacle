@@ -24,7 +24,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#if !defined Windows
 #include <unistd.h>
+#endif
 
 #include "tun.h"
 

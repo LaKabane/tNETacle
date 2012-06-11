@@ -5,6 +5,10 @@
 struct bufferevent;
 struct sockaddr;
 
+#if defined Windows
+#define socklen_t int
+#endif
+
 struct mc
 {
   struct peer {

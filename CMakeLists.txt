@@ -21,7 +21,7 @@ set(${CMAKE_SYSTEM_NAME} True)
 # ------------------
 find_package(Event COMPONENTS core REQUIRED)
 find_package(Tuntap)
-find_package(ZLIB REQUIRED)
+# find_package(ZLIB REQUIRED)
 
 # Global definitions
 # ------------------
@@ -31,12 +31,16 @@ add_definitions(-DHAVE_SETRESXID)
 if (${TUNTAP_FOUND})
 	add_definitions(-DUSE_LIBTUNTAP)
 else()
+    find_package(Tapcfg)
+    if (${TAPCFG_FOUND})
 	add_definitions(-DUSE_TAPCFG)
+    endif()
 endif()
 
 # Global include directories
 # ------------------
 include_directories(${CMAKE_HOME_DIRECTORY}/include)
+include_directories(${EVENT_INCLUDE_DIR})
 if (${TUNTAP_FOUND})
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
@@ -51,7 +55,7 @@ endif()
 set(SOURCES_LIST
   src/conf.c
   src/tun-compat.c
-  src/compress.c
+  #src/compress.c
   #src/pipeline.c
   src/mc.c
   src/server.c)
@@ -76,15 +80,18 @@ if(UNIX)
 		sys/unix/tntsocket.c)
 endif()
 
-if (WINDOWS)
+if (Windows)
 	# CMake windows Configuration
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 
 	# Windows source files
 	# ------------------
-	file(GLOB WIN_SOURCES_LIST sys/wnt/*.c)
-	set(SOURCES_LIST ${SOURCES_LIST} ${WIN_SOURCES_LIST})
+	set(SOURCES_LIST ${SOURCES_LIST}
+		sys/wnt/conf.c
+		sys/wnt/log.c
+		sys/wnt/tntsocket.c
+	)
 endif()
 
 # OS specific things
@@ -149,4 +156,11 @@ endif()
 
 if (ENABLE_BSDCOMPAT AND BSD_FOUND)
   target_link_libraries(tNETacle ${BSD_LIBRARIES})
+endif()
+
+# Windows linked libraries
+# ------------------------
+
+if (Windows)
+    target_link_libraries(tNETacle Ws2_32.lib)
 endif()
