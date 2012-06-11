@@ -91,6 +91,7 @@ if (Windows)
 		sys/wnt/conf.c
 		sys/wnt/log.c
 		sys/wnt/tntsocket.c
+		sys/wnt/main.c
 	)
 endif()
 
