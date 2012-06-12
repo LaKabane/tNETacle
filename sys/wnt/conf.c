@@ -14,11 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * Original copyright notice :
- * David Leonard <d@openbsd.org>, 1999. Public domain.
- */
-
 #include <windows.h>
 #include <stdio.h>
 #include <Winbase.h> 
