@@ -19,6 +19,8 @@
 #include <pwd.h>
 #endif
 
+struct passwd;
+
 #ifndef TNETACLE_H__
 #define TNETACLE_H__
 

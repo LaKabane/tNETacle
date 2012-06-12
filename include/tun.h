@@ -21,7 +21,7 @@
 #  include <tuntap.h>
 # elif defined USE_TAPCFG
 #  include <tapcfg.h>
-#  define device tapcfg_t
+#  define device tapcfg_s
 # else
 #  error "You must define USE_LIBTUNTAP or USE_TAPCFG"
 # endif

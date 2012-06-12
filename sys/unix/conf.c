@@ -60,7 +60,7 @@ tnt_parse_file(const char *file) {
 	    (void)fchmod(fd, S_IRUSR|S_IWUSR);
         }
 
-        buf = mmap(0, st.st_size, PROT_READ, MAP_FILE, fd, 0);
+        buf = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE | MAP_FILE, fd, 0);
         if (buf == MAP_FAILED) {
             perror("mmap");
             return -1;

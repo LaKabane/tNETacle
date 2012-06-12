@@ -73,20 +73,6 @@ tnt_imsg_callback(evutil_socket_t fd, short events, void *args) {
     }
 }
 
-void
-device_cb(evutil_socket_t fd, short events, void *args)
-{
-    (void)fd;
-    (void)args;
-    printf("%s\n", __PRETTY_FUNCTION__);
-    if (events & EV_READ) {
-	printf("%s::[READ EVENTS]\n", __PRETTY_FUNCTION__);
-    }
-    if (events & EV_WRITE) {
-	printf("%s::[WRITE EVENTS]\n", __PRETTY_FUNCTION__);
-    }
-}
-
 static void
 chld_sighdlr(evutil_socket_t sig, short events, void *args) {
     (void)events;
@@ -232,10 +218,8 @@ int
 tnt_dispatch_imsg(struct imsg_data *data) {
     struct imsg imsg;
     ssize_t n;
-    int tun_fd;
+    int device_fd;
     struct imsgbuf *ibuf = data->ibuf;
-    struct event_base *evbase = data->evbase;
-    struct event *ievent = NULL;
 
     n = imsg_read(ibuf);
     if (n == -1) {
@@ -253,19 +237,12 @@ tnt_dispatch_imsg(struct imsg_data *data) {
     while ((n = imsg_get(ibuf, &imsg)) != 0 && n != -1) {
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
-	    if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof(tun_fd))
-		log_errx(1, "invalid IMSG_CREATE_DEV received");
-	    (void)memcpy(&tun_fd, imsg.data, sizeof tun_fd);
-	    log_info("receive IMSG_CREATE_DEV: fd %i", tun_fd);
-	    ievent = event_new(evbase, tun_fd,
-			       EV_READ | EV_PERSIST,
-			       &device_cb, &data);
-	    event_add(ievent, NULL);
+            device_fd = imsg.fd;
+	    log_info("receive IMSG_CREATE_DEV: fd %i", device_fd);
 
-	    server_set_device(data->server, ievent);
+	    server_set_device(data->server, device_fd);
 
 	    /* directly ask to configure the tun device */
-
 	    imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
 			server_options.addr , strlen(server_options.addr));
 	    break;

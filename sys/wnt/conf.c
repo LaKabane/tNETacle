@@ -21,6 +21,8 @@
 #define __func__ __FUNCTION__
 #endif
 
+#include <stdio.h>
+
 #include "tnetacle.h"
 #include "log.h"
 
