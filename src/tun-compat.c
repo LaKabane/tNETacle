@@ -24,7 +24,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#if !defined WIN32
 #include <unistd.h>
+#endif
 
 #include "tnetacle.h"
 #include "options.h"

@@ -15,12 +15,15 @@
  */
 
 #include <sys/types.h>
+#if !defined WIN32
 #include <sys/socket.h>
+#endif
 #include <sys/stat.h>
+#if !defined WIN32
 #include <sys/mman.h>
 
 #include <netdb.h>
-
+#endif
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +34,15 @@
 #include "tnetacle.h"
 #include "options.h"
 
+#ifdef WIN32
+#include <winsock2.h>
+#include <Windows.h>
+#include <Ws2tcpip.h>
+#include "winstrtonum.h"
+#define __func__ __FUNCTION__
+#define alloca _alloca
+#define snprintf _snprintf
+#endif
 extern int debug;
 struct options server_options;
 

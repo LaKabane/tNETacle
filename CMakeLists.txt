@@ -24,6 +24,21 @@ set(SOURCES_LIST
   src/conf.c
   src/tun-compat.c)
 
+
+# Global include directories
+# ------------------
+include_directories(${CMAKE_HOME_DIRECTORY}/include)
+include_directories(${EVENT_INCLUDE_DIR})
+include_directories(${YAJL_INCLUDE_DIR})
+if (${TUNTAP_FOUND})
+	include_directories(${TUNTAP_INCLUDE_DIRS})
+else()
+	find_package(Tapcfg REQUIRED)
+	if (${TAPCFG_FOUND})
+		include_directories(${TAPCFG_INCLUDE_DIRS})
+	endif()
+endif()
+
 if (Linux)
 	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
 	option(ENABLE_NETLINK "Enable the use of libnl to configure the
@@ -41,7 +56,7 @@ if(UNIX)
 	  sys/unix/conf.c)
 endif()
 
-if (WINDOWS)
+if (Windows)
   add_definitions(-DWnt)
   add_definitions(-DUSE_TAPCFG)
 
@@ -125,3 +140,6 @@ target_link_libraries(tNETacle
 target_link_libraries(tNETacle
 	${EVENT_LIBRARIES})
 
+if (Windows)
+    target_link_libraries(tNETacle Ws2_32.lib)
+endif()

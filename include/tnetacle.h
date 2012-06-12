@@ -15,7 +15,9 @@
  */
 
 #include <sys/types.h>
+#if !defined WIN32
 #include <pwd.h>
+#endif
 
 #ifndef TNETACLE_H__
 #define TNETACLE_H__
