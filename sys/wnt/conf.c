@@ -28,11 +28,14 @@ int
 tnt_parse_file(const char *file) {
     void *buf;
     char *p;
+    size_t size;
     HANDLE hdl;
 
     if (file == NULL) {
         file = _PATH_DEFAULT_CONFIG_FILE;
     }
+
+    (void)GetFilesSizeEx(hdl, &size);
 
     if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, nm)) != -1) {
         buf = MapViewOfFile(hdl, FILE_MAP_READ, 0, 0, 0);
@@ -40,9 +43,10 @@ tnt_parse_file(const char *file) {
         if (buf == NULL)
             log_err(1, "MapViewOfFile");
 
-        p = (char *)buf;
-        while (p != NULL && *p != '\0') {
-            p = tnt_parse_line(p);
+        ret = tnt_parse_buf((char *)buf, size);
+        if (ret == -1) {
+            perror("tnt_parse_buf");
+            return -1;
         }
 
         if (UnMapViewOfFile(buf) == 0)

@@ -12,6 +12,7 @@ set(${CMAKE_SYSTEM_NAME} True)
 find_package(Event COMPONENTS core REQUIRED)
 find_package(Tapcfg REQUIRED)
 find_package(Tuntap REQUIRED)
+find_package(Yajl REQUIRED)
 
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
@@ -120,4 +121,7 @@ if (Linux)
 endif()
 
 target_link_libraries(tNETacle
+	${YAJL_LIBRARIES})
+target_link_libraries(tNETacle
 	${EVENT_LIBRARIES})
+

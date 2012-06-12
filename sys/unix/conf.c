@@ -38,7 +38,7 @@
 int
 tnt_parse_file(const char *file) {
     int fd;
-    char *p;
+    int ret;
     void *buf;
     struct stat st;
 
@@ -66,9 +66,10 @@ tnt_parse_file(const char *file) {
             return -1;
         }
 
-        p = (char *)buf;
-        while (p != NULL && *p != '\0') {
-            p = tnt_parse_line(p);
+        ret = tnt_parse_buf((char *)buf, st.st_size);
+        if (ret == -1) {
+            perror("tnt_parse_buf");
+            return -1;
         }
 
         if (munmap(buf, st.st_size) == -1)

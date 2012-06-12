@@ -47,7 +47,7 @@
 
 #include <event2/event.h>
 
-int conf_debug;
+int debug;
 volatile sig_atomic_t sigchld_recv;
 
 /* XXX: clean that after the TA2 */
@@ -128,10 +128,11 @@ main(int argc, char *argv[]) {
     while ((ch = getopt(argc, argv, "dhD:f:")) != -1) {
         switch(ch) {
         case 'd':
-            conf_debug = 1;
+            debug = 1;
         break;
         case 'D':
-            tnt_parse_line(optarg);
+            /*TODO */
+            /*tnt_parse_line(optarg);*/
         break;
         case 'f':
             tnt_parse_file(optarg);
@@ -161,7 +162,7 @@ main(int argc, char *argv[]) {
 	return 1;
     }
 
-    if (conf_debug == 0) {
+    if (debug == 0) {
 	if (tnt_daemonize() == -1) {
 		fprintf(stderr, "can't daemonize\n");
 		return 1;
@@ -206,7 +207,7 @@ main(int argc, char *argv[]) {
     if (sigchld_recv != 1)
 	event_base_dispatch(evbase);
     else
-	fprintf(stderr, "The tNETalce initialisation phase failed."
+	fprintf(stderr, "The tNETacle initialisation phase failed."
 		" Check the logs to find out why.");
     
     signal(SIGCHLD, SIG_DFL);

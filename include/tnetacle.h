@@ -26,6 +26,9 @@
  */
 #define TNETACLE_USER "_tnetacle"
 
+#define TNETACLE_DEFAULT_PORT	4242
+#define TNETACLE_MAX_PORTS	256
+
 /*
  * Definition of types for our imsg.
  */
@@ -35,15 +38,15 @@ enum imsg_type {
 	IMSG_SET_IP,
 };
 
-char 		*tnt_getprogname(void);
-void    	 tnt_setproctitle(const char *);
-int		 tnt_fork(int [2], struct passwd *);
-int		 tnt_daemonize(void);
+char	*tnt_getprogname(void);
+void	 tnt_setproctitle(const char *);
+int	 tnt_fork(int [2], struct passwd *);
+int	 tnt_daemonize(void);
 
 /* src/conf.c */
-char		*tnt_parse_line(char *);
+int	 tnt_parse_buf(char *, size_t);
 /* and sys/ specific call */
-int		 tnt_parse_file(const char *);
+int	 tnt_parse_file(const char *);
 
 #endif
 
