@@ -133,11 +133,11 @@ init_pipe_endpoint(int imsg_fds[2],
 }
 
 int
-tnt_fork(int imsg_fds[2], struct passwd *pw) {
+tnt_fork(int imsg_fds[2]) {
     pid_t pid;
     struct imsgbuf ibuf;
-    /* XXX: To remove when Mota will bring his network code */
     struct imsg_data data;
+    struct passwd *pw;
     struct event_base *evbase = NULL;
     struct event *sigterm = NULL;
     struct event *sigint = NULL;
@@ -156,6 +156,11 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	tnt_setproctitle("[priv]");
 	log_set_prefix("priv");
 	return pid;
+    }
+
+    if ((pw = getpwnam(TNETACLE_USER)) == NULL) {
+	log_errx(1, "Unknown user " TNETACLE_USER ".\n");
+	return TNT_NOUSER;
     }
 
     tnt_priv_drop(pw);
@@ -199,11 +204,11 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
      * It may look like we freed this one twice, once here and once in tnetacled.c
      * but this is not the case. Please don't erase this !
      */
-    event_base_free(evbase);
 
     event_free(sigterm);
     event_free(sigint);
     event_free(imsg_event);
+    event_base_free(evbase);
 
     log_info("tnetacle exiting");
     exit(TNT_OK);
