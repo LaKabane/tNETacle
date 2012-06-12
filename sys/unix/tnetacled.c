@@ -44,6 +44,7 @@
 #include <sys/uio.h>
 #include <sys/queue.h>
 #include <imsg.h>
+#include <pwd.h>
 
 #include <event2/event.h>
 

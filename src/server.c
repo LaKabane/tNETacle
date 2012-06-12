@@ -278,6 +278,7 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
     }
 }
 
+#if defined Windows
 void
 server_set_device(struct server *s, int fd)
 {
@@ -285,17 +286,10 @@ server_set_device(struct server *s, int fd)
     struct event *ev = event_new(evbase, -1, 0, server_device_cb, s);
     int err;
 
-	printf("initial device handle %p\n", fd);
-	/*Sadly, this don't work on windows :(*/
-#if !defined Windows
-    err = evutil_make_socket_nonblocking(fd);
-    if (err == -1)
-        log_debug("Fuck !");
-#else
-	s->devide_fd = fd;
-	s->tv.tv_sec = 1;
-	s->tv.tv_usec = 0;
-#endif
+    /*Sadly, this don't work on windows :(*/
+    s->devide_fd = fd;
+    s->tv.tv_sec = 1;
+    s->tv.tv_usec = 0;
     if (ev == NULL)
     {
         log_warn("Failed to allocate the event handler for the device:");
@@ -308,6 +302,32 @@ server_set_device(struct server *s, int fd)
     evconnlistener_enable(s->srv);
     log_notice("Listener started.");
 }
+#else
+void
+server_set_device(struct server *s, int fd)
+{
+    struct event_base *evbase = evconnlistener_get_base(s->srv);
+    struct event *ev = event_new(evbase, fd, EV_READ | EV_PERSIST,
+                                 server_device_cb, s);
+    int err;
+
+    err = evutil_make_socket_nonblocking(fd);
+    if (err == -1)
+        log_debug("Fuck !");
+
+    if (ev == NULL)
+    {
+        log_warn("Failed to allocate the event handler for the device:");
+        return;
+    }
+    s->device = ev;
+    event_add(s->device, NULL);
+    log_notice("Event handler for the device sucessfully configured. Starting "
+              "the listener...");
+    evconnlistener_enable(s->srv);
+    log_notice("Listener started.");
+}
+#endif
 
 extern char conf_peer_address[];
 
