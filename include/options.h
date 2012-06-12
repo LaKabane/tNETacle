@@ -36,7 +36,7 @@ struct options {
 };
 
 enum {
-    TNT_TUNMODE_POINTTOPOINT,
+    TNT_TUNMODE_TUNNEL,
     TNT_TUNMODE_ETHERNET
 };
 

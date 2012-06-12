@@ -38,13 +38,13 @@ struct options server_options;
 static void add_listen_addr(struct options *, char *, int);
 static void add_one_listen_addr(struct options *, char *, int);
 
-void
+static void
 init_options(struct options *opt) {
     unsigned int i;
 
     (void)memset(opt, '\0', sizeof(*opt));
 
-    opt->tunnel = (int)TNT_TUNMODE_POINTTOPOINT;
+    opt->tunnel = (int)TNT_TUNMODE_TUNNEL;
     opt->tunnel_index = -1;
     opt->mode = TNT_DAEMONMODE_ROUTER;
 
@@ -67,7 +67,7 @@ init_options(struct options *opt) {
 
 int yajl_null(void *ctx) {
     (void)ctx;
-    return 1;
+    return -1;
 }
 
 int yajl_boolean(void *ctx, int val) {
@@ -101,13 +101,13 @@ int yajl_boolean(void *ctx, int val) {
 int yajl_integer(void *ctx, long long val) {
     (void)ctx;
     (void)val;
-    return 1;
+    return -1;
 }
 
 int yajl_double(void *ctx, double val) {
     (void)ctx;
     (void)val;
-    return 1;
+    return -1;
 }
 
 int yajl_number(void *ctx, const char *num, size_t len) {
@@ -167,7 +167,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
 
     if (strncmp("Address", map, map_len) == 0) {
         /* XXX: Address validation */
-        server_options.addr = strndup(map, map_len);
+        server_options.addr = strndup(str, len);
         if (server_options.addr == NULL) {
             perror(__func__);
             return -1;
@@ -182,6 +182,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
         } else {
             fprintf(stderr, "AddressFamily: bad value, should be "
               "\"inet6\", \"inet\" or \"any\"\n");
+            return -1;
         }
     } else if (strncmp("Mode", map, map_len) == 0) {
         if (strncmp("router", str, len) == 0) {
@@ -197,7 +198,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
         }
     } else if (strncmp("Tunnel", map, map_len) == 0) {
          if (strncmp("point-to-point", str, len) == 0) {
-            server_options.tunnel = TNT_TUNMODE_POINTTOPOINT;
+            server_options.tunnel = TNT_TUNMODE_TUNNEL;
         } else if (strncmp("ethernet", str, len) == 0) {
             server_options.tunnel = TNT_TUNMODE_ETHERNET;
         } else {
@@ -250,7 +251,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
 
 int yajl_start_map(void *ctx) {
     (void)ctx;
-    return 1;
+    return -1;
 }
 
 int yajl_map_key(void *ctx, const unsigned char *key, size_t len) {
@@ -262,17 +263,17 @@ int yajl_map_key(void *ctx, const unsigned char *key, size_t len) {
 
 int yajl_end_map(void *ctx) {
     (void)ctx;
-    return 1;
+    return -1;
 }
 
 int yajl_start_array(void *ctx) {
     (void)ctx;
-    return 1;
+    return -1;
 }
 
 int yajl_end_array(void *ctx) {
     (void)ctx;
-    return 1;
+    return -1;
 }
 
 static yajl_callbacks callbacks = {
@@ -294,6 +295,7 @@ tnt_parse_buf(char *p, size_t size) {
 	yajl_handle parse;
 	yajl_status status;
 
+    /* Overwrite previous configuration in case of SIGHUP */
     init_options(&server_options);
 
 	parse = yajl_alloc(&callbacks, NULL, NULL);
@@ -314,7 +316,6 @@ tnt_parse_buf(char *p, size_t size) {
 	yajl_free(parse);
 
 	if (status != yajl_status_ok) {
-		printf("Status: %s\n", yajl_status_to_string(status));
 		return -1;
 	}
 
