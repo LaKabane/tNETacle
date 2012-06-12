@@ -12,21 +12,30 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
 **/
+
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
+
+#if defined Windows
+# include <WS2tcpip.h>
+# include <io.h>
+# define write _write
+# define ssize_t SSIZE_T
+#endif
+
+#if defined Unix
+# include <unistd.h>
+# include <netinet/in.h>
+#endif
+
 #include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
-#include <errno.h>
-#include <string.h>
-#if !defined Windows
-#include <unistd.h>
-#else
-#include <io.h>
-#include <WS2tcpip.h>
-#define write _write
-#define ssize_t SSIZE_T
-#endif
 
 #include "mc.h"
 #include "tntsocket.h"
@@ -294,7 +303,6 @@ server_init(struct server *s, struct event_base *evbase)
     struct sockaddr_in addr;
     struct sockaddr_in uaddr;
     struct evconnlistener *evl;
-    int errcode;
 
     memset(&addr, 0, sizeof(addr));
     memset(&uaddr, 0, sizeof(uaddr));

@@ -28,6 +28,10 @@
 # endif
 #endif
 
+#ifdef OpenBSD
+# include <pwd.h> /* for getpwnam */
+#endif
+
 #include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
