@@ -65,7 +65,6 @@ set(SOURCES_LIST
 # OS families specific things
 # ---------------------------
 if(UNIX)
-<<<<<<< HEAD
 	# Unix specific include directories
 	# ------------------
 	include_directories(/usr/include/ /usr/local/include)
@@ -97,26 +96,6 @@ if (Windows)
 		sys/wnt/log.c
 		sys/wnt/tntsocket.c
 	)
-=======
-  add_definitions(-DUnix)
-  include_directories(/usr/include/ /usr/local/include)
-  set(CMAKE_C_FLAGS "-W -Wall")
-  set(SOURCES_LIST ${SOURCES_LIST} sys/unix/log.c
-	  sys/unix/imsg.c sys/unix/imsg-buffer.c
-	  sys/unix/tnetacle.c sys/unix/tnetacled.c
-	  sys/unix/util.c sys/unix/server.c
-	  sys/unix/conf.c)
-endif()
-
-if (WINDOWS)
-  add_definitions(-DWnt)
-  add_definitions(-DUSE_TAPCFG)
-
-  set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-
-  file(GLOB WIN_SOURCES_LIST sys/wnt/*.c)
-  set(SOURCES_LIST ${SOURCES_LIST} ${WIN_SOURCES_LIST})
->>>>>>> 538f6580c5ce3d4d1e39fe17649dab29e158ac5e
 endif()
 
 # OS specific things
