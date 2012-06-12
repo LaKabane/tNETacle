@@ -97,7 +97,7 @@ if (Windows)
 		sys/wnt/log.c
 		sys/wnt/tntsocket.c
 		sys/wnt/winstrtonum.c
-		)
+	)
 endif()
 
 # OS specific things
