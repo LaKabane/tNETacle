@@ -294,7 +294,6 @@ server_init(struct server *s, struct event_base *evbase)
     struct sockaddr_in addr;
     struct sockaddr_in uaddr;
     struct evconnlistener *evl;
-    evutil_socket_t udpsocket;
     int errcode;
 
     memset(&addr, 0, sizeof(addr));
@@ -316,19 +315,6 @@ server_init(struct server *s, struct event_base *evbase)
     uaddr.sin_family = AF_INET;
     uaddr.sin_port = htons(UDPPORT);
     uaddr.sin_addr.s_addr = INADDR_ANY;
-
-    udpsocket = tnt_udp_socket(IPv4);
-    errcode = evutil_make_listen_socket_reuseable(udpsocket);
-    if (errcode < 0)
-        log_warn("Failed to make the listen UDP socket reusable:");
-
-    errcode = evutil_make_socket_nonblocking(udpsocket);
-    if (errcode < 0)
-        log_warn("Failed to make the listen UDP socket non blocking:");
-
-    errcode = bind(udpsocket, (struct sockaddr *)&uaddr, sizeof(uaddr));
-    if (errcode < 0)
-        log_warn("Failed to bind the listen UDP socket:");
 
     evconnlistener_set_error_cb(evl, accept_error_cb);
     evconnlistener_disable(evl);
