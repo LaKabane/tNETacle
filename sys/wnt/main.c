@@ -22,6 +22,31 @@
 #include "tun.h"
 #include "server.h"
 
+static void
+libevent_dump(struct event_base *base)
+{
+	int i;
+	enum event_method_feature f;
+	const char **methods = event_get_supported_methods();
+
+	printf("Starting Libevent %s.  Available methods are:\n",
+		event_get_version());
+	for (i=0; methods[i] != NULL; ++i) {
+		printf("    %s\n", methods[i]);
+	}
+
+    printf("Using Libevent with backend method %s.",
+        event_base_get_method(base));
+	f = event_base_get_features(base);
+    if ((f & EV_FEATURE_ET))
+        printf("  Edge-triggered events are supported.");
+    if ((f & EV_FEATURE_O1))
+        printf("  O(1) event notification is supported.");
+    if ((f & EV_FEATURE_FDS))
+        printf("  All FD types are supported.");
+    puts("");
+}
+
 int
 main(int argc, char *argv[]) {
 
@@ -31,12 +56,15 @@ main(int argc, char *argv[]) {
     struct server server;
 	struct device *interfce;
 
+
 	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
 	log_err(-1, "Failed to init WSA.");
 	}
 	if ((evbase = event_base_new()) == NULL) {
 	log_err(-1, "Failed to init the event library");
-    }
+	} else {
+		libevent_dump(evbase);
+	}
 	if ((interfce = tnt_ttc_open()) == NULL) {
 		log_err(-1, "Failed to open a tap interface");
 	}
@@ -69,8 +97,8 @@ main(int argc, char *argv[]) {
     log_info("Starting event loop");
 	if (event_base_dispatch(evbase) == -1) {
 		errcode = WSAGetLastError();
+		fprintf(stderr, "(%d) %s\n", errcode, evutil_socket_error_to_string(errcode));
 	}
-
 
     /*
      * It may look like we freed this one twice, once here and once in tnetacled.c
@@ -83,5 +111,6 @@ main(int argc, char *argv[]) {
     //event_free(sigint);
 
     log_info("tnetacle exiting");
+	WSACleanup();
     return TNT_OK;
 }

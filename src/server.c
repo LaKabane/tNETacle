@@ -24,7 +24,8 @@
 #else
 #include <io.h>
 #include <WS2tcpip.h>
-#define write _write
+#define write(A, B, C) windows_fix_write(A, B, C)
+#define read(A, B, C) windows_fix_read(A, B, C)
 #define ssize_t SSIZE_T
 #endif
 
@@ -38,6 +39,43 @@ union chartoshort {
     unsigned short *sptr;
 }; /* The goal of this union is to properly convert uchar* to ushort* */
 
+#if defined Windows
+
+OVERLAPPED gl_overlap;
+
+static ssize_t
+windows_fix_write(intptr_t fd, void *buf, size_t len)
+{
+	DWORD n = 0;
+	int err;
+
+	err = WriteFile((HANDLE)fd, buf, len, &n, &gl_overlap);
+	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
+	{
+		printf("Write failed, error %d\n", GetLastError());
+		return -1;
+	}
+	else
+		return n;
+}
+
+static ssize_t
+windows_fix_read(intptr_t fd, void *buf, size_t len)
+{
+	DWORD n = 0;
+	int err;
+
+	err = ReadFile((HANDLE)fd, buf, len, &n, &gl_overlap);
+	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
+	{
+		printf("Read failed, error %d\n", GetLastError());
+		return -1;
+	}
+	else
+		return n;
+}
+#endif
+
 static void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
@@ -45,7 +83,13 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     ssize_t n;
     struct evbuffer *buf = NULL;
     unsigned short size;
+	intptr_t device_fd;
 
+#if defined Windows
+	device_fd = s->devide_fd;
+#else
+	device_fd = event_get_fd(s->device);
+#endif
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
     {
@@ -65,9 +109,7 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
         }
         log_debug("Receive a frame of %d(%-#2x) bytes.", size, *(u.sptr));
         evbuffer_drain(buf, sizeof(size));
-        n = write(event_get_fd(s->device),
-                  evbuffer_pullup(buf, size),
-                  size);
+		n = write(device_fd, evbuffer_pullup(buf, size), size);
         evbuffer_drain(buf, size);
     }
 }
@@ -204,7 +246,12 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
 {
     struct server *s = (struct server *)ctx;
 
+#if defined Windows
+	device_fd =	s->devide_fd;
+	if (events & EV_TIMEOUT)
+#else
     if (events & EV_READ)
+#endif
     {
         int _n = 0;
         ssize_t n;
@@ -217,12 +264,16 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
             log_debug("Read a new frame of %d bytes.", n);
             _n++;
         }
+#if defined Windows
+		if (n == 0 || GetLastError() == ERROR_IO_PENDING)
+#else
         if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
+#endif
         {
             log_debug("Read %d frames in this pass.", _n);
             broadcast_to_peers(s);
         }
-        else
+        else if (n == -1)
             log_warn("Read on the device failed:");
     }
 }
@@ -231,19 +282,27 @@ void
 server_set_device(struct server *s, int fd)
 {
     struct event_base *evbase = evconnlistener_get_base(s->srv);
-    struct event *ev = event_new(evbase, fd, EV_READ | EV_PERSIST, server_device_cb, s);
+    struct event *ev = event_new(evbase, -1, 0, server_device_cb, s);
     int err;
 
+	printf("initial device handle %p\n", fd);
+	/*Sadly, this don't work on windows :(*/
+#if !defined Windows
     err = evutil_make_socket_nonblocking(fd);
     if (err == -1)
         log_debug("Fuck !");
+#else
+	s->devide_fd = fd;
+	s->tv.tv_sec = 1;
+	s->tv.tv_usec = 0;
+#endif
     if (ev == NULL)
     {
         log_warn("Failed to allocate the event handler for the device:");
         return;
     }
     s->device = ev;
-    event_add(s->device, NULL);
+    event_add(s->device, &s->tv);
     log_notice("Event handler for the device sucessfully configured. Starting "
               "the listener...");
     evconnlistener_enable(s->srv);
@@ -294,7 +353,6 @@ server_init(struct server *s, struct event_base *evbase)
     struct sockaddr_in addr;
     struct sockaddr_in uaddr;
     struct evconnlistener *evl;
-    int errcode;
 
     memset(&addr, 0, sizeof(addr));
     memset(&uaddr, 0, sizeof(uaddr));
@@ -311,6 +369,10 @@ server_init(struct server *s, struct event_base *evbase)
                                   sizeof(addr));
     if (evl == NULL)
         return -1;
+
+#if defined Windows
+	gl_overlap.hEvent = CreateEvent(NULL, FALSE, FALSE, "Device event");
+#endif
 
     uaddr.sin_family = AF_INET;
     uaddr.sin_port = htons(UDPPORT);
