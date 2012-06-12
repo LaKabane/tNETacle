@@ -26,7 +26,7 @@
 #  error "You must define USE_LIBTUNTAP or USE_TAPCFG"
 # endif
 
-struct device	*tnt_ttc_open(void);
+struct device	*tnt_ttc_open(int);
 void		 tnt_ttc_close(struct device *);
 int		 tnt_ttc_set_ip(struct device *, const char *);
 int		 tnt_ttc_up(struct device *);

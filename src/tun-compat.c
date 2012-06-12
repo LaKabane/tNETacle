@@ -26,22 +26,37 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "tnetacle.h"
+#include "options.h"
 #include "tun.h"
 
 /* Will search the first available tap device with both libraries */
 struct device *
-tnt_ttc_open(void) {
+tnt_ttc_open(int tunmode) {
 	struct device *dev;
 
 #if defined USE_LIBTUNTAP
-	if ((dev = tnt_tt_init()) == NULL)
+	if ((dev = tuntap_init()) == NULL)
 		return NULL;
 
-	if (tnt_tt_start(dev, TNT_TUNMODE_ETHERNET, TNT_TUNID_ANY) == -1) {
-		tnt_tt_release(dev);
+    if (tunmode == TNT_TUNMODE_TUNNEL)
+        tunmode = TUNTAP_TUNMODE_TUNNEL;
+    else if (tunmode == TNT_TUNMODE_ETHERNET)
+        tunmode = TUNTAP_TUNMODE_ETHERNET;
+    else
+        return NULL;
+
+	if (tuntap_start(dev, tunmode, TUNTAP_TUNID_ANY) == -1) {
+		tuntap_release(dev);
 		return NULL;
 	}
 #elif defined USE_TAPCFG
+    if (tunmode == TNT_TUNMODE_TUNNEL) {
+        log_errx(1, "Layer 3 tunnelling is not implemented for your system "
+          "(because of tapcfg)");
+        /* NOTREACHED */
+    }
+
 	dev = tapcfg_init();
 	if (tapcfg_start(dev, NULL, 1) == -1) {
 		tapcfg_destroy(dev);
@@ -54,7 +69,7 @@ tnt_ttc_open(void) {
 void
 tnt_ttc_close(struct device *dev) {
 #if defined USE_LIBTUNTAP
-	tnt_tt_destroy(dev);
+	tuntap_destroy(dev);
 #elif defined USE_TAPCFG
 	tapcfg_destroy(dev);
 #endif
@@ -76,7 +91,7 @@ tnt_ttc_set_ip(struct device *dev, const char *addr) {
 #if defined USE_LIBTUNTAP
 	*mask= '\0';
 	++mask;
-	tnt_tt_set_ip(dev, ip, mask);
+	tuntap_set_ip(dev, ip, mask);
 	(void)netbits;
 #elif defined USE_TAPCFG
 	netbits = (short)evutil_strtoll(mask + 1, NULL, 10);
@@ -92,7 +107,7 @@ tnt_ttc_set_ip(struct device *dev, const char *addr) {
 int
 tnt_ttc_up(struct device *dev) {
 #if defined USE_LIBTUNTAP
-	return tnt_tt_up(dev);
+	return tuntap_up(dev);
 #elif defined USE_TAPCFG
 	return tapcfg_iface_set_status(dev, TAPCFG_STATUS_ALL_UP);
 #endif
@@ -101,7 +116,7 @@ tnt_ttc_up(struct device *dev) {
 int
 tnt_ttc_down(struct device *dev) {
 #if defined USE_LIBTUNTAP
-	return tnt_tt_down(dev);
+	return tuntap_down(dev);
 #elif defined USE_TAPCFG
 	return tapcfg_iface_set_status(dev, TAPCFG_STATUS_ALL_DOWN);
 #endif
@@ -110,7 +125,7 @@ tnt_ttc_down(struct device *dev) {
 int
 tnt_ttc_get_fd(struct device *dev) {
 #if defined USE_LIBTUNTAP
-	return TNT_TT_GET_FD(dev);
+	return TUNTAP_GET_FD(dev);
 #elif defined USE_TAPCFG
 	return tapcfg_get_fd(dev);
 #endif

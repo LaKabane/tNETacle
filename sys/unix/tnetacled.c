@@ -37,6 +37,7 @@
 
 #include "tnetacle.h"
 #include "tntexits.h"
+#include "options.h"
 #include "log.h"
 #include "tun.h"
 
@@ -49,6 +50,7 @@
 
 int debug;
 volatile sig_atomic_t sigchld_recv;
+extern struct options server_options;
 
 /* XXX: clean that after the TA2 */
 struct device *dev = NULL;
@@ -267,7 +269,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
-	    dev = tnt_ttc_open();
+	    dev = tnt_ttc_open(server_options.tunnel);
 	    fd = tnt_ttc_get_fd(dev);
 	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, -1,
 	      &fd, sizeof(int));
