@@ -19,7 +19,8 @@
  * David Leonard <d@openbsd.org>, 1999. Public domain.
  */
 
-#include <Winbase.h> 
+#include <windows.h>
+#include <stdio.h>
 
 #include "tnetacle.h"
 #include "log.h"
@@ -41,7 +42,7 @@ load_config(HANDLE hdl) {
 		p = tnt_parse_line(p);
 	}
 
-	if (UnMapViewOfFile(buf) == 0)
+	if (UnmapViewOfFile(buf) == 0)
 		log_warn("UnMapViewOfFile");
 }
 
@@ -51,8 +52,8 @@ load_config(HANDLE hdl) {
  */
 void
 config(void) {
+	/*
 	char nm[MAXNAMLEN + 1];
-	/* TODO: Get normal path to store config file */
 	char *fnms[] = { 
 		"...",
 		NULL
@@ -62,7 +63,7 @@ config(void) {
 	struct stat st;
 
 	for (fn = 0; fnms[fn]; fn++) {
-		(void)snprintf(nm, sizeof nm, fnms[fn], home);
+		(void)_snprintf(nm, sizeof nm, fnms[fn], home);
 		if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, nm)) != -1) {
 			load_config(hdl);
 			(void)CloseHandle(hdl);
@@ -70,5 +71,6 @@ config(void) {
 		else if (errno != ENOENT)
 			log_notice("config: %s", nm);
 	}
+	*/
 }
 

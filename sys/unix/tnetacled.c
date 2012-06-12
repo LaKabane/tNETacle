@@ -74,17 +74,22 @@ _sighdlr(int sig) {
 static void
 sighdlr(evutil_socket_t sig, short events, void *args) {
     struct event_base *evbase = args;
+    char *name = "unknow";
     (void)events;
 
     switch (sig) {
     case SIGCHLD:
-    case SIGTERM:
-    case SIGINT:
-	log_warn("Received signal %d, stoping.\n", sig);
-	event_base_loopbreak(evbase);
+        name = "sigchld";
 	break;
-    /* TODO: SIGHUP */
+    case SIGTERM:
+        name = "sigterm";
+	break;
+    case SIGINT:
+        name = "sigint";
+	break;
     }
+    log_warn("Received signal %d(%s) stoping.\n", sig, name);
+    event_base_loopbreak(evbase);
 }
 
 static void
@@ -262,8 +267,8 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	case IMSG_CREATE_DEV:
 	    dev = tnt_ttc_open();
 	    fd = tnt_ttc_get_fd(dev);
-	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, -1,
-	      &fd, sizeof(int));
+	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
+	      NULL, 0);
 	    break;
 	case IMSG_SET_IP:
 	    if (dev == NULL) {
@@ -277,6 +282,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    
 	    log_info("receive IMSG_SET_IP: %s", buf);
 	    tnt_ttc_set_ip(dev, buf);
+            tnt_ttc_up(dev);
 	    break;
 	default:
 	    break;

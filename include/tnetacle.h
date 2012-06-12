@@ -15,7 +15,8 @@
  */
 
 #include <sys/types.h>
-#include <pwd.h>
+
+struct passwd;
 
 #ifndef TNETACLE_H__
 #define TNETACLE_H__

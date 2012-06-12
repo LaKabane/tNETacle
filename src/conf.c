@@ -25,12 +25,17 @@
 #include <string.h>
 #include <stdlib.h>
 
+#if defined Windows
+#define strcasecmp _stricmp
+#endif
+
 #include "log.h"
 
-extern int 	conf_debug;
+int 	conf_debug;
 char		conf_tunnel[25] = "ethernet";
 int		conf_tunneldevice = -1;
-char		conf_address[25] = "127.0.0.1/255.0.0.0";
+char		conf_address[] = "10.0.0.22/255.255.255.0";
+char		conf_peer_address[] = "";
 
 struct kwvar {
 	char *	kw;
@@ -45,6 +50,44 @@ static const struct kwvar keywords[] = {
 	{"Address", &conf_address, Vstring},
 	{NULL, NULL, Vint}
 };
+
+#if defined Windows
+static int
+isblank(char c)
+{
+	return c == ' ' || c == '\n' || c == '\t';
+}
+
+/*
+** Copied from somewhere in the internet. Because I'm lazy.
+** Fabien
+*/
+
+static size_t
+strlcpy(char *dst, const char *src, size_t siz)
+{
+	char *d = dst;
+	const char *s = src;
+	size_t n = siz;
+
+	/* Copy as many bytes as will fit */
+	if (n != 0 && --n != 0) {
+		do {
+			if ((*d++ = *s++) == 0)
+				break;
+		} while (--n != 0);
+	}
+
+	/* Not enough room in dst, add NUL and traverse rest of src */
+	if (n == 0) {
+		if (siz != 0)
+			*d = '\0';              /* NUL-terminate dst */
+		while (*s++) ;
+	}
+	return(s - src - 1);    /* count does not include NUL */
+}
+
+#endif
 
 static char *
 parse_string(char *p, struct kwvar *kvp) {
