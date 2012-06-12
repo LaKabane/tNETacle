@@ -20,8 +20,10 @@ set(${CMAKE_SYSTEM_NAME} True)
 # Global Packages search
 # ------------------
 find_package(Event COMPONENTS core REQUIRED)
-find_package(Tuntap)
 # find_package(ZLIB REQUIRED)
+find_package(Tapcfg REQUIRED)
+find_package(Tuntap REQUIRED)
+find_package(Yajl REQUIRED)
 
 # Global definitions
 # ------------------
@@ -148,7 +150,8 @@ add_executable(tNETacle ${SOURCES_LIST})
 # Global linked libraries
 # ------------------
 
-target_link_libraries(tNETacle ${EVENT_LIBRARIES} ${ZLIB_LIBRARY})
+target_link_libraries(tNETacle
+    ${EVENT_LIBRARIES} ${ZLIB_LIBRARY} ${YAJL_LIBRARIES})
 
 if (TUNTAP_FOUND)
   target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
@@ -166,3 +169,4 @@ endif()
 if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
+

@@ -29,6 +29,7 @@
 #include "tntexits.h"
 #include "tnetacle.h"
 #include "log.h"
+#include "options.h"
 #include "server.h"
 
 /* imsg specific includes */
@@ -38,7 +39,7 @@
 
 #include <event2/event.h>
 
-extern char conf_address[25];
+extern struct options server_options;
 
 struct imsg_data {
     struct imsgbuf *ibuf;
@@ -243,7 +244,7 @@ tnt_dispatch_imsg(struct imsg_data *data) {
 
 	    /* directly ask to configure the tun device */
 	    imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
-			 conf_address, strlen(conf_address));
+			server_options.addr , strlen(server_options.addr));
 	    break;
 	default:
 	    break;
