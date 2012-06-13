@@ -39,7 +39,7 @@
 
 #include <event2/event.h>
 
-extern struct options server_options;
+extern struct options serv_opts;
 
 struct imsg_data {
     struct imsgbuf *ibuf;
@@ -244,7 +244,7 @@ tnt_dispatch_imsg(struct imsg_data *data) {
 
 	    /* directly ask to configure the tun device */
 	    imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
-			server_options.addr , strlen(server_options.addr));
+			serv_opts.addr , strlen(serv_opts.addr));
 	    break;
 	default:
 	    break;

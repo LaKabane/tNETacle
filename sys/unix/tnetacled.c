@@ -54,7 +54,7 @@
 
 int debug;
 volatile sig_atomic_t sigchld_recv;
-extern struct options server_options;
+extern struct options serv_opts;
 
 /* XXX: clean that after the TA2 */
 struct device *dev = NULL;
@@ -146,7 +146,10 @@ main(int argc, char *argv[]) {
             /*tnt_parse_line(optarg);*/
         break;
         case 'f':
-            tnt_parse_file(optarg);
+            if (tnt_parse_file(optarg) == -1) {
+                fprintf(stderr, "%s: invalid file\n", optarg);
+                return 1;
+            }
         break;
         case 'h':
         default:
@@ -278,7 +281,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
-	    dev = tnt_ttc_open(server_options.tunnel);
+	    dev = tnt_ttc_open(serv_opts.tunnel);
 	    fd = tnt_ttc_get_fd(dev);
 	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
 	      NULL, 0);

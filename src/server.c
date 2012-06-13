@@ -46,7 +46,7 @@
 #include "server.h"
 #include "log.h"
 
-extern struct options server_options;
+extern struct options serv_opts;
 
 union chartoshort {
     unsigned char *cptr;
@@ -276,8 +276,8 @@ server_init(struct server *s, struct event_base *evbase)
     int err;
     size_t i;
 
-    listens = server_options.listen_addrs;
-    peers = server_options.peer_addrs;
+    listens = serv_opts.listen_addrs;
+    peers = serv_opts.peer_addrs;
 
     v_mc_init(&s->peers);
     v_mc_init(&s->pending_peers);
@@ -286,12 +286,12 @@ server_init(struct server *s, struct event_base *evbase)
     /*evbase = evconnlistener_get_base(s->srv);*/
 
     /* Listen on all ListenAddress */
-    for (i = 0; i < server_options.listen_addrs_num; i++) {
+    for (i = 0; i < serv_opts.listen_addrs_num; i++) {
         evl = evconnlistener_new_bind(evbase, listen_callback,
                 s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
                 (listens+i), sizeof(*(listens+i)));
         if (evl == NULL) {
-            log_debug("Fail at ListenAddress #%i");
+            log_debug("Fail at ListenAddress #%i", i);
             return -1;
         }
     }
@@ -300,8 +300,11 @@ server_init(struct server *s, struct event_base *evbase)
     evconnlistener_disable(evl);
     s->srv = evl;
 
-    /* If there is some PeerAddress, connect to them */
-    for (i = 0; i < server_options.peer_addrs_num; i++) {
+    /* If we don't have any PeerAddress it's finished */
+    if (serv_opts.peer_addrs == NULL)
+        return 0;
+
+    for (i = 0; i < serv_opts.peer_addrs_num; i++) {
         bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
         if (bev == NULL) {
             log_warn("Unable to allocate a socket for connecting to the peer");
