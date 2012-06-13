@@ -294,28 +294,37 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
 
         if (strncmp("any", str, len) == 0) {
             unsigned int i = 0;
+            int family = serv_opts.addr_family;
+            struct sockaddr_in sin;
+            struct sockaddr_in6 sin6;
 
             /* Feed local addresses */
             for (; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i) {
-                struct sockaddr_in sin;
-                struct sockaddr_in6 sin6;
-
                 (void)memset(&sin, 0, sizeof sin);
                 (void)memset(&sin6, 0, sizeof sin6);
-                sin.sin_family = AF_INET;
-                sin.sin_port = htons(serv_opts.ports[i]);
-                if (inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr.s_addr) == -1)
-                    return -1;
-                sin6.sin6_family = AF_INET6;
-                sin6.sin6_port = htons(serv_opts.ports[i]);
-                if (inet_pton(AF_INET6, "::1", &sin6.sin6_addr.s6_addr) == -1)
-                    return -1;
 
-                add_sockaddr(&serv_opts.listen_addrs,
-                  &serv_opts.listen_addrs_num, (struct sockaddr*)&sin);
-                add_sockaddr(&serv_opts.listen_addrs,
-                  &serv_opts.listen_addrs_num, (struct sockaddr*)&sin6);
- fprintf(stderr, "ListenAddr: Added 127.0.0.1:%i and [::1]:%i\n", serv_opts.ports[i], serv_opts.ports[i]);
+                if (family == AF_INET || family == AF_UNSPEC) {
+                    sin.sin_family = AF_INET;
+                    sin.sin_port = htons(serv_opts.ports[i]);
+                    if (inet_pton(AF_INET, "127.0.0.1",
+                      &sin.sin_addr.s_addr) == -1)
+                        return -1;
+                    add_sockaddr(&serv_opts.listen_addrs,
+                      &serv_opts.listen_addrs_num, (struct sockaddr*)&sin);
+                    fprintf(stderr, "ListenAddr: Added 127.0.0.1:%i\n",
+                      serv_opts.ports[i]);
+                }
+                if (family == AF_INET6 || family == AF_UNSPEC) {
+                    sin6.sin6_family = AF_INET6;
+                    sin6.sin6_port = htons(serv_opts.ports[i]);
+                    if (inet_pton(AF_INET6, "::1",
+                      &sin6.sin6_addr.s6_addr) == -1)
+                        return -1;
+                    add_sockaddr(&serv_opts.listen_addrs,
+                    &serv_opts.listen_addrs_num, (struct sockaddr*)&sin6);
+                    fprintf(stderr, "ListenAddr: Added [::1]:%i\n",
+                      serv_opts.ports[i]);
+                }
             }
         } else
             add_sockaddr_buf(&serv_opts.listen_addrs,
