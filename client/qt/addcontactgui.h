@@ -3,10 +3,10 @@
 
 #include <QString>
 #include <QWidget>
-#include "ClientGUI.h"
+#include "clientgui.h"
 #include "ui_addContact.h"
 #include "contact.h"
-#include "controller.h"
+#include "Controller.h"
 
 class ClientGUI;
 

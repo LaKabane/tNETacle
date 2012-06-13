@@ -1,5 +1,5 @@
 #include "clientgui.h"
-#include "controller.h"
+#include "Controller.h"
 #include "contact.h"
 
 Controller::Controller(ClientGUI & gui) :

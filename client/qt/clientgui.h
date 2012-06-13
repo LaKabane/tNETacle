@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include "ui_client.h"
-#include "controller.h"
+#include "Controller.h"
 #include "contact.h"
 
 namespace Ui {
