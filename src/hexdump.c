@@ -37,10 +37,10 @@ hex_dump(void *data, int size)
     int n;
     char bytestr[4] = {0};
     char addrstr[10] = {0};
-    char hexstr[ 16*3 + 5] = {0};
-    char charstr[16*1 + 5] = {0};
-    for(n=1;n<=size;n++) {
-        if (n%16 == 1) {
+    char hexstr[16 * 3 + 5] = {0};
+    char charstr[16 * 1 + 5] = {0};
+    for(n = 1; n <= size; n++) {
+        if (n % 16 == 1) {
             /* store address for this line */
             snprintf(addrstr, sizeof(addrstr), "%.4x",
                ((unsigned int)p-(unsigned int)data) );
@@ -82,13 +82,16 @@ static int
 cksum(char *addr, int count)
 {
   int sum = 0;
+  short *sptr = (short *)addr;
 
   while(count > 1)
   {
-    sum = sum + *((short *) addr)++;
+    sum = sum + *sptr;
     count = count - 2;
+	sptr++;
   }
 
+  addr = (char *)sptr;
   if (count > 0)
     sum = sum + *((char *) addr);
   return(~sum);
