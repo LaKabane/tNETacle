@@ -192,11 +192,12 @@ int yajl_number(void *ctx, const char *num, size_t len) {
         return -1;
     }
 
+    (void)memset(nptr, 0, sizeof nptr);
     (void)memcpy(nptr, num, len);
 
     ret = strtol(nptr, &errstr, 10);
     if (*errstr != '\0' || ret < 0 || ret > 65535) {
-        fprintf(stderr, "TunnelIndex or Port has not a valid value\n");
+        fprintf(stderr, "[%s] TunnelIndex or Port has not a valid value\n", nptr);
         return -1;
     }
 
