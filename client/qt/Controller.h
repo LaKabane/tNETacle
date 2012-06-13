@@ -1,3 +1,4 @@
+#include <QMap>
 #include <QObject>
 
 
@@ -14,8 +15,10 @@ public:
   Controller(ClientGUI &);
 public slots:
   void addContact();
+  void deleteContact();
 private:
   ClientGUI &_view;
+  QMap<QString, QString> _model; // This model is temporary, waiting for the real one to be ready.
 };
 
 

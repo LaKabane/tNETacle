@@ -4,10 +4,11 @@
 
 ClientGUI::ClientGUI(QMainWindow *parent) :
   QMainWindow(parent),
-    _controller(*this)
+  _controller(*this)
 {
    setupUi(this);
    QObject::connect(actionAddContact, SIGNAL(activated()), this, SLOT(createAddContact()));
+   QObject::connect(actionDeleteContact, SIGNAL(activated()), &_controller, SLOT(deleteContact()));
 }
 
 ClientGUI::~ClientGUI() {
