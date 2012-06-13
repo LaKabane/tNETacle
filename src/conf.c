@@ -15,13 +15,22 @@
  */
 
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
+#if defined Unix
+# include <sys/socket.h>
+# include <sys/mman.h>
+#else
+# include <Windows.h>
+#endif
 
-#include <netdb.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#if defined Unix
+# include <netdb.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
+#else
+# include <winsock2.h>
+# include <Ws2tcpip.h>
+#endif
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -30,6 +39,13 @@
 
 #include <event2/util.h>
 #include <yajl/yajl_parse.h>
+
+#ifdef WIN32
+# include "winstrtonum.h"
+# define __func__ __FUNCTION__
+# define alloca _alloca
+# define snprintf _snprintf
+#endif
 
 #include "tnetacle.h"
 #include "options.h"

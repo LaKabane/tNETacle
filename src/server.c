@@ -14,7 +14,9 @@
 **/
 
 #include <sys/types.h>
+#if !defined WIN32
 #include <sys/socket.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>

@@ -15,6 +15,9 @@
  */
 
 #include <sys/types.h>
+#if !defined WIN32
+#include <pwd.h>
+#endif
 
 struct passwd;
 

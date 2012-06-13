@@ -14,9 +14,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <windows.h>
+#ifdef WIN32
+#include <winsock2.h>
+#include <Windows.h>
+#define _PATH_DEFAULT_CONFIG_FILE "./"
+#define __func__ __FUNCTION__
+#endif
+
 #include <stdio.h>
-#include <Winbase.h> 
 
 #include "tnetacle.h"
 #include "log.h"
@@ -28,6 +33,7 @@
  */
 int
 tnt_parse_file(const char *file) {
+	int ret;
     void *buf;
     char *p;
     size_t size;
@@ -37,9 +43,9 @@ tnt_parse_file(const char *file) {
         file = _PATH_DEFAULT_CONFIG_FILE;
     }
 
-    (void)GetFilesSizeEx(hdl, &size);
+    (void)GetFileSizeEx(hdl, (PLARGE_INTEGER)&size);
 
-    if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, nm)) != -1) {
+    if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, file)) != NULL) {
         buf = MapViewOfFile(hdl, FILE_MAP_READ, 0, 0, 0);
 
         if (buf == NULL)
@@ -51,11 +57,11 @@ tnt_parse_file(const char *file) {
             return -1;
         }
 
-        if (UnMapViewOfFile(buf) == 0)
+        if (UnmapViewOfFile(buf) == 0)
             log_warn("UnMapViewOfFile");
         (void)CloseHandle(hdl);
     } else {
-        log_notice("config: %s", nm);
+        log_notice("config: %s", file);
         return -1;
     }
     return 0;
