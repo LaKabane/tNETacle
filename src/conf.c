@@ -196,7 +196,7 @@ int yajl_number(void *ctx, const char *num, size_t len) {
 
     ret = strtol(nptr, &errstr, 10);
     if (*errstr != '\0' || ret < 0 || ret > 65535) {
-        fprintf(stderr, "%s: value is not a valid number\n", map);
+        fprintf(stderr, "TunnelIndex or Port has not a valid value\n");
         return -1;
     }
 
