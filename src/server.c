@@ -102,6 +102,8 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     struct server *s = (struct server *)ctx;
     ssize_t n;
     struct evbuffer *buf = NULL;
+	struct mc *it = NULL;
+	struct mc *ite = NULL;
     unsigned short size;
 	intptr_t device_fd;
 
@@ -128,6 +130,24 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
             break;
         }
         log_debug("Receive a frame of %d(%-#2x) bytes.", size, *(u.sptr));
+        for (it = v_mc_begin(&s->peers),
+             ite = v_mc_end(&s->peers);
+             it != ite;
+             it = v_mc_next(it))
+        {
+            int err;
+
+			if (it->bev == bev)
+				continue;
+			err = bufferevent_write(it->bev, evbuffer_pullup(buf, sizeof(size) + size), sizeof(size) + size);
+            if (err == -1)
+            {
+                log_notice("Error while crafting the buffer to send to %p.", it);
+                break;
+            }
+            log_debug("Adding %d(%-#2x) bytes to %p's output buffer.",
+                      size, size, it);
+        }
         evbuffer_drain(buf, sizeof(size));
 		n = write(device_fd, evbuffer_pullup(buf, size), size);
         evbuffer_drain(buf, size);
