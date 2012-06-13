@@ -3,9 +3,9 @@
 #
 # Once done, this will define:
 #
-#  YAJL_FOUND - system has Tapcfg compat
-#  YAJL_INCLUDE_DIRS - the Tapcfg compat include directories
-#  YAJL_LIBRARIES - link these to use Tapcfg compat
+#  YAJL_FOUND - system has yajl
+#  YAJL_INCLUDE_DIRS - the yajl include directories
+#  YAJL_LIBRARIES - link these to use yajl
 #
 
 include(LibFindMacros)
