@@ -30,28 +30,7 @@ p, li { white-space: pre-wrap; }
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QListWidget" name="ContactsList">
-         <item>
-          <property name="text">
-           <string>contact1</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>contact2</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>contact3</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>contact4</string>
-          </property>
-         </item>
-        </widget>
+        <widget class="QListWidget" name="ContactsList"/>
        </item>
       </layout>
      </widget>
@@ -81,7 +60,7 @@ p, li { white-space: pre-wrap; }
      <x>0</x>
      <y>0</y>
      <width>245</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -106,7 +85,7 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionShutdown">
    <property name="icon">
-    <iconset resource="../share/client.qrc">
+    <iconset>
      <normaloff>:/tools/shutdown2.png</normaloff>:/tools/shutdown2.png</iconset>
    </property>
    <property name="text">
@@ -118,7 +97,7 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionRestart">
    <property name="icon">
-    <iconset resource="../share/client.qrc">
+    <iconset>
      <normaloff>:/tools/restart.png</normaloff>:/tools/restart.png</iconset>
    </property>
    <property name="text">
@@ -135,7 +114,7 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionAddContact">
    <property name="icon">
-    <iconset resource="../share/client.qrc">
+    <iconset>
      <normaloff>:/tools/addcontact.png</normaloff>:/tools/addcontact.png</iconset>
    </property>
    <property name="text">
@@ -147,7 +126,7 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionDeleteContact">
    <property name="icon">
-    <iconset resource="../share/client.qrc">
+    <iconset>
      <normaloff>:/tools/deletecontact.png</normaloff>:/tools/deletecontact.png</iconset>
    </property>
    <property name="text">
@@ -159,7 +138,7 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionChangeRoot">
    <property name="icon">
-    <iconset resource="../share/client.qrc">
+    <iconset>
      <normaloff>:/tools/root.png</normaloff>:/tools/root.png</iconset>
    </property>
    <property name="text">
