@@ -15,6 +15,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
+
+#include "log.h"
 
 #if defined Windows
 #define snprintf _snprintf
@@ -56,12 +59,12 @@ hex_dump(void *data, int size)
         snprintf(bytestr, sizeof(bytestr), "%c", c);
         strncat(charstr, bytestr, sizeof(charstr)-strlen(charstr)-1);
 
-        if(n%16 == 0) { 
+        if(n % 16 == 0) { 
             /* line completed */
-            printf("[%4.4s]   %-50.50s  %s\n", addrstr, hexstr, charstr);
+            log_debug("[%4.4s]   %-50.50s  %s\n", addrstr, hexstr, charstr);
             hexstr[0] = 0;
             charstr[0] = 0;
-        } else if(n%8 == 0) {
+        } else if(n % 8 == 0) {
             /* half line: add whitespaces */
             strncat(hexstr, "  ", sizeof(hexstr)-strlen(hexstr)-1);
             strncat(charstr, " ", sizeof(charstr)-strlen(charstr)-1);
@@ -71,7 +74,29 @@ hex_dump(void *data, int size)
 
     if (strlen(hexstr) > 0) {
         /* print rest of buffer if not empty */
-        printf("[%4.4s]   %-50.50s  %s\n", addrstr, hexstr, charstr);
+        log_debug("[%4.4s]   %-50.50s  %s\n", addrstr, hexstr, charstr);
     }
 }
 
+static int
+cksum(char *addr, int count)
+{
+  int sum = 0;
+
+  while(count > 1)
+  {
+    sum = sum + *((short *) addr)++;
+    count = count - 2;
+  }
+
+  if (count > 0)
+    sum = sum + *((char *) addr);
+  return(~sum);
+}
+
+void
+hex_dump_chk(void *data, int size)
+{
+	hex_dump(data, size);
+	log_debug("Checksum of this block: %0#4x", cksum((char*)data, size));
+}

@@ -13,8 +13,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
 **/
 
-void hex_dump(void *data, int size);
-/* dumps size bytes of *data to stdout. Looks like:
+/* dumps size bytes of *data with log_debug. Looks like:
  * [0000] 75 6E 6B 6E 6F 77 6E 20   30 FF 00 00 00 00 39 00 unknown 0.....9.
  */
-
+void hex_dump(void *data, int size);
+void hex_dump_chk(void *data, int size);

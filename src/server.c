@@ -61,7 +61,7 @@ windows_fix_write(intptr_t fd, void *buf, size_t len)
 		if (len > 0)
 		{
 			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
-			hex_dump(buf, len);
+			hex_dump_chk(buf, len);
 			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
 		}
 		WaitForSingleObject(gl_overlap.hEvent, INFINITE);
@@ -87,7 +87,7 @@ windows_fix_read(intptr_t fd, void *buf, size_t len)
 		if (n > 0)
 		{
 			log_debug("== READ == READ == READ == READ ==");
-			hex_dump(buf, n);
+			hex_dump_chk(buf, n);
 			log_debug("== READ == READ == READ == READ ==");
 		}
 		WaitForSingleObject(gl_overlap.hEvent, INFINITE);
