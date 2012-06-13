@@ -5,6 +5,7 @@ SOURCES += \
     ../share/contact.cpp \
     ../share/config.cpp \
     clientgui.cpp \
+    controller.cpp\
     addcontactgui.cpp \
     contactgui.cpp
 
@@ -16,6 +17,7 @@ RESOURCES += \
     ../share/img/client.qrc
 
 HEADERS += \
+    controller.h\
     clientgui.h \
     ../share/controler.h \
     ../share/contactsList.h \

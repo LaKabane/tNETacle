@@ -3,7 +3,8 @@
 
 #include <QMainWindow>
 #include "ui_client.h"
-#include "controler.h"
+#include "controller.h"
+#include "contact.h"
 
 namespace Ui {
     class ClientGUI;
@@ -18,11 +19,11 @@ public:
     explicit ClientGUI(QMainWindow *parent = 0);
     ~ClientGUI();
 
-    void addContact(Contact* c);
+  void addContact(Contact* c);
 
 private:
     addContactGui*  _addContact;
-    Controler*      _controler;
+    Controller      _controller;
 
 signals:
 

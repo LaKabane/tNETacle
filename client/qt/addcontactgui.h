@@ -4,6 +4,7 @@
 #include <QWidget>
 #include "ui_addContact.h"
 #include "contact.h"
+#include "controller.h"
 
 class ClientGUI;
 
@@ -15,15 +16,15 @@ class addContactGui : public QWidget, private Ui::addContactGui
 {
     Q_OBJECT
 public:
-    explicit addContactGui(ClientGUI* client, QWidget* parents = 0);
+  explicit addContactGui(Controller &client, QWidget* parents = 0);
     ~addContactGui();
-    QDialogButtonBox* getOkOrReject() const {return okOrReject;}
+  QDialogButtonBox* getOkOrReject() const {return okOrReject;}
 
 private:
-    ClientGUI*  _clientGui;
+  Controller  &_controller;
 
 private slots:
-        void sendContact();
+  void sendContact();
 };
 
 #endif // ADDCONTACTGUI_H

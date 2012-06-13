@@ -3,11 +3,11 @@
 #include "contact.h"
 #include "clientgui.h"
 
-addContactGui::addContactGui(ClientGUI* client, QWidget* parents)
-    : QWidget(parents), _clientGui(client)
+addContactGui::addContactGui(Controller &controller, QWidget* parents)
+    : QWidget(parents), _controller(controller)
 {
     setupUi(this);
-    QObject::connect(okOrReject, SIGNAL(accepted()), this, SLOT(sendContact()));
+    //    QObject::connect(okOrReject, SIGNAL(accepted()), this, SLOT(sendContact()));
 }
 
 addContactGui::~addContactGui()
@@ -15,8 +15,8 @@ addContactGui::~addContactGui()
 }
 
 void addContactGui::sendContact() {
-    Contact* newContact = new Contact(this->nameLabel->text().toStdString(),
-                                      this->keyText->toPlainText().toStdString());
-    std::cout << "Lololilolilol" << *newContact << std::endl;
-    _clientGui->addContact(newContact);
+    // Contact* newContact = new Contact(this->nameLabel->text().toStdString(),
+    //                                   this->keyText->toPlainText().toStdString());
+    // std::cout << "Lololilolilol" << *newContact << std::endl;
+    // _clientGui->addContact(newContact);
 }
