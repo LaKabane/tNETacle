@@ -25,7 +25,11 @@ struct options {
 
     int ports[TNETACLE_MAX_PORTS]; /* Port number to listen on */
     int addr_family;               /* Address family used by the server */
-    struct addrinfo *listen_addrs; /* Addresses on which the server listens */
+    struct sockaddr *listen_addrs; /* Addresses on which the server listens */
+    size_t listen_addrs_num;
+
+    struct sockaddr *peer_addrs;   /* Address of others tNETacle daemon */
+    size_t peer_addrs_num;
     char *addr;                    /* Address on the VPN */
 
     const char *key_path;

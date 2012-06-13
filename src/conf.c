@@ -20,12 +20,15 @@
 #include <sys/mman.h>
 
 #include <netdb.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <event2/util.h>
 #include <yajl/yajl_parse.h>
 
 #include "tnetacle.h"
@@ -33,10 +36,6 @@
 
 extern int debug;
 struct options server_options;
-
-/* These functions come from OpenSSH (servconf.c) */
-static void add_listen_addr(struct options *, char *, int);
-static void add_one_listen_addr(struct options *, char *, int);
 
 static void
 init_options(struct options *opt) {
@@ -57,12 +56,61 @@ init_options(struct options *opt) {
     opt->ports[0] = TNETACLE_DEFAULT_PORT;
     opt->addr_family = AF_UNSPEC;
     opt->listen_addrs = NULL;
+    opt->listen_addrs_num = 0;
+
+    opt->peer_addrs = NULL;
+    opt->peer_addrs_num = 0;
+
     opt->addr = NULL;
 
     opt->key_path= NULL;
 
     opt->last_map_key = NULL;
     opt->last_map_key_len = 0;
+}
+
+static int
+add_sockaddr(struct sockaddr *sock, size_t *index, struct sockaddr *bufaddr) {
+    size_t newsize;
+    struct sockaddr *newsock;
+
+    newsize = *index + 1;
+    if ((newsock = realloc(sock, newsize)) == NULL) {
+        free(sock);
+        sock = NULL;
+        *index = 0;
+        return -1;
+    }
+    sock = newsock;
+    *(sock + *index) = *bufaddr;
+    *index = newsize;
+    return 0;
+}
+
+static int
+add_sockaddr_buf(struct sockaddr *sock, size_t *index, char *bufaddr) {
+    int socklen;
+    size_t newsize;
+    struct sockaddr *newsock;
+    struct sockaddr out;
+
+    (void)memset(&out, '\0', sizeof out);
+   
+    socklen = sizeof(struct sockaddr);
+    /* TODO: Sanity check with socklen */
+    evutil_parse_sockaddr_port(bufaddr, &out, &socklen);
+    
+    newsize = *index + 1;
+    if ((newsock = realloc(sock, newsize)) == NULL) {
+        free(sock);
+        sock = NULL;
+        *index = 0;
+        return -1;
+    }
+    sock = newsock;
+    *(sock + *index) = out;
+    *index = newsize;
+    return 0;
 }
 
 int yajl_null(void *ctx) {
@@ -213,28 +261,37 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("ListenAddress", map, map_len) == 0) {
+    } else if (strncmp("PeerAddress", map, map_len) == 0) {
         char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
-        char *p;
-
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
-            
+
+        add_sockaddr_buf(server_options.peer_addrs,
+          &server_options.peer_addrs_num, bufaddr);
+    } else if (strncmp("ListenAddress", map, map_len) == 0) {
+        char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
+        (void)memset(bufaddr, '\0', sizeof bufaddr);
+        (void)memcpy(bufaddr, str, len);
+
         if (strncmp("any", str, len) == 0) {
-            add_listen_addr(&server_options, NULL, 0);
-        } else if (strchr(bufaddr, '[') == NULL &&
-          (p = strchr(bufaddr, ':')) != NULL && strchr(p + 1, ':') != NULL)  {
-            /* IPv6 with no port number at the end */
-            add_listen_addr(&server_options, bufaddr, 0);
-        } else if ((p = strrchr(bufaddr, ':')) != NULL) {
-            /* TODO! */
-            fprintf(stderr, "%s: IPv4:PortNumber and [IPv6]:PortNumber "
-              "are not handled yet\n", __func__);
-            return -1;
-        } else {
-            /* IPv4 with no port number at the end */
-            add_listen_addr(&server_options, bufaddr, 0);
-        }
+            /* Feed local addresses */
+            struct sockaddr_in sin;
+            struct sockaddr_in6 sin6;
+
+            sin.sin_family = AF_INET;
+            sin.sin_port = htons(TNETACLE_DEFAULT_PORT);
+            sin.sin_addr.s_addr = inet_addr(0);
+            sin.sin_family = AF_INET6;
+            sin.sin_port = htons(TNETACLE_DEFAULT_PORT);
+            sin.sin_addr.s_addr = inet_addr(0);
+
+            add_sockaddr(server_options.listen_addrs,
+              &server_options.listen_addrs_num, (struct sockaddr*)&sin);
+            add_sockaddr(server_options.listen_addrs,
+              &server_options.listen_addrs_num, (struct sockaddr*)&sin6);
+        } else
+            add_sockaddr_buf(server_options.listen_addrs,
+              &server_options.listen_addrs_num, bufaddr);
     } else {
         char *s;
 
@@ -320,45 +377,6 @@ tnt_parse_buf(char *p, size_t size) {
 	}
 
     debug = server_options.debug;
-
-	return 0;
-}
-
-/* If 'port' is 0 set the addr with every values from the config var 'Port' */
-static void
-add_listen_addr(struct options *opt, char *addr, int port)
-{
-	unsigned int i;
-
-	if (port == 0)
-		for (i = 0; opt->ports[i] != -1; i++)
-			add_one_listen_addr(opt, addr, opt->ports[i]);
-	else
-		add_one_listen_addr(opt, addr, port);
-}
-
-/* XXX: Does that work for us? */
-static void
-add_one_listen_addr(struct options *opt, char *addr, int port)
-{
-	struct addrinfo hints, *ai, *aitop;
-	char strport[NI_MAXSERV]; /* in netdb.h */
-	int gaierr;
-
-	(void)memset(&hints, 0, sizeof(hints));
-	hints.ai_family = opt->addr_family;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = (addr == NULL) ? AI_PASSIVE : 0; /* "any"=>AI_PASSIVE */
-	(void)snprintf(strport, sizeof strport, "%d", port);
-	if ((gaierr = getaddrinfo(addr, strport, &hints, &aitop)) != 0) {
-		fprintf(stderr, "bad addr or host: %s (%s)\n",
-		    addr ? addr : "<NULL>",
-		    gai_strerror(gaierr));
-        exit(1);
-    }
-	for (ai = aitop; ai->ai_next; ai = ai->ai_next)
-		;
-	ai->ai_next = opt->listen_addrs;
-	opt->listen_addrs = aitop;
+    return 0;
 }
 

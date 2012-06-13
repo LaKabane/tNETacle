@@ -49,9 +49,6 @@ struct server {
   struct vector_frame frames_to_send;
 };
 
-#define UDPPORT 8989
-#define MCPORT 4242
-
 int server_init(struct server *, struct event_base *);
 void server_set_device(struct server *, int fd);
 
