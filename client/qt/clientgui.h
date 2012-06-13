@@ -20,6 +20,8 @@ public:
     ~ClientGUI();
   //  void addContact(Contact* c);
   void addContact(const QString &);
+  QString getSelected() const;
+  void    deleteSelected();
   QString getNewContactName() const;
   QString getNewContactKey() const;
 private:

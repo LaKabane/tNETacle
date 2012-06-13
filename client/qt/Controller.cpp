@@ -12,7 +12,8 @@ Controller::Controller(ClientGUI & gui) :
 
 void Controller::deleteContact()
 {
-
+  this->_model.remove(this->_view.getSelected());
+  this->_view.deleteSelected();
 }
 
 void Controller::addContact()

@@ -14,6 +14,20 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
 ClientGUI::~ClientGUI() {
 }
 
+void    ClientGUI::deleteSelected()
+{
+  int pos = this->ContactsList->currentRow();
+  delete this->ContactsList->currentItem();
+  this->ContactsList->setCurrentRow(pos - 1);
+}
+
+QString ClientGUI::getSelected() const
+{
+  if (!this->ContactsList->currentItem())
+    return "";
+  return this->ContactsList->currentItem()->text();
+}
+
 QString ClientGUI::getNewContactName() const
 {
   if (!this->_addContact)
