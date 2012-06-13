@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QWidget>
+#include "ClientGUI.h"
 #include "ui_addContact.h"
 #include "contact.h"
 #include "controller.h"
@@ -18,14 +19,18 @@ class addContactGui : public QWidget, private Ui::addContactGui
   Q_OBJECT
   public:
   QString getNewContactName() const;
+  const QString getInitialContactName() const;
   QString getNewContactKey() const;
-  explicit addContactGui(Controller &client, QWidget* parents = 0);
-    ~addContactGui();
+  explicit addContactGui(Controller &controller, ClientGUI &view, const QString &name, const QString &key);
+
+  explicit addContactGui(Controller &controller, ClientGUI &view);
+  virtual ~addContactGui();
   QDialogButtonBox* getOkOrReject() const {return okOrReject;}
 
 private:
   Controller  &_controller;
-
+  ClientGUI &_view;
+  const QString _initialName;
 private slots:
   void sendContact();
 };

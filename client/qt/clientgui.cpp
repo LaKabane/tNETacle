@@ -1,14 +1,17 @@
+#include <QDebug>
 #include "clientgui.h"
 #include <iostream>
 #include "addcontactgui.h"
 
 ClientGUI::ClientGUI(QMainWindow *parent) :
-  QMainWindow(parent),
-  _controller(*this)
+    QMainWindow(parent),
+    _addContact(0),
+    _controller(*this)
 {
    setupUi(this);
    QObject::connect(actionAddContact, SIGNAL(activated()), this, SLOT(createAddContact()));
    QObject::connect(actionDeleteContact, SIGNAL(activated()), &_controller, SLOT(deleteContact()));
+   QObject::connect(ContactsList, SIGNAL(itemDoubleClicked(QListWidgetItem*)), &_controller, SLOT(edit(QListWidgetItem *)));
 }
 
 ClientGUI::~ClientGUI() {
@@ -28,6 +31,13 @@ QString ClientGUI::getSelected() const
   return this->ContactsList->currentItem()->text();
 }
 
+const QString ClientGUI::getInitialContactName() const
+{
+  if (!this->_addContact)
+    return *new QString("");// TODO throw a fatal exception
+  return this->_addContact->getInitialContactName();
+}
+
 QString ClientGUI::getNewContactName() const
 {
   if (!this->_addContact)
@@ -42,18 +52,36 @@ QString ClientGUI::getNewContactKey() const
   return this->_addContact->getNewContactKey();
 }
 
-void ClientGUI::createAddContact() {
-    _addContact = new addContactGui(this->_controller);
 
-    //    QObject::connect(_addContact, SIGNAL(destroyed()), this, SLOT(deleteAddContact()));
-    _addContact->show();
+
+
+void ClientGUI::createAddContact(const QString& name, const QString &key) {
+  if (_addContact)
+    return ;
+  _addContact = new addContactGui(this->_controller, *this, name, key);
+
+  QObject::connect(_addContact, SIGNAL(destroyed()), this, SLOT(addContactDeleted()));
+  _addContact->show();
+}
+
+
+
+void ClientGUI::createAddContact() {
+  if (_addContact)
+    return ;
+  _addContact = new addContactGui(this->_controller, *this);
+
+  QObject::connect(_addContact, SIGNAL(destroyed()), this, SLOT(addContactDeleted()));
+  _addContact->show();
 }
 
 void ClientGUI::deleteAddContact() {
   delete _addContact;
-  _addContact = 0;
 }
 
+void ClientGUI::addContactDeleted() {
+    _addContact = 0;
+}
 
 void ClientGUI::addContact(const QString &str)
 {

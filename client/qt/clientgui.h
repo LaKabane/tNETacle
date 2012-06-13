@@ -23,7 +23,9 @@ public:
   QString getSelected() const;
   void    deleteSelected();
   QString getNewContactName() const;
+  const QString getInitialContactName() const;
   QString getNewContactKey() const;
+  void    createAddContact(const QString &, const QString &);
 private:
     addContactGui*  _addContact;
     Controller      _controller;
@@ -33,6 +35,7 @@ signals:
 public slots:
     void            createAddContact();
     void            deleteAddContact();
+    void  addContactDeleted();
 
 };
 
