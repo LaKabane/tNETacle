@@ -86,25 +86,25 @@ init_options(struct options *opt) {
 }
 
 static int
-add_sockaddr(struct sockaddr *sock, size_t *index, struct sockaddr *bufaddr) {
+add_sockaddr(struct sockaddr **sock, size_t *index, struct sockaddr *bufaddr) {
     size_t newsize;
     struct sockaddr *newsock;
 
     newsize = *index + 1;
-    if ((newsock = realloc(sock, newsize)) == NULL) {
+    if ((newsock = realloc(*sock, newsize)) == NULL) {
         free(sock);
         sock = NULL;
         *index = 0;
         return -1;
     }
-    sock = newsock;
-    *(sock + *index) = *bufaddr;
+    *sock = newsock;
+    *sock[*index] = *bufaddr;
     *index = newsize;
     return 0;
 }
 
 static int
-add_sockaddr_buf(struct sockaddr *sock, size_t *index, char *bufaddr) {
+add_sockaddr_buf(struct sockaddr **sock, size_t *index, char *bufaddr) {
     int socklen;
     size_t newsize;
     struct sockaddr *newsock;
@@ -114,17 +114,20 @@ add_sockaddr_buf(struct sockaddr *sock, size_t *index, char *bufaddr) {
    
     socklen = sizeof(struct sockaddr);
     /* TODO: Sanity check with socklen */
-    evutil_parse_sockaddr_port(bufaddr, &out, &socklen);
-    
+    if (evutil_parse_sockaddr_port(bufaddr, &out, &socklen) == -1) {
+        fprintf(stderr, "%s is probably invalid\n", bufaddr);
+        return -1;
+    }
+
     newsize = *index + 1;
-    if ((newsock = realloc(sock, newsize)) == NULL) {
+    if ((newsock = realloc(*sock, newsize)) == NULL) {
         free(sock);
-        sock = NULL;
+        *sock = NULL;
         *index = 0;
         return -1;
     }
-    sock = newsock;
-    *(sock + *index) = out;
+    *sock = newsock;
+    *sock[*index] = out;
     *index = newsize;
     return 0;
 }
@@ -282,7 +285,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
-        add_sockaddr_buf(server_options.peer_addrs,
+        add_sockaddr_buf(&server_options.peer_addrs,
           &server_options.peer_addrs_num, bufaddr);
     } else if (strncmp("ListenAddress", map, map_len) == 0) {
         char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
@@ -294,19 +297,22 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
             struct sockaddr_in sin;
             struct sockaddr_in6 sin6;
 
+            (void)memset(&sin, 0, sizeof sin);
+            (void)memset(&sin6, 0, sizeof sin6);
             sin.sin_family = AF_INET;
             sin.sin_port = htons(TNETACLE_DEFAULT_PORT);
-            sin.sin_addr.s_addr = inet_addr(0);
+            sin.sin_addr.s_addr = inet_addr("0.0.0.0");
             sin.sin_family = AF_INET6;
             sin.sin_port = htons(TNETACLE_DEFAULT_PORT);
-            sin.sin_addr.s_addr = inet_addr(0);
+            sin.sin_addr.s_addr = inet_addr("::");
 
-            add_sockaddr(server_options.listen_addrs,
+            add_sockaddr(&server_options.listen_addrs,
               &server_options.listen_addrs_num, (struct sockaddr*)&sin);
-            add_sockaddr(server_options.listen_addrs,
+            add_sockaddr(&server_options.listen_addrs,
               &server_options.listen_addrs_num, (struct sockaddr*)&sin6);
+            fprintf(stderr, "ListenAddr: any: Added 0.0.0.0 and ::\n");
         } else
-            add_sockaddr_buf(server_options.listen_addrs,
+            add_sockaddr_buf(&server_options.listen_addrs,
               &server_options.listen_addrs_num, bufaddr);
     } else {
         char *s;

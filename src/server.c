@@ -274,7 +274,7 @@ server_init(struct server *s, struct event_base *evbase)
     struct sockaddr *listens;
     struct sockaddr *peers;
     int err;
-    int i;
+    size_t i;
 
     listens = server_options.listen_addrs;
     peers = server_options.peer_addrs;
@@ -290,8 +290,10 @@ server_init(struct server *s, struct event_base *evbase)
         evl = evconnlistener_new_bind(evbase, listen_callback,
                 s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
                 (listens+i), sizeof(*(listens+i)));
-        if (evl == NULL)
+        if (evl == NULL) {
+            log_debug("Fail at ListenAddress #%i");
             return -1;
+        }
     }
 
     evconnlistener_set_error_cb(evl, accept_error_cb);
