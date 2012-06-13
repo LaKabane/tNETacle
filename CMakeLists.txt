@@ -58,6 +58,7 @@ set(SOURCES_LIST
   #src/compress.c
   #src/pipeline.c
   src/mc.c
+  src/hexdump.c
   src/server.c)
 
 # OS families specific things

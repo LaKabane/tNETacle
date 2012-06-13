@@ -33,6 +33,7 @@
 #include "tntsocket.h"
 #include "server.h"
 #include "log.h"
+#include "hexdump.h"
 
 union chartoshort {
     unsigned char *cptr;
@@ -48,15 +49,24 @@ windows_fix_write(intptr_t fd, void *buf, size_t len)
 {
 	DWORD n = 0;
 	int err;
-
 	err = WriteFile((HANDLE)fd, buf, len, &n, &gl_overlap);
+	//log_debug("WRITE fd=%ld, buf=%p, len=%ld, n=%ld, err=%d", fd, buf, len, n, err);
 	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
 	{
 		printf("Write failed, error %d\n", GetLastError());
 		return -1;
 	}
 	else
+	{
+		if (len > 0)
+		{
+			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
+			hex_dump(buf, len);
+			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
+		}
+		WaitForSingleObject(gl_overlap.hEvent, INFINITE);
 		return n;
+	}
 }
 
 static ssize_t
@@ -66,13 +76,23 @@ windows_fix_read(intptr_t fd, void *buf, size_t len)
 	int err;
 
 	err = ReadFile((HANDLE)fd, buf, len, &n, &gl_overlap);
+	//log_debug("READ fd=%ld, buf=%p, len=%ld, n=%ld, err=%d", fd, buf, len, n, err);
 	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
 	{
 		printf("Read failed, error %d\n", GetLastError());
 		return -1;
 	}
 	else
+	{
+		if (n > 0)
+		{
+			log_debug("== READ == READ == READ == READ ==");
+			hex_dump(buf, n);
+			log_debug("== READ == READ == READ == READ ==");
+		}
+		WaitForSingleObject(gl_overlap.hEvent, INFINITE);
 		return n;
+	}
 }
 #endif
 
@@ -222,6 +242,7 @@ broadcast_to_peers(struct server *s)
              it = v_mc_next(it))
         {
             int err;
+
             err = bufferevent_write(it->bev, &size_networked, sizeof(size_networked));
             if (err == -1)
             {
@@ -235,7 +256,7 @@ broadcast_to_peers(struct server *s)
                 break;
             }
             log_debug("Adding %d(%-#2x) bytes to %p's output buffer.",
-                      fit->size, it);
+                      fit->size, fit->size, it);
         }
     }
     v_frame_erase_range(&s->frames_to_send, v_frame_begin(&s->frames_to_send), fite);
@@ -261,7 +282,7 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
         {
             tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
             v_frame_push(&s->frames_to_send, &tmp);
-            log_debug("Read a new frame of %d bytes.", n);
+            //log_debug("Read a new frame of %d bytes.", n);
             _n++;
         }
 #if defined Windows
@@ -270,7 +291,7 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
         if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
 #endif
         {
-            log_debug("Read %d frames in this pass.", _n);
+            //log_debug("Read %d frames in this pass.", _n);
             broadcast_to_peers(s);
         }
         else if (n == -1)
@@ -283,13 +304,13 @@ void
 server_set_device(struct server *s, int fd)
 {
     struct event_base *evbase = evconnlistener_get_base(s->srv);
-    struct event *ev = event_new(evbase, -1, 0, server_device_cb, s);
+	struct event *ev = event_new(evbase, -1, EV_PERSIST, server_device_cb, s);
     int err;
 
     /*Sadly, this don't work on windows :(*/
     s->devide_fd = fd;
-    s->tv.tv_sec = 1;
-    s->tv.tv_usec = 0;
+    s->tv.tv_sec = 0;
+    s->tv.tv_usec = 5000;
     if (ev == NULL)
     {
         log_warn("Failed to allocate the event handler for the device:");
@@ -391,7 +412,9 @@ server_init(struct server *s, struct event_base *evbase)
         return -1;
 
 #if defined Windows
-	gl_overlap.hEvent = CreateEvent(NULL, FALSE, FALSE, "Device event");
+	gl_overlap.hEvent = CreateEvent(NULL, /*Auto reset*/FALSE,
+		                                  /*Initial state*/FALSE,
+										  TEXT("Device event"));
 #endif
 
     uaddr.sin_family = AF_INET;
@@ -405,4 +428,3 @@ server_init(struct server *s, struct event_base *evbase)
         server_establish_mc_hostname(s, conf_peer_address);
     return 0;
 }
-

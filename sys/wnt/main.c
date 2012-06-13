@@ -78,7 +78,7 @@ main(int argc, char *argv[]) {
     if (server_init(&server, evbase) == -1)
 	log_err(-1, "Failed to init the server socket");
 
-	if (tnt_ttc_set_ip(interfce, "192.168.10.2/24") == -1){
+	if (tnt_ttc_set_ip(interfce, "10.0.0.22/24") == -1){
 		log_err(-1, "Failed to set interface's ip");
 	}
 	if (tnt_ttc_up(interfce) != 0) {
