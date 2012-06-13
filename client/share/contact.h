@@ -7,7 +7,7 @@
 class Contact
 {
 public:
-  Contact(const std::string&, const std::string&);
+  Contact(const std::string& name, const std::string& key);
   ~Contact();
 
   const std::string& getName() {return _name;}
@@ -18,7 +18,7 @@ public:
   void setPublicKey(std::string& publicKey) {_publicKey = publicKey;}
   void setRealIP(std::string& realIP) {_realIP = realIP;}
   void setVirtualIP(std::string& virtualIP) {_virtualIP = virtualIP;}
-  
+
 private:
   std::string	_name;
   std::string	_publicKey;

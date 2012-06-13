@@ -1,6 +1,6 @@
 SOURCES += \
     main.cpp \
-    ../share/controler.cpp \
+#    ../share/controler.cpp \
     ../share/contactsList.cpp \
     ../share/contact.cpp \
     ../share/config.cpp \
@@ -19,7 +19,7 @@ RESOURCES += \
 HEADERS += \
     controller.h\
     clientgui.h \
-    ../share/controler.h \
+ #   ../share/controler.h \
     ../share/contactsList.h \
     ../share/contact.h \
     ../share/config.h \

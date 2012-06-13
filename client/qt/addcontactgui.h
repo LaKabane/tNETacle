@@ -1,6 +1,7 @@
 #ifndef ADDCONTACTGUI_H
 #define ADDCONTACTGUI_H
 
+#include <QString>
 #include <QWidget>
 #include "ui_addContact.h"
 #include "contact.h"
@@ -14,8 +15,10 @@ namespace UI {
 
 class addContactGui : public QWidget, private Ui::addContactGui
 {
-    Q_OBJECT
-public:
+  Q_OBJECT
+  public:
+  QString getNewContactName() const;
+  QString getNewContactKey() const;
   explicit addContactGui(Controller &client, QWidget* parents = 0);
     ~addContactGui();
   QDialogButtonBox* getOkOrReject() const {return okOrReject;}

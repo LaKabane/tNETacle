@@ -18,9 +18,10 @@ class ClientGUI : public QMainWindow, private Ui::ClientGUI
 public:
     explicit ClientGUI(QMainWindow *parent = 0);
     ~ClientGUI();
-
-  void addContact(Contact* c);
-
+  //  void addContact(Contact* c);
+  void addContact(const QString &);
+  QString getNewContactName() const;
+  QString getNewContactKey() const;
 private:
     addContactGui*  _addContact;
     Controller      _controller;

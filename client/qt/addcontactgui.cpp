@@ -7,12 +7,23 @@ addContactGui::addContactGui(Controller &controller, QWidget* parents)
     : QWidget(parents), _controller(controller)
 {
     setupUi(this);
-    //    QObject::connect(okOrReject, SIGNAL(accepted()), this, SLOT(sendContact()));
+    QObject::connect(okOrReject, SIGNAL(accepted()), &_controller, SLOT(addContact()));
 }
 
 addContactGui::~addContactGui()
 {
 }
+
+QString addContactGui::getNewContactName() const
+{
+  return (this->name->text());
+}
+
+QString addContactGui::getNewContactKey() const
+{
+  return (this->pubKey->toPlainText());
+}
+
 
 void addContactGui::sendContact() {
     // Contact* newContact = new Contact(this->nameLabel->text().toStdString(),

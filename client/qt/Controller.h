@@ -9,10 +9,11 @@ class ClientGUI;
 
 class Controller : public QObject
 {
+  Q_OBJECT
 public:
   Controller(ClientGUI &);
-  // public slots:
-  //   void addContact();
+public slots:
+  void addContact();
 private:
   ClientGUI &_view;
 };
