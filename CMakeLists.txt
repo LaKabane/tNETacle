@@ -21,7 +21,7 @@ set(${CMAKE_SYSTEM_NAME} True)
 # ------------------
 find_package(Event COMPONENTS core REQUIRED)
 find_package(Tuntap)
-# find_package(ZLIB REQUIRED)
+find_package(ZLIB REQUIRED)
 
 # Global definitions
 # ------------------
@@ -55,7 +55,9 @@ endif()
 set(SOURCES_LIST
   src/conf.c
   src/tun-compat.c
-  #src/compress.c
+  src/compress.c
+# IF YOU CANT COMPILE COMPRESS.C, mail ntnmrndn@gmail.com
+# INSTEAD OF SILENTLY COMMENTING LIKE A RETARD.
   #src/pipeline.c
   src/mc.c
   src/server.c)
@@ -77,7 +79,8 @@ if(UNIX)
 		sys/unix/imsg.c sys/unix/imsg-buffer.c
 		sys/unix/tnetacle.c sys/unix/tnetacled.c
 		sys/unix/util.c sys/unix/conf.c
-		sys/unix/tntsocket.c)
+		sys/unix/tntsocket.c sys/unix/compress_unix.c
+                )
 endif()
 
 if (Windows)
