@@ -12,28 +12,43 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
 **/
+
+#include <sys/types.h>
+#if !defined WIN32
+#include <sys/socket.h>
+#endif
+
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
+
+#if defined Windows
+# include <WS2tcpip.h>
+# include <io.h>
+# define write _write
+# define ssize_t SSIZE_T
+#endif
+
+#if defined Unix
+# include <unistd.h>
+# include <netinet/in.h>
+#endif
+
 #include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
-#include <errno.h>
-#include <string.h>
-#if !defined Windows
-#include <unistd.h>
-#else
-#include <io.h>
-#include <WS2tcpip.h>
-#define write _write
-#define ssize_t SSIZE_T
-#endif
 
+#include "tnetacle.h"
+#include "options.h"
 #include "mc.h"
 #include "tntsocket.h"
 #include "server.h"
 #include "log.h"
 #include "compress.h"
 #include "compress_unix.h"
+
+extern struct options serv_opts;
 
 union chartoshort {
     unsigned char *cptr;
@@ -264,76 +279,60 @@ server_set_device(struct server *s, int fd)
     log_notice("Listener started.");
 }
 
-extern char conf_peer_address[];
-
-static
-void server_establish_mc_hostname(struct server *s, char *hostname)
-{
-    struct event_base *evbase = evconnlistener_get_base(s->srv);
-    struct sockaddr_storage paddr;
-    socklen_t plen = sizeof(paddr);
-    struct bufferevent *bev;
-    struct mc mctx;
-    int err;
-
-    err = evutil_parse_sockaddr_port(hostname,
-                                     (struct sockaddr*)&paddr,
-                                     (int*)&plen);
-    if (err == -1)
-    {
-        log_notice("Syntax error with the peer address given in the conf.");
-        return;
-    }
-
-    bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
-    if (bev == NULL)
-    {
-        log_warn("Unable to allocate a socket for connecting to the peer:");
-        return;
-    }
-    err = bufferevent_socket_connect(bev, (struct sockaddr *)&paddr, (int)plen);
-    if (err == -1)
-    {
-        log_warn("Unable to connect to the peer:");
-        return;
-    }
-    mc_init(&mctx, (struct sockaddr*)&paddr, plen, bev);
-    bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
-    v_mc_push(&s->pending_peers, &mctx);
-}
-
 int
 server_init(struct server *s, struct event_base *evbase)
 {
-    struct sockaddr_in addr;
-    struct sockaddr_in uaddr;
     struct evconnlistener *evl;
-    int errcode;
+    struct bufferevent *bev;
+    struct mc mctx;
+    struct sockaddr *listens;
+    struct sockaddr *peers;
+    int err;
+    size_t i;
 
-    memset(&addr, 0, sizeof(addr));
-    memset(&uaddr, 0, sizeof(uaddr));
+    listens = serv_opts.listen_addrs;
+    peers = serv_opts.peer_addrs;
 
     v_mc_init(&s->peers);
     v_mc_init(&s->pending_peers);
     v_frame_init(&s->frames_to_send);
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(MCPORT);
-    addr.sin_addr.s_addr = INADDR_ANY;
-    evl = evconnlistener_new_bind(evbase, listen_callback,
-                                  s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
-                                  -1, (struct sockaddr const*)&addr,
-                                  sizeof(addr));
-    if (evl == NULL)
-        return -1;
 
-    uaddr.sin_family = AF_INET;
-    uaddr.sin_port = htons(UDPPORT);
-    uaddr.sin_addr.s_addr = INADDR_ANY;
+    /*evbase = evconnlistener_get_base(s->srv);*/
+
+    /* Listen on all ListenAddress */
+    for (i = 0; i < serv_opts.listen_addrs_num; i++) {
+        evl = evconnlistener_new_bind(evbase, listen_callback,
+                s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
+                (listens+i), sizeof(*(listens+i)));
+        if (evl == NULL) {
+            log_debug("Fail at ListenAddress #%i", i);
+            return -1;
+        }
+    }
 
     evconnlistener_set_error_cb(evl, accept_error_cb);
     evconnlistener_disable(evl);
     s->srv = evl;
-    if (strcmp(conf_peer_address, "") != 0) /*XXX Dirty hack*/
-        server_establish_mc_hostname(s, conf_peer_address);
+
+    /* If we don't have any PeerAddress it's finished */
+    if (serv_opts.peer_addrs == NULL)
+        return 0;
+
+    for (i = 0; i < serv_opts.peer_addrs_num; i++) {
+        bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
+        if (bev == NULL) {
+            log_warn("Unable to allocate a socket for connecting to the peer");
+            return -1;
+        }
+        err = bufferevent_socket_connect(bev, (peers+i), sizeof(*(peers+i)));
+        if (err == -1) {
+            log_warn("Unable to connect to the peer");
+            return -1;
+        }
+        mc_init(&mctx, (peers+1), sizeof(*(peers+1)), bev);
+    }
+
+    bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
+    v_mc_push(&s->pending_peers, &mctx);
     return 0;
 }

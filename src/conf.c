@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Tristan Le Guern <leguern AT medu DOT se>
+ * Copyright (c) 2011,2012 Tristan Le Guern <leguern AT medu DOT se>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,251 +14,409 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * Original copyright notice :
- * David Leonard <d@openbsd.org>, 1999. Public domain.
- */
-
 #include <sys/types.h>
+#include <sys/stat.h>
+#if defined Unix
+# include <sys/socket.h>
+# include <sys/mman.h>
+#else
+# include <Windows.h>
+#endif
 
-#include <ctype.h>
-#include <string.h>
+#if defined Unix
+# include <netdb.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
+#else
+# include <winsock2.h>
+# include <Ws2tcpip.h>
+#endif
+
+#include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#if defined Windows
-#define strcasecmp _stricmp
+#include <event2/util.h>
+#include <yajl/yajl_parse.h>
+
+#ifdef WIN32
+# include "winstrtonum.h"
+# define __func__ __FUNCTION__
+# define alloca _alloca
+# define snprintf _snprintf
 #endif
 
-#include "log.h"
+#include "tnetacle.h"
+#include "options.h"
 
-int 	conf_debug;
-char		conf_tunnel[25] = "ethernet";
-int		conf_tunneldevice = -1;
-char		conf_address[] = "10.0.0.22/255.255.255.0";
-char		conf_peer_address[] = "";
+extern int debug;
+struct options serv_opts;
 
-struct kwvar {
-	char *	kw;
-	void *	var;
-	enum vartype { Vint, Vstring, Vbool, Vchar, Vdouble} type;
-};
+static void
+init_options(struct options *opt) {
+    unsigned int i;
 
-static const struct kwvar keywords[] = {
-	{"Debug", &conf_debug, Vbool},
-	{"Tunnel", &conf_tunnel, Vstring},
-	{"TunnelDevice", &conf_tunneldevice, Vint},
-	{"Address", &conf_address, Vstring},
-	{NULL, NULL, Vint}
-};
+    (void)memset(opt, '\0', sizeof(*opt));
 
-#if defined Windows
+    opt->tunnel = (int)TNT_TUNMODE_TUNNEL;
+    opt->tunnel_index = -1;
+    opt->mode = TNT_DAEMONMODE_ROUTER;
+
+    opt->debug = 0;
+    opt->compression = 1;
+    opt->encryption = 1;
+
+    for (i = 0; i < TNETACLE_MAX_PORTS; ++i)
+        opt->ports[i] = -1;
+    opt->addr_family = AF_UNSPEC;
+    opt->listen_addrs = NULL;
+    opt->listen_addrs_num = 0;
+
+    opt->peer_addrs = NULL;
+    opt->peer_addrs_num = 0;
+
+    opt->addr = NULL;
+
+    opt->key_path= NULL;
+
+    opt->last_map_key = NULL;
+    opt->last_map_key_len = 0;
+}
+
 static int
-isblank(char c)
-{
-	return c == ' ' || c == '\n' || c == '\t';
+add_sockaddr(struct sockaddr **sock, size_t *index, struct sockaddr *bufaddr) {
+    size_t newsize;
+    struct sockaddr *newsock;
+
+    newsize = *index + 1;
+    if ((newsock = realloc(*sock, newsize)) == NULL) {
+        free(*sock);
+        *sock = NULL;
+        *index = 0;
+        return -1;
+    }
+    *sock = newsock;
+    (*sock)[*index] = *bufaddr;
+    *index = newsize;
+    return 0;
 }
 
-/*
-** Copied from somewhere in the internet. Because I'm lazy.
-** Fabien
-*/
+static int
+add_sockaddr_buf(struct sockaddr **sock, size_t *index, char *bufaddr) {
+    int socklen;
+    size_t newsize;
+    struct sockaddr *newsock;
+    struct sockaddr out;
 
-static size_t
-strlcpy(char *dst, const char *src, size_t siz)
-{
-	char *d = dst;
-	const char *s = src;
-	size_t n = siz;
+    (void)memset(&out, '\0', sizeof out);
+   
+    socklen = sizeof(struct sockaddr);
+    /* TODO: Sanity check with socklen */
+    if (evutil_parse_sockaddr_port(bufaddr, &out, &socklen) == -1) {
+        fprintf(stderr, "%s: not a valid IP address\n", bufaddr);
+        return -1;
+    }
 
-	/* Copy as many bytes as will fit */
-	if (n != 0 && --n != 0) {
-		do {
-			if ((*d++ = *s++) == 0)
-				break;
-		} while (--n != 0);
-	}
-
-	/* Not enough room in dst, add NUL and traverse rest of src */
-	if (n == 0) {
-		if (siz != 0)
-			*d = '\0';              /* NUL-terminate dst */
-		while (*s++) ;
-	}
-	return(s - src - 1);    /* count does not include NUL */
+    newsize = *index + 1;
+    if ((newsock = realloc(*sock, newsize)) == NULL) {
+        free(sock);
+        *sock = NULL;
+        *index = 0;
+        return -1;
+    }
+    *sock = newsock;
+    (*sock)[*index] = out;
+    *index = newsize;
+    return 0;
 }
 
-#endif
-
-static char *
-parse_string(char *p, struct kwvar *kvp) {
-	char *valuestart;
-	char buf[25];
-
-	valuestart = p;
-	while (isalpha(*p) || *p == '-' || *p == '_')
-		p++;
-	if ((*p == '\0' || isspace(*p) || *p == '#') && valuestart != p) {
-		(void)memset(buf, '\0', sizeof buf);
-		(void)strncpy(buf, valuestart, (size_t)(p - valuestart));
-		log_info("%s: %s -> %s", kvp->kw, kvp->var, buf);
-		(void)strlcpy(kvp->var, buf, sizeof kvp->var);
-		return p;
-	} else {
-		log_errx(1, "invalid string value");
-		return NULL;
-	}
-	return NULL;
+int yajl_null(void *ctx) {
+    (void)ctx;
+    return -1;
 }
 
-static char *
-parse_bool(char *p, struct kwvar *kvp) {
-	char *valuestart;
-	char buf[25];
+int yajl_boolean(void *ctx, int val) {
+    const char *map = serv_opts.last_map_key;
+    const int map_len = serv_opts.last_map_key_len;
 
-	valuestart = p;
-	while (isalpha(*p))
-		p++;
-	if ((*p == '\0' || isspace(*p) || *p == '#') && valuestart != p) {
-		(void)memset(buf, '\0', sizeof buf);
-		(void)strncpy(buf, valuestart, (size_t)(p - valuestart));
-		if (strcasecmp(buf, "yes") == 0) {
-			log_info("%s: %d -> %d",
-			    kvp->kw, *(int *)kvp->var, 1);
-			*(int *)kvp->var = 1;
-		} else {
-			log_info("%s: %d -> %d",
-			    kvp->kw, *(int *)kvp->var, 0);
-			*(int *)kvp->var = 0;
-		}
-		return p;
-	} else {
-		log_errx(1, "invalid boolean value");
-		return NULL;
-	}
-	return NULL;
+    (void)ctx;
+    if (map == NULL)
+        return -1;
+
+    if (strncmp("Compression", map, map_len) == 0) {
+        serv_opts.compression = val;
+    } else if (strncmp("Encryption", map, map_len) == 0) {
+        serv_opts.encryption = val;
+    } else if (strncmp("Debug", map, map_len) == 0) {
+        serv_opts.debug = val;
+    } else {
+        char *s;
+
+        s = alloca(map_len);
+        (void)memcpy(s, map, map_len);
+        s[map_len] = '\0';
+        fprintf(stderr, "%s: unknown boolean\n", s);
+        return -1;
+    }
+    serv_opts.last_map_key = NULL;
+    serv_opts.last_map_key_len = 0;
+    return 1;
 }
 
-static char *
-parse_int(char *p, struct kwvar *kvp) {
-	char *valuestart, *digitstart;
-	char buf[25];
-	int newval;
-
-	/* expect a number */
-	valuestart = p;
-	if (*p == '-') 
-		p++;
-	digitstart = p;
-	while (isdigit(*p))
-		p++;
-	if ((*p == '\0' || isspace(*p) || *p == '#') && digitstart != p) {
-		(void)strncpy(buf, valuestart, (size_t)(p - valuestart));
-		newval = atoi(valuestart);
-		log_info("%s: %d -> %d", kvp->kw, *(int *)kvp->var, newval);
-		*(int *)kvp->var = newval;
-		return p;
-	} else {
-		log_errx(1, "invalid integer value");
-		return NULL;
-	}
-	return NULL;
+int yajl_integer(void *ctx, long long val) {
+    (void)ctx;
+    (void)val;
+    return -1;
 }
 
-static char *
-parse_value(char *p, struct kwvar *kvp) {
-	switch (kvp->type) {
-	case Vint:
-		return parse_int(p, kvp);
-	case Vbool:
-		return parse_bool(p, kvp);
-	case Vstring:
-		return parse_string(p, kvp);
-	case Vchar:
-	case Vdouble:
-	default:
-		log_errx(1, "type not implemented");
-	}
-	return NULL;
+int yajl_double(void *ctx, double val) {
+    (void)ctx;
+    (void)val;
+    return -1;
 }
 
-/* Parse one line of configuration (a key/value pair) */
-char *
-tnt_parse_line(char *p) {
-	char *word;
-	char *endword;
-	char varname[25];
-	struct kwvar *kvp;
+int yajl_number(void *ctx, const char *num, size_t len) {
+    const char *map = serv_opts.last_map_key;
+    const int map_len = serv_opts.last_map_key_len;
+    char *errstr;
+    long ret;
+    char nptr[20];
 
-	/* skip leading white */
-	while (isblank(*p))
-		p++;
-	/* allow blank lines and comment lines */
-	if (*p == '\0')
-		return NULL;
-	if (*p == '\n')
-		return ++p;
-	if (*p == '#') {
-		while (*p != '\n' && *p != '\0')
-			++p;
-		++p;
-		return p;
+    if (map == NULL)
+        return -1;
+
+    if (len > 20) {
+        fprintf(stderr, "%s l%i, buffer not long enough\n",
+          __func__, __LINE__);
+        return -1;
+    }
+
+    (void)memset(nptr, 0, sizeof nptr);
+    (void)memcpy(nptr, num, len);
+
+    ret = strtol(nptr, &errstr, 10);
+    if (*errstr != '\0' || ret < 0 || ret > 65535) {
+        fprintf(stderr, "[%s] TunnelIndex or Port has not a valid value\n", nptr);
+        return -1;
+    }
+
+    if (strncmp("TunnelIndex", map, map_len) == 0) {
+        serv_opts.tunnel_index = ret;
+    } else if (strncmp("Port", map, map_len) == 0) {
+        unsigned int i;
+
+        for (i = 0; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i)
+            ;
+        serv_opts.ports[i] = ret;
+    } else {
+       char *s;
+
+       s = alloca(map_len);
+       (void)memcpy(s, map, map_len);
+       s[map_len] = '\0';
+
+       fprintf(stderr, "%s: unknown integer\n", s);
+        return -1;
+    }
+    (void)ctx;
+    serv_opts.last_map_key = NULL;
+    serv_opts.last_map_key_len = 0;
+    return 1;
+}
+
+int yajl_string(void *ctx, const unsigned char *str, size_t len) {
+    const char *map = serv_opts.last_map_key;
+    const int map_len = serv_opts.last_map_key_len;
+
+    (void)ctx;
+    if (map == NULL)
+        return -1;
+
+    if (strncmp("Address", map, map_len) == 0) {
+        /* XXX: Address validation */
+        serv_opts.addr = strndup(str, len);
+        if (serv_opts.addr == NULL) {
+            perror(__func__);
+            return -1;
+        }
+    } else if (strncmp("AddressFamily", map, map_len) == 0) {
+        if (strncmp("inet6", str, len) == 0) {
+            serv_opts.addr_family = AF_INET;
+        } else if (strncmp("inet", str, len) == 0) {
+            serv_opts.addr_family = AF_INET6;
+        } else if (strncmp("any", str, len) == 0) {
+            serv_opts.addr_family = AF_UNSPEC;
+        } else {
+            fprintf(stderr, "AddressFamily: bad value, should be "
+              "\"inet6\", \"inet\" or \"any\"\n");
+            return -1;
+        }
+    } else if (strncmp("Mode", map, map_len) == 0) {
+        if (strncmp("router", str, len) == 0) {
+            serv_opts.tunnel = TNT_DAEMONMODE_ROUTER;
+        } else if (strncmp("switch", str, len) == 0) {
+            serv_opts.tunnel = TNT_DAEMONMODE_SWITCH;
+        } else if (strncmp("hub", str, len) == 0) {
+            serv_opts.tunnel = TNT_DAEMONMODE_HUB;
+        } else {
+            fprintf(stderr, "Mode: bad value, should be "
+              "\"router\", \"switch\" or \"hub\"\n");
+            return -1;
+        }
+    } else if (strncmp("Tunnel", map, map_len) == 0) {
+         if (strncmp("point-to-point", str, len) == 0) {
+            serv_opts.tunnel = TNT_TUNMODE_TUNNEL;
+        } else if (strncmp("ethernet", str, len) == 0) {
+            serv_opts.tunnel = TNT_TUNMODE_ETHERNET;
+        } else {
+            fprintf(stderr, "Tunnel: bad value, should be "
+              "\"ethernet\" or \"point-to-point\"\n");
+            return -1;
+        }
+    } else if (strncmp("PrivateKey", map, map_len) == 0) {
+        /* XXX: Should we check for the existence of the key now ? */
+        serv_opts.key_path = strndup(map, map_len);
+        if (serv_opts.key_path == NULL) {
+            perror(__func__);
+            return -1;
+        }
+    } else if (strncmp("PeerAddress", map, map_len) == 0) {
+        char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
+        (void)memset(bufaddr, '\0', sizeof bufaddr);
+        (void)memcpy(bufaddr, str, len);
+
+        add_sockaddr_buf(&serv_opts.peer_addrs,
+          &serv_opts.peer_addrs_num, bufaddr);
+    } else if (strncmp("ListenAddress", map, map_len) == 0) {
+        char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
+        (void)memset(bufaddr, '\0', sizeof bufaddr);
+        (void)memcpy(bufaddr, str, len);
+
+        if (strncmp("any", str, len) == 0) {
+            unsigned int i = 0;
+            int family = serv_opts.addr_family;
+            struct sockaddr_in sin;
+            struct sockaddr_in6 sin6;
+
+            /* Feed local addresses */
+            for (; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i) {
+                (void)memset(&sin, 0, sizeof sin);
+                (void)memset(&sin6, 0, sizeof sin6);
+
+                if (family == AF_INET || family == AF_UNSPEC) {
+                    sin.sin_family = AF_INET;
+                    sin.sin_port = htons(serv_opts.ports[i]);
+                    if (inet_pton(AF_INET, "127.0.0.1",
+                      &sin.sin_addr.s_addr) == -1)
+                        return -1;
+                    add_sockaddr(&serv_opts.listen_addrs,
+                      &serv_opts.listen_addrs_num, (struct sockaddr*)&sin);
+                    fprintf(stderr, "ListenAddr: Added 127.0.0.1:%i\n",
+                      serv_opts.ports[i]);
+                }
+                if (family == AF_INET6 || family == AF_UNSPEC) {
+                    sin6.sin6_family = AF_INET6;
+                    sin6.sin6_port = htons(serv_opts.ports[i]);
+                    if (inet_pton(AF_INET6, "::1",
+                      &sin6.sin6_addr.s6_addr) == -1)
+                        return -1;
+                    add_sockaddr(&serv_opts.listen_addrs,
+                    &serv_opts.listen_addrs_num, (struct sockaddr*)&sin6);
+                    fprintf(stderr, "ListenAddr: Added [::1]:%i\n",
+                      serv_opts.ports[i]);
+                }
+            }
+        } else
+            add_sockaddr_buf(&serv_opts.listen_addrs,
+              &serv_opts.listen_addrs_num, bufaddr);
+    } else {
+        char *s;
+
+        s = alloca(map_len);
+        (void)memcpy(s, map, map_len);
+        s[map_len] = '\0';
+        fprintf(stderr, "%s: unknown variable\n", s);
+        return -1;
+    }
+    serv_opts.last_map_key = NULL;
+    serv_opts.last_map_key_len = 0;
+    return 1;
+}
+
+int yajl_start_map(void *ctx) {
+    (void)ctx;
+    return -1;
+}
+
+int yajl_map_key(void *ctx, const unsigned char *key, size_t len) {
+    (void)ctx;
+    serv_opts.last_map_key = key;
+    serv_opts.last_map_key_len = len;
+    return 1;
+}
+
+int yajl_end_map(void *ctx) {
+    (void)ctx;
+    return -1;
+}
+
+int yajl_start_array(void *ctx) {
+    (void)ctx;
+    return -1;
+}
+
+int yajl_end_array(void *ctx) {
+    (void)ctx;
+    return -1;
+}
+
+static yajl_callbacks callbacks = {
+	yajl_null,
+	yajl_boolean,
+	yajl_integer,
+	yajl_double,
+	yajl_number,
+	yajl_string,
+	yajl_start_map,
+	yajl_map_key,
+	yajl_end_map,
+	yajl_start_array,
+	yajl_end_array
+};
+
+int
+tnt_parse_buf(char *p, size_t size) {
+	yajl_handle parse;
+	yajl_status status;
+
+    /* Overwrite previous configuration in case of SIGHUP */
+    init_options(&serv_opts);
+
+	parse = yajl_alloc(&callbacks, NULL, NULL);
+	yajl_config(parse, yajl_allow_comments, 1);
+
+    /* yajl might be feeded a bit at a time, but it also works this way */
+	status = yajl_parse(parse, p, size);
+	if (status != yajl_status_ok) {
+		char *err;
+		
+		err = yajl_get_error(parse, 1, p, size);
+		fprintf(stderr, "%s\n", err);
+		yajl_free_error(parse, err);
 	}
 
-	/* walk to the end of the word: */
-	word = p;
-	if (isalpha(*p) || *p == '_') {
-		p++;
-		while (isalpha(*p) || isdigit(*p) || *p == '_')
-			p++;
-	}
-	endword = p;
+	status = yajl_complete_parse(parse);
 
-	if (endword == word) {
-		log_errx(1 ,"expected variable name");
-		return NULL;
+	yajl_free(parse);
+
+	if (status != yajl_status_ok) {
+		return -1;
 	}
 
-	/* match the configuration variable name */
-	(void)strncpy(varname, word, (size_t)(endword - word));
-
-	for (kvp = (struct kwvar *)keywords; kvp->kw; kvp++) 
-		if (strncmp(kvp->kw, varname, (size_t)(endword - word)) == 0)
-			break;
-
-	if (kvp->kw == NULL) {
-		log_errx(1, "unrecognised variable");
-		return NULL;
-	}
-
-	/* skip whitespace */
-	while (isblank(*p))
-		p++;
-
-	if (*p++ != '=') {
-		log_errx(1, "expected `='");
-		return NULL;
-	}
-
-	/* skip whitespace */
-	while (isblank(*p))
-		p++;
-
-	/* parse the value */
-	p = parse_value(p, kvp);
-	if (!p) 
-		return NULL;
-
-	/* skip trailing whitespace */
-	while (isblank(*p))
-		p++;
-
-	/* skip trailing comment */
-	if (*p != '\0' && *p == '#') {
-		while (*p != '\0' && *p != '\n')
-			p++;
-		if (*p != '\0')
-			p++;
-	}
-	return p;
+    debug = serv_opts.debug;
+    if (serv_opts.ports[0] == -1)
+        serv_opts.ports[0] = TNETACLE_DEFAULT_PORT;
+    return 0;
 }
 

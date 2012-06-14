@@ -28,6 +28,10 @@
 # endif
 #endif
 
+#ifdef OpenBSD
+# include <pwd.h> /* for getpwnam */
+#endif
+
 #include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
@@ -37,6 +41,7 @@
 
 #include "tnetacle.h"
 #include "tntexits.h"
+#include "options.h"
 #include "log.h"
 #include "tun.h"
 
@@ -47,8 +52,9 @@
 
 #include <event2/event.h>
 
-int conf_debug;
+int debug;
 volatile sig_atomic_t sigchld_recv;
+extern struct options serv_opts;
 
 /* XXX: clean that after the TA2 */
 struct device *dev = NULL;
@@ -126,18 +132,28 @@ main(int argc, char *argv[]) {
     struct event *sigterm = NULL;
     struct event *sigchld = NULL;
 
-    /* Parse configuration files and then command line switches */
-    tnt_conf();
+    /* Parse configuration file and then command line switches */
+    tnt_parse_file(NULL);
 
-    while ((ch = getopt(argc, argv, "dh")) != -1) {
-	switch(ch) {
-	    case 'd':
-		conf_debug = 1;
-		break;
-	    case 'h':
-	    default:
-		usage();
-	}
+    while ((ch = getopt(argc, argv, "dhD:f:")) != -1) {
+        switch(ch) {
+        case 'd':
+            debug = 1;
+        break;
+        case 'D':
+            /*TODO */
+            /*tnt_parse_line(optarg);*/
+        break;
+        case 'f':
+            if (tnt_parse_file(optarg) == -1) {
+                fprintf(stderr, "%s: invalid file\n", optarg);
+                return 1;
+            }
+        break;
+        case 'h':
+        default:
+            usage();
+        }
     }
     argc -= optind;
     argv += optind;
@@ -155,7 +171,7 @@ main(int argc, char *argv[]) {
 	return 1;
     }
 
-    if (conf_debug == 0) {
+    if (debug == 0) {
 	if (tnt_daemonize() == -1) {
 		fprintf(stderr, "can't daemonize\n");
 		return 1;
@@ -200,7 +216,7 @@ main(int argc, char *argv[]) {
     if (sigchld_recv != 1)
 	event_base_dispatch(evbase);
     else
-	fprintf(stderr, "The tNETalce initialisation phase failed."
+	fprintf(stderr, "The tNETacle initialisation phase failed."
 		" Check the logs to find out why.");
     
     signal(SIGCHLD, SIG_DFL);
@@ -260,7 +276,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
-	    dev = tnt_ttc_open();
+	    dev = tnt_ttc_open(serv_opts.tunnel);
 	    fd = tnt_ttc_get_fd(dev);
 	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
 	      NULL, 0);
