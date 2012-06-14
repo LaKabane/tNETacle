@@ -20,7 +20,10 @@
 #include "tntexits.h"
 #include "log.h"
 #include "tun.h"
+#include "options.h"
 #include "server.h"
+
+int debug;
 
 static void
 libevent_dump(struct event_base *base)
@@ -57,15 +60,22 @@ main(int argc, char *argv[]) {
 	struct device *interfce;
 
 
+	errcode = tnt_parse_file("./tNETacle.conf");
+	if (errcode == -1)
+	{
+		log_errx(TNT_OSERR, "No conf file");
+	}
+
 	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
 	log_err(-1, "Failed to init WSA.");
 	}
+
 	if ((evbase = event_base_new()) == NULL) {
 	log_err(-1, "Failed to init the event library");
 	} else {
 		libevent_dump(evbase);
 	}
-	if ((interfce = tnt_ttc_open()) == NULL) {
+	if ((interfce = tnt_ttc_open(TNT_TUNMODE_ETHERNET)) == NULL) {
 		log_err(-1, "Failed to open a tap interface");
 	}
 	/*

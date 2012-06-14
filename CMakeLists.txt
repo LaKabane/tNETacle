@@ -43,6 +43,7 @@ endif()
 # ------------------
 include_directories(${CMAKE_HOME_DIRECTORY}/include)
 include_directories(${EVENT_INCLUDE_DIR})
+include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 if (${TUNTAP_FOUND})
 	include_directories(${TUNTAP_INCLUDE_DIRS})

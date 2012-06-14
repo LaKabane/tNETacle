@@ -43,9 +43,8 @@ tnt_parse_file(const char *file) {
         file = _PATH_DEFAULT_CONFIG_FILE;
     }
 
-    (void)GetFileSizeEx(hdl, (PLARGE_INTEGER)&size);
-
     if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, file)) != NULL) {
+		(void)GetFileSizeEx(hdl, (PLARGE_INTEGER)&size);
         buf = MapViewOfFile(hdl, FILE_MAP_READ, 0, 0, 0);
 
         if (buf == NULL)
