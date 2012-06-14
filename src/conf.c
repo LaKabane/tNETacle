@@ -70,7 +70,7 @@ strndup(const char *s, size_t n)
 extern int debug;
 struct options serv_opts;
 
-static void
+void
 init_options(struct options *opt) {
     unsigned int i;
 
@@ -321,7 +321,8 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
                 (void)memset(&sin, 0, sizeof sin);
                 (void)memset(&sin6, 0, sizeof sin6);
 
-                if (family == AF_INET || family == AF_UNSPEC) {
+				fprintf(stderr, "Ohoh\n");
+				if (family == AF_INET || family == AF_UNSPEC) {
                     sin.sin_family = AF_INET;
                     sin.sin_port = htons(serv_opts.ports[i]);
                     if (inet_pton(AF_INET, "127.0.0.1",
@@ -428,6 +429,8 @@ tnt_parse_buf(char *p, size_t size) {
 	yajl_free(parse);
 
 	if (status != yajl_status_ok) {
+		const char *err = yajl_status_to_string(status);
+		fprintf(stderr, "%s\n", err);
 		return -1;
 	}
 

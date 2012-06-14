@@ -33,36 +33,30 @@
  */
 int
 tnt_parse_file(const char *file) {
-	int ret;
-    void *buf;
-    char *p;
-    size_t size;
+    char buf[65000];
+	int n;
     HANDLE hdl;
 
     if (file == NULL) {
         file = _PATH_DEFAULT_CONFIG_FILE;
     }
 
-    if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, file)) != NULL) {
-		(void)GetFileSizeEx(hdl, (PLARGE_INTEGER)&size);
-        buf = MapViewOfFile(hdl, FILE_MAP_READ, 0, 0, 0);
+	hdl = CreateFile(TEXT(file), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hdl == INVALID_HANDLE_VALUE) {
+		fprintf(stderr, "%s: Can't open\n", file);
+	}
 
-        if (buf == NULL)
-            log_err(1, "MapViewOfFile");
-
-        ret = tnt_parse_buf((char *)buf, size);
+	while (ReadFile(hdl, buf, sizeof buf, &n, NULL) == TRUE) {
+		int ret;
+		fprintf(stderr, "ByteRead: %i\n", n);
+		ret = tnt_parse_buf((char *)buf, n);
         if (ret == -1) {
             perror("tnt_parse_buf");
-            return -1;
+            break; /* XXX: ???*/
         }
+	}
 
-        if (UnmapViewOfFile(buf) == 0)
-            log_warn("UnMapViewOfFile");
-        (void)CloseHandle(hdl);
-    } else {
-        log_notice("config: %s", file);
-        return -1;
-    }
+	(void)CloseHandle(hdl);
     return 0;
 }
 

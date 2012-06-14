@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <WS2tcpip.h>
+
 #include <event2/event.h>
 
 #include "tnetacle.h"
@@ -22,8 +24,10 @@
 #include "tun.h"
 #include "options.h"
 #include "server.h"
+#include "pathnames.h"
 
 int debug;
+extern struct options serv_opts;
 
 static void
 libevent_dump(struct event_base *base)
@@ -50,6 +54,8 @@ libevent_dump(struct event_base *base)
     puts("");
 }
 
+void init_options(struct options *);
+
 int
 main(int argc, char *argv[]) {
 
@@ -58,13 +64,28 @@ main(int argc, char *argv[]) {
     struct event_base *evbase = NULL;
     struct server server;
 	struct device *interfce;
+	struct sockaddr_in sin;
 
+	memset(&sin, 0, sizeof sin);
+	init_options(&serv_opts);
+	serv_opts.listen_addrs_num = 1;
+	serv_opts.addr_family = AF_INET;
+	serv_opts.listen_addrs = calloc(1, sizeof(struct sockaddr));
 
-	errcode = tnt_parse_file("./tNETacle.conf");
+	sin.sin_family = AF_INET;
+    sin.sin_port = htons(4242);
+    if (inet_pton(AF_INET, "0.0.0.0", &sin.sin_addr.s_addr) == -1)
+        return -1;
+
+	serv_opts.listen_addrs[0] = *((struct sockaddr *)&sin);
+	serv_opts.addr = strdup("10.0.0.101");
+
+	/*errcode = tnt_parse_file(_PATH_DEFAULT_CONFIG_FILE);
 	if (errcode == -1)
 	{
-		log_errx(TNT_OSERR, "No conf file");
-	}
+		fprintf(stderr, "No conf file");
+		exit(1);
+	}*/
 
 	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
 	log_err(-1, "Failed to init WSA.");
@@ -88,7 +109,7 @@ main(int argc, char *argv[]) {
     if (server_init(&server, evbase) == -1)
 	log_err(-1, "Failed to init the server socket");
 
-	if (tnt_ttc_set_ip(interfce, "10.0.0.22/24") == -1){
+	if (tnt_ttc_set_ip(interfce, "10.0.0.101/24") == -1){
 		log_err(-1, "Failed to set interface's ip");
 	}
 	if (tnt_ttc_up(interfce) != 0) {

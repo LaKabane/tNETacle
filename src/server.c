@@ -422,7 +422,9 @@ server_init(struct server *s, struct event_base *evbase)
 
     /*evbase = evconnlistener_get_base(s->srv);*/
 
-    /* Listen on all ListenAddress */
+	fprintf(stderr, "Found %i address. Cool, bro ?\n", serv_opts.listen_addrs_num);
+    fprintf(stderr, "Yoyo: %p\n", serv_opts.listen_addrs);
+	/* Listen on all ListenAddress */
     for (i = 0; i < serv_opts.listen_addrs_num; i++) {
         evl = evconnlistener_new_bind(evbase, listen_callback,
                 s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
