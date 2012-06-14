@@ -82,21 +82,9 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
         }
         log_debug("Receive a frame of %d(%-#2x) bytes.", size, *(u.sptr));
         evbuffer_drain(buf, sizeof(size));
-        if (1) /* Check conf */
-        {
-            uchar *uncompressed_data = evbuffer_pullup(buf, size);
-            size_t compressed_size;
-            uchar *compressed_data = tnt_compress_sized(uncompressed_data, size,
-              &compressed_size);
-            if (compressed_data == NULL)
-                n = write(event_get_fd(s->device), uncompressed_data, size);
-            else
-                n = write(event_get_fd(s->device), compressed_data, compressed_size);
-        }
-        else
-            n = write(event_get_fd(s->device),
-              evbuffer_pullup(buf, size),
-              size);
+        n = write(event_get_fd(s->device),
+          evbuffer_pullup(buf, size),
+          size);
         evbuffer_drain(buf, size);
     }
 }
@@ -199,69 +187,103 @@ broadcast_to_peers(struct server *s)
     struct frame *fite = v_frame_end(&s->frames_to_send);
 	struct mc *it = NULL;
 	struct mc *ite = NULL;
+    int err;
 
     for (;fit != fite; fit = v_frame_next(fit))
     {
-        unsigned short size_networked = htons(fit->size);
         for (it = v_mc_begin(&s->peers),
-             ite = v_mc_end(&s->peers);
+               ite = v_mc_end(&s->peers);
              it != ite;
              it = v_mc_next(it))
         {
-            int err;
-            err = bufferevent_write(it->bev, &size_networked, sizeof(size_networked));
-            if (err == -1)
+            if (1) /* Check conf */
             {
-                log_notice("Error while crafting the buffer to send to %p.", it);
-                break;
+                uchar *uncompressed_data = fit->frame;
+                size_t compressed_size;
+                uchar *compressed_data = tnt_compress_sized(uncompressed_data,
+                  fit->size, &compressed_size);
+                if (compressed_data == NULL)
+                {
+                    log_warn("Aborting frame due to failed compression");
+                    break;
+                }
+                unsigned short size_networked = htons(compressed_size);
+                /* TODO: One shoot write */
+                err = bufferevent_write(it->bev, &size_networked, sizeof(size_networked));
+                if (err == -1)
+                {
+                    log_notice("Error while crafting the buffer to send to %p.", it);
+                    free(compressed_data);
+                    break;
+                }
+                err = bufferevent_write(it->bev, compressed_data , compressed_size);
+                if (err == -1)
+                {
+                    log_notice("Error while crafting the buffer to send to %p.", it);
+                    free(compressed_data);
+                    break;
+                }
+                log_debug("Adding %d(%-#2x) bytes to %p's output buffer.",
+                  fit->size, it);
+                free(compressed_data);
             }
-            err = bufferevent_write(it->bev, fit->frame, fit->size);
-            if (err == -1)
+            else
             {
-                log_notice("Error while crafting the buffer to send to %p.", it);
-                break;
+                unsigned short size_networked = htons(fit->size);
+                err = bufferevent_write(it->bev, &size_networked, sizeof(size_networked));
+                if (err == -1)
+                {
+                    log_notice("Error while crafting the buffer to send to %p.", it);
+                    break;
+                }
+                err = bufferevent_write(it->bev, fit->frame, fit->size);
+                if (err == -1)
+                {
+                    log_notice("Error while crafting the buffer to send to %p.", it);
+                    break;
+                }
+                log_debug("Adding %d(%-#2x) bytes to %p's output buffer.",
+                  fit->size, it);
             }
-            log_debug("Adding %d(%-#2x) bytes to %p's output buffer.",
-                      fit->size, it);
         }
+        v_frame_erase_range(&s->frames_to_send, v_frame_begin(&s->frames_to_send), fite);
     }
-    v_frame_erase_range(&s->frames_to_send, v_frame_begin(&s->frames_to_send), fite);
 }
 
-static void
-server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
-{
-    struct server *s = (struct server *)ctx;
-
-    if (events & EV_READ)
+    static void
+      server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
     {
-        int _n = 0;
-        ssize_t n;
-        struct frame tmp;
+        struct server *s = (struct server *)ctx;
 
-        while ((n = read(device_fd, &tmp.frame, sizeof(tmp.frame))) > 0)
+        if (events & EV_READ)
         {
-            tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
-            v_frame_push(&s->frames_to_send, &tmp);
-            log_debug("Read a new frame of %d bytes.", n);
-            _n++;
+            int _n = 0;
+            ssize_t n;
+            struct frame tmp;
+
+            while ((n = read(device_fd, &tmp.frame, sizeof(tmp.frame))) > 0)
+            {
+                tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
+                v_frame_push(&s->frames_to_send, &tmp);
+                log_debug("Read a new frame of %d bytes.", n);
+                _n++;
+            }
+            if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
+            {
+                log_debug("Read %d frames in this pass.", _n);
+                broadcast_to_peers(s);
+            }
+            else
+                log_warn("Read on the device failed:");
         }
-        if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
-        {
-            log_debug("Read %d frames in this pass.", _n);
-            broadcast_to_peers(s);
-        }
-        else
-            log_warn("Read on the device failed:");
     }
-}
 
-void
-server_set_device(struct server *s, int fd)
-{
-    struct event_base *evbase = evconnlistener_get_base(s->srv);
-    struct event *ev = event_new(evbase, fd, EV_READ | EV_PERSIST, server_device_cb, s);
-    int err;
+    void
+      server_set_device(struct server *s, int fd)
+    {
+        struct event_base *evbase = evconnlistener_get_base(s->srv);
+        struct event *ev = event_new(evbase, fd, EV_READ | EV_PERSIST, server_device_cb, s);
+        int err;
 
     err = evutil_make_socket_nonblocking(fd);
     if (err == -1)

@@ -46,6 +46,7 @@ uchar *tnt_compress_sized(uchar *uncompressed_data, const int size,
     }
     memcpy(compressed_data + *compressed_size, &size,
       sizeof(size));
+    compressed_size += sizeof(size);
     return compressed_data;
 }
 
