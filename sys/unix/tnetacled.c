@@ -117,7 +117,6 @@ int
 main(int argc, char *argv[]) {
     int ch;
     pid_t chld_pid;
-    struct passwd *pw;
     int imsg_fds[2];
     struct imsgbuf ibuf;
     struct imsg_data data;
@@ -150,10 +149,6 @@ main(int argc, char *argv[]) {
 	return 1;
     }
 
-    if ((pw = getpwnam(TNETACLE_USER)) == NULL) {
-	(void)fprintf(stderr, "unknown user " TNETACLE_USER "\n");
-	return TNT_NOUSER;
-    }
 
     if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1) {
 	perror("socketpair");
@@ -170,7 +165,7 @@ main(int argc, char *argv[]) {
      * monitor for SIGCHLD by signal
      */
     signal(SIGCHLD, _sighdlr);
-    chld_pid = tnt_fork(imsg_fds, pw);
+    chld_pid = tnt_fork(imsg_fds);
 
     if ((evbase = event_base_new()) == NULL) {
 	log_err(-1, "Failed to init the event library");
@@ -214,11 +209,11 @@ main(int argc, char *argv[]) {
 	kill(chld_pid, SIGTERM);
 
     msgbuf_clear(&ibuf.w);
-    event_base_free(evbase);
     event_free(event);
     event_free(sigint);
     event_free(sigterm);
     event_free(sigchld);
+    event_base_free(evbase);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
@@ -277,7 +272,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    }
 	    datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
 	    (void)memset(buf, '\0', sizeof buf);
-	    (void)memcpy(buf, imsg.data, sizeof buf);
+	    (void)memcpy(buf, imsg.data, datalen);
 	    buf[datalen] = '\0';
 	    
 	    log_info("receive IMSG_SET_IP: %s", buf);
