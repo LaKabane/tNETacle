@@ -32,6 +32,7 @@
 #include "tntsocket.h"
 #include "server.h"
 #include "log.h"
+#include "compress.h"
 
 union chartoshort {
     unsigned char *cptr;
@@ -42,7 +43,7 @@ static void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = (struct server *)ctx;
-    ssize_t n;
+    ssize_t n; /* n is unused ? */
     struct evbuffer *buf = NULL;
     unsigned short size;
 
@@ -66,8 +67,8 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
         log_debug("Receive a frame of %d(%-#2x) bytes.", size, *(u.sptr));
         evbuffer_drain(buf, sizeof(size));
         n = write(event_get_fd(s->device),
-                  evbuffer_pullup(buf, size),
-                  size);
+          evbuffer_pullup(buf, size),
+          size);
         evbuffer_drain(buf, size);
     }
 }
@@ -143,7 +144,7 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
         struct mc mctx;
 
         /*
-         * Set a callback to bev using 
+         * Set a callback to bev using
          * bufferevent_setcb.
          */
         mc_init(&mctx, sock, (socklen_t)len, bev);
