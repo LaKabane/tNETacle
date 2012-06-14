@@ -19,12 +19,14 @@ set(${CMAKE_SYSTEM_NAME} True)
 
 # Global Packages search
 # ------------------
+find_package(ZLIB REQUIRED)
 find_package(Event COMPONENTS core REQUIRED)
-find_package(Tuntap)
-# find_package(ZLIB REQUIRED)
+find_package(Tapcfg REQUIRED)
+find_package(Tuntap REQUIRED)
+find_package(Yajl REQUIRED)
 
-# Global definitions
-# ------------------
+
+# Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 add_definitions(-DHAVE_SETPROCTITLE)
 add_definitions(-DHAVE_SETRESXID)
@@ -41,6 +43,7 @@ endif()
 # ------------------
 include_directories(${CMAKE_HOME_DIRECTORY}/include)
 include_directories(${EVENT_INCLUDE_DIR})
+include_directories(${YAJL_INCLUDE_DIR})
 if (${TUNTAP_FOUND})
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
@@ -55,7 +58,7 @@ endif()
 set(SOURCES_LIST
   src/conf.c
   src/tun-compat.c
-  #src/compress.c
+  src/compress.c
   #src/pipeline.c
   src/mc.c
   src/server.c)
@@ -70,6 +73,7 @@ if(UNIX)
 	# Unix specific definitions
 	# ------------------
 	set(CMAKE_C_FLAGS "-W -Wall")
+  	add_definitions(-DUnix)
 
 	# Unix specific source files
 	# ------------------
@@ -84,6 +88,7 @@ if (Windows)
 	# CMake windows Configuration
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+  	add_definitions(-DWnt)
 
 	# Windows source files
 	# ------------------
@@ -91,6 +96,7 @@ if (Windows)
 		sys/wnt/conf.c
 		sys/wnt/log.c
 		sys/wnt/tntsocket.c
+		sys/wnt/winstrtonum.c
 	)
 endif()
 
@@ -146,7 +152,8 @@ add_executable(tNETacle ${SOURCES_LIST})
 # Global linked libraries
 # ------------------
 
-target_link_libraries(tNETacle ${EVENT_LIBRARIES} ${ZLIB_LIBRARY})
+target_link_libraries(tNETacle
+    ${EVENT_LIBRARIES} ${ZLIB_LIBRARY} ${YAJL_LIBRARIES})
 
 if (TUNTAP_FOUND)
   target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
@@ -164,3 +171,4 @@ endif()
 if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
+

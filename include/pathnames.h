@@ -19,5 +19,11 @@
 
 /* Here will be macro object of various files, folders and paths */
 
+#if defined Unix
+# define _PATH_DEFAULT_CONFIG_FILE "/etc/tNETacle.conf"
+#else
+# define _PATH_DEFAULT_CONFIG_FILE "%APPDATA%a/tNETacle/tNETacle.conf"
+#endif
+
 #endif
 

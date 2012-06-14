@@ -14,63 +14,56 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * Original copyright notice :
- * David Leonard <d@openbsd.org>, 1999. Public domain.
- */
+#ifdef WIN32
+#include <winsock2.h>
+#include <Windows.h>
+#define _PATH_DEFAULT_CONFIG_FILE "./"
+#define __func__ __FUNCTION__
+#endif
 
-#include <windows.h>
 #include <stdio.h>
 
 #include "tnetacle.h"
 #include "log.h"
 
 /*
- * MapViewOfFile the given config file and start the parsing
+ * Load the configuration file given in argument.
+ * If file is NULL, tnt_parse_config_file() will load the default
+ * configuration file.
  */
-static void
-load_config(HANDLE hdl) {
-	void *buf;
-	char *p;
+int
+tnt_parse_file(const char *file) {
+	int ret;
+    void *buf;
+    char *p;
+    size_t size;
+    HANDLE hdl;
 
-	buf = MapViewOfFile(hdl, FILE_MAP_READ, 0, 0, 0);
-	if (buf == NULL)
-		log_err(1, "MapViewOfFile");
+    if (file == NULL) {
+        file = _PATH_DEFAULT_CONFIG_FILE;
+    }
 
-	p = (char *)buf;
-	while (p != NULL && *p != '\0') {
-		p = tnt_parse_line(p);
-	}
+    (void)GetFileSizeEx(hdl, (PLARGE_INTEGER)&size);
 
-	if (UnmapViewOfFile(buf) == 0)
-		log_warn("UnMapViewOfFile");
-}
+    if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, file)) != NULL) {
+        buf = MapViewOfFile(hdl, FILE_MAP_READ, 0, 0, 0);
 
-/*
- * load various config file, allowing later ones to 
- * overwrite earlier values
- */
-void
-config(void) {
-	/*
-	char nm[MAXNAMLEN + 1];
-	char *fnms[] = { 
-		"...",
-		NULL
-	};
-	int fn;
-	HANDLE hdl;
-	struct stat st;
+        if (buf == NULL)
+            log_err(1, "MapViewOfFile");
 
-	for (fn = 0; fnms[fn]; fn++) {
-		(void)_snprintf(nm, sizeof nm, fnms[fn], home);
-		if ((hdl = OpenFileMapping(FILE_MAP_READ, FALSE, nm)) != -1) {
-			load_config(hdl);
-			(void)CloseHandle(hdl);
-		} 
-		else if (errno != ENOENT)
-			log_notice("config: %s", nm);
-	}
-	*/
+        ret = tnt_parse_buf((char *)buf, size);
+        if (ret == -1) {
+            perror("tnt_parse_buf");
+            return -1;
+        }
+
+        if (UnmapViewOfFile(buf) == 0)
+            log_warn("UnMapViewOfFile");
+        (void)CloseHandle(hdl);
+    } else {
+        log_notice("config: %s", file);
+        return -1;
+    }
+    return 0;
 }
 
