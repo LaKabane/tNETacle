@@ -82,9 +82,21 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
         }
         log_debug("Receive a frame of %d(%-#2x) bytes.", size, *(u.sptr));
         evbuffer_drain(buf, sizeof(size));
-        n = write(event_get_fd(s->device),
-          evbuffer_pullup(buf, size),
-          size);
+        if (1)
+        {
+            size_t uncompressed_size;
+            uchar *uncompressed_data = tnt_uncompress_sized(evbuffer_pullup(buf, size), size, &uncompressed_size);
+            if (uncompressed_data == NULL)
+            {
+                log_warn("Dropping packet du to uncompress failure");
+                break;
+            }
+            n = write(event_get_fd(s->device), uncompressed_data, uncompressed_size);
+        }
+        else
+            n = write(event_get_fd(s->device),
+              evbuffer_pullup(buf, size),
+              size);
         evbuffer_drain(buf, size);
     }
 }
