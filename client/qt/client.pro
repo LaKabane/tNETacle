@@ -7,11 +7,13 @@ SOURCES += \
     clientgui.cpp \
     controller.cpp\
     addcontactgui.cpp \
-    contactgui.cpp
+    contactgui.cpp \
+    rootnodegui.cpp
 
 FORMS += \
     client.ui \
-    addContact.ui
+    addContact.ui \
+    rootNode.ui
 
 RESOURCES += \
     ../share/img/client.qrc
@@ -24,6 +26,7 @@ HEADERS += \
     ../share/contact.h \
     ../share/config.h \
     addcontactgui.h \
-    contactgui.h
+    contactgui.h \
+    rootnodegui.h
 
 INCLUDEPATH += ../share/
