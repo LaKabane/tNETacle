@@ -9,7 +9,7 @@ Controller::Controller(ClientGUI & gui) :
 
 }
 
-void Controller::edit(QListWidgetItem *item)
+void Controller::editContact(QListWidgetItem *item)
 {
   this->_view.createAddContact(item->text(), _model[item->text()]);
 }
@@ -30,7 +30,19 @@ void Controller::addContact()
   // new Contact (this->e_view.getNewContactName(),
   //              this->_view.getNewContactKey());
   //TODO integrate Contact in to model, validate DATA
-
-
 }
 
+void Controller::editRootNode()
+{
+  // TODO
+  this->_view.createRootNodeGui(_rootNodeName, _rootNodeIP, _rootNodePubkey);
+}
+
+void	Controller::changeRootNode()
+{
+  // TODO
+  _rootNodeName = this->_view.getRootName();
+  _rootNodeIP = this->_view.getRootIP();
+  _rootNodePubkey = this->_view.getRootKey();
+  this->_view.deleteRootNode();
+}

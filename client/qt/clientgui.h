@@ -11,6 +11,7 @@ namespace Ui {
 }
 
 class addContactGui;
+class rootNodeGui;
 
 class ClientGUI : public QMainWindow, private Ui::ClientGUI
 {
@@ -22,12 +23,20 @@ public:
   void addContact(const QString &);
   QString getSelected() const;
   void    deleteSelected();
-  QString getNewContactName() const;
   const QString getInitialContactName() const;
+  QString getNewContactName() const;
   QString getNewContactKey() const;
+
+  QString getRootName() const;
+  QString getRootKey() const;
+  QString getRootIP() const;
+
   void    createAddContact(const QString &, const QString &);
+  void    createRootNodeGui(const QString &, const QString &, const QString &);
+
 private:
     addContactGui*  _addContact;
+	rootNodeGui*	_rootNode;
     Controller      _controller;
 
 signals:
@@ -36,6 +45,8 @@ public slots:
     void            createAddContact();
     void            deleteAddContact();
     void  addContactDeleted();
+	void  rootNodeGuiDeleted();
+	void            deleteRootNode();
 
 };
 

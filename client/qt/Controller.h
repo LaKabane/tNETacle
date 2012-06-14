@@ -16,11 +16,20 @@ public:
 public slots:
   void addContact();
   void deleteContact();
-  void edit(QListWidgetItem *);
+  void editContact(QListWidgetItem *);
+
+  void editRootNode();
+  void changeRootNode();
+
 private:
   ClientGUI &_view;
   QMap<QString, QString> _model; // This model is temporary, waiting for the real one to be ready.
   bool  editing;
+
+  // TODO : put the root node here with a correct type
+  QString _rootNodeName;
+  QString _rootNodeIP;
+  QString _rootNodePubkey;
 };
 
 
