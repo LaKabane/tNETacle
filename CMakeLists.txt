@@ -61,6 +61,7 @@ set(SOURCES_LIST
   src/compress.c
   #src/pipeline.c
   src/mc.c
+  src/hexdump.c
   src/server.c)
 
 # OS families specific things
@@ -97,6 +98,7 @@ if (Windows)
 		sys/wnt/log.c
 		sys/wnt/tntsocket.c
 		sys/wnt/winstrtonum.c
+		sys/wnt/main.c
 	)
 endif()
 

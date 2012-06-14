@@ -9,36 +9,66 @@ log_init(void) {
 
 void
 log_err(int eval, const char *str, ...) {
-	printf("%s\n", str);
+	va_list	 ap;
+
+	va_start(ap, str);
+	vprintf(str, ap);
+	puts("\n");
+	va_end(ap);
 }
 
 void
 log_errx(int eval, const char *str) {
-	printf("%s\n", str);
+	vprintf("%s\n", str);
 }
 
 void
 log_warn(const char *str, ...) {
-	printf("%s\n", str);
+	va_list	 ap;
+
+	va_start(ap, str);
+	vprintf(str, ap);
+	puts("");
+	va_end(ap);
 }
 
 void
 log_warnx(const char *str, ...) {
-	printf("%s\n", str);
+	va_list	 ap;
+
+	va_start(ap, str);
+	vprintf(str, ap);
+	puts("");
+	va_end(ap);
 }
 
 void
 log_notice(const char *str, ...) {
-	printf(str);
+	va_list	 ap;
+
+	va_start(ap, str);
+	vprintf(str, ap);
+	puts("");
+	va_end(ap);
 }
 
 void
 log_info(const char *str, ...) {
-	printf("%s\n", str);
+	va_list	 ap;
+
+	va_start(ap, str);
+	vprintf(str, ap);
+	puts("");
+	va_end(ap);
 }
 
 void
 log_debug(const char *str, ...) {
-	printf("%s\n", str);
+	va_list	 ap;
+
+	va_start(ap, str);
+	vprintf(str, ap);
+	puts("");
+	va_end(ap);
 }
 
