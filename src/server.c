@@ -33,6 +33,7 @@
 #include "server.h"
 #include "log.h"
 #include "compress.h"
+#include "compress_unix.h"
 
 union chartoshort {
     unsigned char *cptr;
@@ -66,9 +67,21 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
         }
         log_debug("Receive a frame of %d(%-#2x) bytes.", size, *(u.sptr));
         evbuffer_drain(buf, sizeof(size));
-        n = write(event_get_fd(s->device),
-          evbuffer_pullup(buf, size),
-          size);
+        if (1) /* Check conf */
+        {
+            uchar *uncompressed_data = evbuffer_pullup(buf, size);
+            size_t compressed_size;
+            uchar *compressed_data = tnt_compress_sized(uncompressed_data, size,
+              &compressed_size);
+            if (compressed_data == NULL)
+                n = write(event_get_fd(s->device), uncompressed_data, size);
+            else
+                n = write(event_get_fd(s->device), compressed_data, compressed_size);
+        }
+        else
+            n = write(event_get_fd(s->device),
+              evbuffer_pullup(buf, size),
+              size);
         evbuffer_drain(buf, size);
     }
 }
@@ -324,4 +337,3 @@ server_init(struct server *s, struct event_base *evbase)
         server_establish_mc_hostname(s, conf_peer_address);
     return 0;
 }
-
