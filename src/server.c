@@ -90,7 +90,7 @@ windows_fix_read(intptr_t fd, void *buf, size_t len)
 			hex_dump_chk(buf, n);
 			log_debug("== READ == READ == READ == READ ==");
 		}
-		WaitForSingleObject(gl_overlap.hEvent, INFINITE);
+		WaitForSingleObject(gl_overlap.hEvent, 1000);
 		return n;
 	}
 }
