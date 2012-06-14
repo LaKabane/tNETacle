@@ -19,14 +19,14 @@ set(${CMAKE_SYSTEM_NAME} True)
 
 # Global Packages search
 # ------------------
+find_package(ZLIB REQUIRED)
 find_package(Event COMPONENTS core REQUIRED)
-# find_package(ZLIB REQUIRED)
 find_package(Tapcfg REQUIRED)
 find_package(Tuntap REQUIRED)
 find_package(Yajl REQUIRED)
 
-# Global definitions
-# ------------------
+
+# Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 add_definitions(-DHAVE_SETPROCTITLE)
 add_definitions(-DHAVE_SETRESXID)
@@ -58,7 +58,7 @@ endif()
 set(SOURCES_LIST
   src/conf.c
   src/tun-compat.c
-  #src/compress.c
+  src/compress.c
   #src/pipeline.c
   src/mc.c
   src/server.c)
@@ -172,6 +172,3 @@ if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
 
-if (Windows)
-    target_link_libraries(tNETacle Ws2_32.lib)
-endif()
