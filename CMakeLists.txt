@@ -70,7 +70,7 @@ set(SOURCES_LIST
 if(UNIX)
 	# Unix specific include directories
 	# ------------------
-	include_directories(/usr/include/ /usr/local/include)
+	include_directories(/usr/include/)
 
 	# Unix specific definitions
 	# ------------------
@@ -129,9 +129,11 @@ if(Linux)
 endif()
 
 if (OpenBSD)
+	include_directories(/usr/local/include)
 endif()
 
 if (NetBSD)
+	include_directories(/usr/pkg/include)
 endif()
 
 if (FreeBSD)
