@@ -14,80 +14,72 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * Original copyright notice :
- * David Leonard <d@openbsd.org>, 1999. Public domain.
- */
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/param.h>
 
-#include <dirent.h> /* For MAXNAMLEN */
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "log.h"
+#include "pathnames.h"
 #include "tnetacle.h"
 
 /*
- * mmap the given config file and start the parsing
+ * Load the configuration file given in argument.
+ * If file is NULL, tnt_parse_file() will load the default
+ * configuration file.
  */
-static void
-load_config(int fd, unsigned long int len) {
-	void *buf;
-	char *p;
+int
+tnt_parse_file(const char *file) {
+    int fd;
+    int ret;
+    void *buf;
+    struct stat st;
 
-	buf = mmap(0, len, PROT_READ, MAP_PRIVATE | MAP_FILE, fd, 0);
-	if (buf == MAP_FAILED)
-		log_err(1, "mmap");
+    if (file == NULL) {
+        file = _PATH_DEFAULT_CONFIG_FILE;
+    }
 
-	p = (char *)buf;
-	while (p != NULL && *p != '\0') {
-		p = tnt_parse_line(p);
+    if ((fd = open(file, O_RDONLY)) != -1) {
+        if (stat(file, &st) == -1) {
+	    (void)close(fd);
+	    (void)fprintf(stderr, "%s: can't stat\n", file);
+	    return -1;
 	}
 
-	if (munmap(buf, len) == -1)
-		log_warn("munmap");
-}
+        if (st.st_mode & S_IRGRP || st.st_mode & S_IWGRP ||
+	    st.st_mode & S_IXGRP || st.st_mode & S_IROTH ||
+	    st.st_mode & S_IWOTH || st.st_mode & S_IXOTH) {
+            (void)fprintf(stderr, "%s: insecure file permission\n", file);
+	    (void)fchmod(fd, S_IRUSR|S_IWUSR);
+        }
 
-/*
- * load various config file, allowing later ones to 
- * overwrite earlier values
- */
-void
-tnt_conf(void) {
-	char *home;
-	char nm[MAXNAMLEN + 1];
-	char *fnms[] = { 
-		"/etc/tNETacle.conf",
-		"%s/.tNETacle.conf",
-		".tNETacle.conf",
-		NULL
-	};
-	int fn;
-	int fd;
-	struct stat st;
+        buf = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE | MAP_FILE, fd, 0);
+        if (buf == MAP_FAILED) {
+            perror("mmap");
+            return -1;
+        }
 
-	/* All the %s's get converted to $HOME */
-	if ((home = getenv("HOME")) == NULL)
-		home = "";
+        ret = tnt_parse_buf((char *)buf, st.st_size);
+        if (ret == -1) {
+            perror("tnt_parse_buf");
+            return -1;
+        }
 
-	for (fn = 0; fnms[fn]; fn++) {
-		(void)snprintf(nm, sizeof nm, fnms[fn], home);
-		if ((fd = open(nm, O_RDONLY)) != -1) {
-			if (stat(nm, &st) == -1)
-				log_err(1, "stat");
+        if (munmap(buf, st.st_size) == -1)
+            perror("munmap");
 
-			load_config(fd, st.st_size);
-			(void)close(fd);
-		} 
-		else if (errno != ENOENT)
-			log_notice("config: %s", nm);
-	}
+        (void)close(fd);
+    } else if (errno != ENOENT) {
+        (void)fprintf(stderr, "%s: can't open\n", file);
+        return -1;
+    }
+    return 0;
 }
 

@@ -15,6 +15,9 @@
  */
 
 #include <sys/types.h>
+#if !defined WIN32
+#include <pwd.h>
+#endif
 
 struct passwd;
 
@@ -27,6 +30,9 @@ struct passwd;
  */
 #define TNETACLE_USER "_tnetacle"
 
+#define TNETACLE_DEFAULT_PORT	4242
+#define TNETACLE_MAX_PORTS	256
+
 /*
  * Definition of types for our imsg.
  */
@@ -37,14 +43,14 @@ enum imsg_type {
 };
 
 char 		*tnt_getprogname(void);
-__inline void    tnt_setproctitle(const char *);
+void    	 tnt_setproctitle(const char *);
 int		 tnt_fork(int [2]);
 int		 tnt_daemonize(void);
 
 /* src/conf.c */
-char		*tnt_parse_line(char *);
+int	 tnt_parse_buf(char *, size_t);
 /* and sys/ specific call */
-void		 tnt_conf(void);
+int	 tnt_parse_file(const char *);
 
 #endif
 

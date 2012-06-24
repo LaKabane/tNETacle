@@ -28,14 +28,14 @@
 #include "tnetacle.h"
 #include "log.h"
 
-extern int conf_debug;
+extern int debug;
 static char *prefix = "";
 
 static void
 vlog(int pri, const char *fmt, va_list ap) {
 	char	*nfmt;
 
-	if (conf_debug == 1) {
+	if (debug == 1) {
 		/* best effort in out of mem situations */
 		if (asprintf(&nfmt, "[%s] %s\n", prefix, fmt) == -1) {
 			vfprintf(stderr, fmt, ap);
@@ -73,7 +73,7 @@ void
 log_init(void) {
 	char	*progname = tnt_getprogname();
 
-	if (conf_debug == 0)
+	if (debug == 0)
 		openlog(progname, LOG_PID | LOG_NDELAY, LOG_USER);
 
 	tzset();
@@ -152,7 +152,7 @@ void
 log_debug(const char *emsg, ...) {
 	va_list	 ap;
 
-	if (conf_debug == 1) {
+	if (debug == 1) {
 		va_start(ap, emsg);
 		vlog(LOG_DEBUG, emsg, ap);
 		va_end(ap);

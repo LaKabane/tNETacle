@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 
 #include <grp.h>
 #include <pwd.h>
@@ -29,6 +30,7 @@
 #include "tntexits.h"
 #include "tnetacle.h"
 #include "log.h"
+#include "options.h"
 #include "server.h"
 
 /* imsg specific includes */
@@ -38,7 +40,7 @@
 
 #include <event2/event.h>
 
-extern char conf_address[25];
+extern struct options serv_opts;
 
 struct imsg_data {
     struct imsgbuf *ibuf;
@@ -55,7 +57,7 @@ int tnt_dispatch_imsg(struct imsg_data *);
 static void
 tnt_imsg_callback(evutil_socket_t fd, short events, void *args) {
     (void)fd;
-    struct imsg_data *data = args; 
+    struct imsg_data *data = args;
     struct imsgbuf *ibuf = data->ibuf;
 
     if (events & EV_READ || data->is_ready_read == 1) {
@@ -114,7 +116,7 @@ tnt_priv_drop(struct passwd *pw) {
 }
 
 static struct event *
-init_pipe_endpoint(int imsg_fds[2], 
+init_pipe_endpoint(int imsg_fds[2],
 		   struct imsg_data *data) {
 
     struct event *event = NULL;
@@ -248,7 +250,7 @@ tnt_dispatch_imsg(struct imsg_data *data) {
 
 	    /* directly ask to configure the tun device */
 	    imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
-			 conf_address, strlen(conf_address));
+			serv_opts.addr , strlen(serv_opts.addr));
 	    break;
 	default:
 	    break;
