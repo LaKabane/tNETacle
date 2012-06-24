@@ -14,7 +14,6 @@ set(${CMAKE_SYSTEM_NAME} True)
 
 # CMake global options
 # ------------------
-
 # None at the moment
 
 # Global Packages search
@@ -25,11 +24,8 @@ find_package(Tapcfg REQUIRED)
 find_package(Tuntap REQUIRED)
 find_package(Yajl REQUIRED)
 
-
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
-add_definitions(-DHAVE_SETPROCTITLE)
-add_definitions(-DHAVE_SETRESXID)
 if (${TUNTAP_FOUND})
 	add_definitions(-DUSE_LIBTUNTAP)
 else()
@@ -120,6 +116,8 @@ if(Linux)
 	# Linux specific definitions
 	# ------------------
 	add_definitions(-D_GNU_SOURCE)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 	if (BSD_FOUND)
 		add_definitions(-DHAVE_BSD_COMPAT)
 		include_directories(${BSD_INCLUDE_DIRS})
@@ -130,13 +128,20 @@ endif()
 
 if (OpenBSD)
 	include_directories(/usr/local/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (NetBSD)
 	include_directories(/usr/pkg/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+#	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (FreeBSD)
+	include_directories(/usr/local/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (Darwin)
@@ -146,8 +151,6 @@ if (Darwin)
 
 	# Darwin specific definitions
 	# ------------------
-	remove_definitions(-DHAVE_SETPROCTITLE)
-	remove_definitions(-DHAVE_SETRESXID)
 endif()
 
 # Executable definitons
