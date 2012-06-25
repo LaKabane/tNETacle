@@ -102,6 +102,7 @@ endif()
 # OS specific things
 # ------------------
 if(Linux)
+	include_directories(/usr/local/include)
 
 	# Linux specific Options
 	# ------------------
