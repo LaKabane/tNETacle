@@ -107,6 +107,8 @@ endif()
 # OS specific things
 # ------------------
 if(Linux)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 	include_directories(/usr/local/include)
 
 	# Linux specific Options
@@ -133,18 +135,24 @@ if(Linux)
 endif()
 
 if (OpenBSD)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 	include_directories(/usr/local/include)
 	add_definitions(-DHAVE_SETPROCTITLE)
 	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (NetBSD)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/pkg/include)
 	include_directories(/usr/pkg/include)
 	add_definitions(-DHAVE_SETPROCTITLE)
 #	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (FreeBSD)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 	include_directories(/usr/local/include)
 	add_definitions(-DHAVE_SETPROCTITLE)
 	add_definitions(-DHAVE_SETRESXID)
@@ -153,6 +161,8 @@ endif()
 if (Darwin)
 	# Darwin specific include directories (macport)
 	# ------------------
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /opt/local/include)
 	include_directories(/opt/local/include)
 
 	# Darwin specific definitions
