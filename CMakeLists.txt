@@ -59,6 +59,7 @@ set(SOURCES_LIST
   src/conf.c
   src/tun-compat.c
   src/compress.c
+  src/utils.c
   #src/pipeline.c
   src/mc.c
   src/server.c)
@@ -132,9 +133,11 @@ if (NetBSD)
 endif()
 
 if (FreeBSD)
+  add_definitions(-DHAS_REALLOCF)
 endif()
 
 if (Darwin)
+  add_definitions(-DHAS_REALLOCF)
 	# Darwin specific include directories (macport)
 	# ------------------
 	include_directories(/opt/local/include)
