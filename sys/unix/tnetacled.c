@@ -95,7 +95,7 @@ sighdlr(evutil_socket_t sig, short events, void *args) {
         name = "sigint";
 	break;
     }
-    log_warn("Received signal %d(%s) stoping.\n", sig, name);
+    log_warn("Received signal %d(%s) stopping", sig, name);
     event_base_loopbreak(evbase);
 }
 
