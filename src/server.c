@@ -413,8 +413,7 @@ server_init(struct server *s, struct event_base *evbase)
 										  TEXT("Device event"));
 #endif
 
-    listens = serv_opts.listen_addrs;
-    peers = serv_opts.peer_addrs;
+    peers = v_sockaddr_begin(&serv_opts.peer_addrs);
 
     v_mc_init(&s->peers);
     v_mc_init(&s->pending_peers);
@@ -422,13 +421,13 @@ server_init(struct server *s, struct event_base *evbase)
 
     /*evbase = evconnlistener_get_base(s->srv);*/
 
-	fprintf(stderr, "Found %i address. Cool, bro ?\n", serv_opts.listen_addrs_num);
-    fprintf(stderr, "Yoyo: %p\n", serv_opts.listen_addrs);
-	/* Listen on all ListenAddress */
-    for (i = 0; i < serv_opts.listen_addrs_num; i++) {
+    /* Listen on all ListenAddress */
+    for (listens = v_sockaddr_begin(&serv_opts.listen_addrs);
+         listens != NULL && listens != v_sockaddr_end(&serv_opts.listen_addrs);
+         listens = v_sockaddr_next(listens)) {
         evl = evconnlistener_new_bind(evbase, listen_callback,
-                s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
-                (listens+i), sizeof(*(listens+i)));
+          s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
+          listens, sizeof(*listens));
         if (evl == NULL) {
             log_debug("Fail at ListenAddress #%i", i);
             return -1;
@@ -439,21 +438,22 @@ server_init(struct server *s, struct event_base *evbase)
     s->srv = evl;
 
     /* If we don't have any PeerAddress it's finished */
-    if (serv_opts.peer_addrs == NULL)
+    if (serv_opts.peer_addrs.size == 0)
         return 0;
 
-    for (i = 0; i < serv_opts.peer_addrs_num; i++) {
+    for (;peers != NULL && peers != v_sockaddr_end(&serv_opts.listen_addrs);
+         peers = v_sockaddr_next(peers)) {
         bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
         if (bev == NULL) {
             log_warn("Unable to allocate a socket for connecting to the peer");
             return -1;
         }
-        err = bufferevent_socket_connect(bev, (peers+i), sizeof(*(peers+i)));
+        err = bufferevent_socket_connect(bev, peers, sizeof(*peers));
         if (err == -1) {
             log_warn("Unable to connect to the peer");
             return -1;
         }
-        mc_init(&mctx, (peers+1), sizeof(*(peers+1)), bev);
+        mc_init(&mctx, peers, sizeof(*peers), bev);
     }
 
     bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);

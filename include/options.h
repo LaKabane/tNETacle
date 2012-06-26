@@ -14,6 +14,21 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#ifndef TNT_OPTIONS_H_ 
+#define TNT_OPTIONS_H_ 
+
+#define VECTOR_TYPE struct sockaddr
+#define VECTOR_PREFIX sockaddr
+#include "vector.h"
+#undef VECTOR_TYPE
+#undef VECTOR_PREFIX
+
 struct options {
     int tunnel;                    /* Tunnel type: layer 2 or 3 */
     int tunnel_index;              /* Force the device instance number */
@@ -25,11 +40,10 @@ struct options {
 
     int ports[TNETACLE_MAX_PORTS]; /* Port number to listen on */
     int addr_family;               /* Address family used by the server */
-    struct sockaddr *listen_addrs; /* Addresses on which the server listens */
-    size_t listen_addrs_num;
-
-    struct sockaddr *peer_addrs;   /* Address of others tNETacle daemon */
-    size_t peer_addrs_num;
+    /* Addresses on which the server listens */
+    struct vector_sockaddr listen_addrs;
+    /* Addresses of others tNETacle daemons */
+    struct vector_sockaddr peer_addrs;
     char *addr;                    /* Address on the VPN */
 
     const char *key_path;
@@ -49,4 +63,6 @@ enum {
     TNT_DAEMONMODE_SWITCH,
     TNT_DAEMONMODE_HUB
 };
+
+#endif
 
