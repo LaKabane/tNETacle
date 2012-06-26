@@ -16,9 +16,10 @@ if (YAJL_INCLUDE_DIR AND YAJL_LIBRARY)
 endif ()
 
 libfind_pkg_check_modules(YAJL_PKGCONF libyajl)
+#message (STATUS ${PATH})
 
 find_path(YAJL_INCLUDE_DIR
-  PATH ${YAJL_PKGCONF_INCLUDE_DIRS}
+  yajl_gen.h ${YAJL_PKGCONF_INCLUDE_DIRS} /opt/local/include/yajl
 )
 
 find_library(YAJL_LIBRARY
