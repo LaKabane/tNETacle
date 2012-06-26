@@ -29,8 +29,7 @@ endif()
 
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
-add_definitions(-DHAVE_SETPROCTITLE)
-add_definitions(-DHAVE_SETRESXID)
+
 
 if (TUNTAP_FOUND)
     add_definitions(-DUSE_LIBTUNTAP)
@@ -147,7 +146,6 @@ if (NetBSD)
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/pkg/include)
 	include_directories(/usr/pkg/include)
 	add_definitions(-DHAVE_SETPROCTITLE)
-#	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (FreeBSD)
@@ -201,4 +199,3 @@ endif()
 if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
-
