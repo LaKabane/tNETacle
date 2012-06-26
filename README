@@ -1,27 +1,68 @@
-               tNETacle -- General information
+tNETacle
+========
+
+Introduction
+------------
 
 tNETacle is an easy to use  Virtual Private Network (VPN) daemon built
 whith efficiency and security in mind.
 
-If there is no flaw in the packaging, you should have the following
-directories :
+Directories
+-----------
 
-    1. 'dat', which contains a variety of data files.
-    2. 'doc', which contains various documentation.
-    3. 'include', which contains all *.h files.
-    4. 'src', which contains *.c files used by all versions.
-    5. 'util', which contains files for utility programs, such as scripts.
-    6. 'sys', which contains subdirectories for OSs specific files.
-    7. 'sys/share', which contains files shared by some OSs.
-    8. 'sys/unix', which contains UNIX family (*BSD, Linux and Mac OS X)
+    1. 'dat', contains a variety of data files.
+    2. 'doc', contains a few documentation.
+    3. 'include', contains all *.h files.
+    4. 'src', contains *.c files used by all versions.
+    5. 'util', contains files for utility programs, such as scripts.
+    6. 'sys', contains subdirectories for OSs specific files.
+    7. 'sys/share', contains files shared by some OSs.
+    8. 'sys/unix', contains UNIX family (*BSD, Linux and Mac OS X)
        specific files.
-    9. 'sys/wnt', which contains Windows NT specific files.
-   10. 'sys/vms', which contains VMS specific files. (This is an exemple only)
-   11. 'client', which contains subdirectories for our clients.
-   12. 'client/share', which contains files shared by some clients.
-   13. 'client/qt', which contains files for our Qt client.
-   14. 'client/tty', which contains files for our curses client.
-   15. 'client/cli', which contains files for our basic command line interface.
+    9. 'sys/wnt', contains Windows NT specific files.
+   10. 'sys/vms', contains VMS specific files. (This is a joke)
+   11. 'client', contains subdirectories for our clients.
+   12. 'client/share', contains files shared by some clients.
+   13. 'client/qt', contains files for our Qt client.
+   14. 'client/tty', contains files for our curses client.
+   15. 'client/cli', contains files for our basic command line interface.
 
-The names of these directories should not be changed unless you are
-ready to dig into the makefiles and change every directory references.
+Requirements
+------------
+
+Add the tNETacle default user (_tnetacle) with '/var/empty' as home,
+owned by root with permission 700, or the tNETacle will refuse to start.
+
+Install OpenSSL, Libevent-2.x (both _core and _openssl), Yajl 2.x and zlib.
+If you are under Linux you might install libbsd too, but it's not mandatory.
+
+Install CMake, then run something like
+    mkdir build && cd build && cmake .. && make
+If something is wrong at this stage, drop us an email.
+
+Now you can edit dat/tNETacle.conf for your need and copy it to
+/etc/tNETacle.conf. If this directory is not the one you want, change it in
+/include/pathnames.h.
+
+Supported Systems
+-----------------
+
+   * Linux (tested on Debian, Ubuntu and Gentoo)
+   * OpenBSD
+   * NetBSD
+   * Mac OS X
+   * Windows NT (tested on Windows 7)
+
+Licence
+-------
+
+   * The tNETacle source code is distributed under the ISC license;
+   * The OpenSSL library is distributed under its own license,
+     check here for more details: <http://www.openssl.org/source/license.html>;
+   * The libevent library is distributed under the 3-clause BSD license;
+   * The zlib library is distributed under the zlib license,
+     check here for more details: <http://www.zlib.net/zlib_license.html>;
+   * The libyajl is distributed under the ISC license;
+   * The libbsd library is distrbitued under BSD and MIT license,
+     check here for more details: <http://libbsd.freedesktop.org/wiki/#License>
+
