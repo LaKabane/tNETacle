@@ -14,7 +14,6 @@ set(${CMAKE_SYSTEM_NAME} True)
 
 # CMake global options
 # ------------------
-
 # None at the moment
 
 # Global Packages search
@@ -25,11 +24,8 @@ find_package(Tapcfg REQUIRED)
 find_package(Tuntap REQUIRED)
 find_package(Yajl REQUIRED)
 
-
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
-add_definitions(-DHAVE_SETPROCTITLE)
-add_definitions(-DHAVE_SETRESXID)
 if (${TUNTAP_FOUND})
 	add_definitions(-DUSE_LIBTUNTAP)
 else()
@@ -43,6 +39,7 @@ endif()
 # ------------------
 include_directories(${CMAKE_HOME_DIRECTORY}/include)
 include_directories(${EVENT_INCLUDE_DIR})
+include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 if (${TUNTAP_FOUND})
 	include_directories(${TUNTAP_INCLUDE_DIRS})
@@ -62,6 +59,7 @@ set(SOURCES_LIST
   src/utils.c
   #src/pipeline.c
   src/mc.c
+  src/hexdump.c
   src/server.c)
 
 # OS families specific things
@@ -69,7 +67,7 @@ set(SOURCES_LIST
 if(UNIX)
 	# Unix specific include directories
 	# ------------------
-	include_directories(/usr/include/ /usr/local/include)
+	include_directories(/usr/include/)
 
 	# Unix specific definitions
 	# ------------------
@@ -99,12 +97,14 @@ if (Windows)
 		sys/wnt/log.c
 		sys/wnt/tntsocket.c
 		sys/wnt/winstrtonum.c
+		sys/wnt/main.c
 	)
 endif()
 
 # OS specific things
 # ------------------
 if(Linux)
+	include_directories(/usr/local/include)
 
 	# Linux specific Options
 	# ------------------
@@ -119,21 +119,33 @@ if(Linux)
 	# Linux specific definitions
 	# ------------------
 	add_definitions(-D_GNU_SOURCE)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 	if (BSD_FOUND)
 		add_definitions(-DHAVE_BSD_COMPAT)
+		include_directories(${BSD_INCLUDE_DIRS})
 	else()
 		remove_definitions(-DHAVE_SETPROCTITLE)
 	endif()
 endif()
 
 if (OpenBSD)
+	include_directories(/usr/local/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (NetBSD)
+	include_directories(/usr/pkg/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+#	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (FreeBSD)
   add_definitions(-DHAS_REALLOCF)
+  include_directories(/usr/local/include)
+  add_definitions(-DHAVE_SETPROCTITLE)
+  add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (Darwin)
@@ -144,8 +156,6 @@ if (Darwin)
 
 	# Darwin specific definitions
 	# ------------------
-	remove_definitions(-DHAVE_SETPROCTITLE)
-	remove_definitions(-DHAVE_SETRESXID)
 endif()
 
 # Executable definitons
