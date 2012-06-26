@@ -13,41 +13,31 @@
  * PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#include <sys/types.h>
-#if !defined WIN32
-#include <sys/socket.h>
-#endif
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 
-#if defined Windows
-# include <WS2tcpip.h>
-# include <io.h>
-# define write _write
-# define ssize_t SSIZE_T
-#endif
-
-#if defined Unix
-# include <unistd.h>
-# include <netinet/in.h>
-#endif
-
 #include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
-#include <errno.h>
-#include <string.h>
-#if !defined Windows
-#include <unistd.h>
-#else
-#include <io.h>
-#include <WS2tcpip.h>
-#define write(A, B, C) windows_fix_write(A, B, C)
-#define read(A, B, C) windows_fix_read(A, B, C)
-#define ssize_t SSIZE_T
+#include <event2/bufferevent_ssl.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
+
+#if defined Unix
+# include <sys/types.h>
+# include <sys/socket.h>
+# include <unistd.h>
+# include <netinet/in.h>
+#endif
+
+#if defined Windows
+# include <io.h>
+# include <WS2tcpip.h>
 #endif
 
 #include "tnetacle.h"
@@ -65,61 +55,6 @@ union chartoshort {
     unsigned short *sptr;
 }; /* The goal of this union is to properly convert uchar* to ushort* */
 
-#if defined Windows
-
-OVERLAPPED gl_overlap;
-
-static ssize_t
-windows_fix_write(intptr_t fd, void *buf, size_t len)
-{
-	DWORD n = 0;
-	int err;
-	err = WriteFile((HANDLE)fd, buf, len, &n, &gl_overlap);
-	//log_debug("WRITE fd=%ld, buf=%p, len=%ld, n=%ld, err=%d", fd, buf, len, n, err);
-	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
-	{
-		printf("Write failed, error %d\n", GetLastError());
-		return -1;
-	}
-	else
-	{
-		if (len > 0)
-		{
-			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
-			hex_dump_chk(buf, len);
-			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
-		}
-		WaitForSingleObject(gl_overlap.hEvent, INFINITE);
-		return n;
-	}
-}
-
-static ssize_t
-windows_fix_read(intptr_t fd, void *buf, size_t len)
-{
-	DWORD n = 0;
-	int err;
-
-	err = ReadFile((HANDLE)fd, buf, len, &n, &gl_overlap);
-	//log_debug("READ fd=%ld, buf=%p, len=%ld, n=%ld, err=%d", fd, buf, len, n, err);
-	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
-	{
-		printf("Read failed, error %d\n", GetLastError());
-		return -1;
-	}
-	else
-	{
-		if (n > 0)
-		{
-			log_debug("== READ == READ == READ == READ ==");
-			hex_dump_chk(buf, n);
-			log_debug("== READ == READ == READ == READ ==");
-		}
-		WaitForSingleObject(gl_overlap.hEvent, 1000);
-		return n;
-	}
-}
-#endif
 
 static void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
@@ -241,24 +176,19 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
 {
     struct server *s = (struct server *)ctx;
     struct event_base *base = evconnlistener_get_base(evl);
-    struct bufferevent *bev = bufferevent_socket_new(base, fd,
-                                                     BEV_OPT_CLOSE_ON_FREE);
-    log_debug("new connection");
-    if (bev != NULL)
-    {
-        struct mc mctx;
+    struct mc mctx;
+    int errcode;
 
-        /*
-         * Set a callback to bev using 
-         * bufferevent_setcb.
-         */
-        mc_init(&mctx, sock, (socklen_t)len, bev);
-        bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
+    errcode = mc_init(&mctx, base, fd, sock, (socklen_t)len, s->server_ctx);
+    if (errcode != -1)
+    {
+        bufferevent_setcb(mctx.bev, server_mc_read_cb, NULL,
+                          server_mc_event_cb, s);
         v_mc_push(&s->peers, &mctx);
     }
     else
     {
-        log_debug("failed to allocate bufferevent");
+        log_notice("Failed to init a meta connexion");
     }
 }
 
@@ -312,8 +242,8 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
     struct server *s = (struct server *)ctx;
 
 #if defined Windows
-	device_fd =	s->devide_fd;
-	if (events & EV_TIMEOUT)
+    device_fd =	s->devide_fd;
+    if (events & EV_TIMEOUT)
 #else
     if (events & EV_READ)
 #endif
@@ -330,7 +260,7 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
             _n++;
         }
 #if defined Windows
-		if (n == 0 || GetLastError() == ERROR_IO_PENDING)
+        if (n == 0 || GetLastError() == ERROR_IO_PENDING)
 #else
         if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
 #endif
@@ -393,16 +323,42 @@ server_set_device(struct server *s, int fd)
 }
 #endif
 
+static SSL_CTX *
+evssl_init(void)
+{
+    SSL_CTX  *server_ctx;
+
+    /* Initialize the OpenSSL library */
+    SSL_load_error_strings();
+    SSL_library_init();
+    /* We MUST have entropy, or else there's no point to crypto. */
+    if (!RAND_poll())
+        return NULL;
+
+    server_ctx = SSL_CTX_new(SSLv23_server_method());
+
+    if (! SSL_CTX_use_certificate_chain_file(server_ctx, "cert") ||
+        ! SSL_CTX_use_PrivateKey_file(server_ctx, "pkey", SSL_FILETYPE_PEM)) {
+        puts("Couldn't read 'pkey' or 'cert' file.  To generate a key\n"
+           "and self-signed certificate, run:\n"
+           "  openssl genrsa -out pkey 2048\n"
+           "  openssl req -new -key pkey -out cert.req\n"
+           "  openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert");
+        return NULL;
+    }
+    SSL_CTX_set_options(server_ctx, SSL_OP_NO_SSLv2);
+
+    return server_ctx;
+}
+
 int
 server_init(struct server *s, struct event_base *evbase)
 {
-    struct evconnlistener *evl;
-    struct bufferevent *bev;
-    struct mc mctx;
-    struct sockaddr *listens;
-    struct sockaddr *peers;
+    struct evconnlistener *evl = NULL;
+    struct sockaddr *listens = NULL;
+    struct sockaddr *peers = NULL;
     int err;
-    size_t i;
+    size_t i = 0;
 
 #if defined Windows
 	gl_overlap.hEvent = CreateEvent(NULL, /*Auto reset*/FALSE,
@@ -416,22 +372,24 @@ server_init(struct server *s, struct event_base *evbase)
     v_mc_init(&s->pending_peers);
     v_frame_init(&s->frames_to_send);
 
+    s->server_ctx = evssl_init();
+
     /*evbase = evconnlistener_get_base(s->srv);*/
 
     /* Listen on all ListenAddress */
     for (listens = v_sockaddr_begin(&serv_opts.listen_addrs);
          listens != NULL && listens != v_sockaddr_end(&serv_opts.listen_addrs);
-         listens = v_sockaddr_next(listens)) {
+         listens = v_sockaddr_next(listens), ++i) {
         evl = evconnlistener_new_bind(evbase, listen_callback,
           s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
           listens, sizeof(*listens));
         if (evl == NULL) {
             log_debug("fail at ListenAddress #%i", i);
-            return -1;
+             continue;
         }
+        evconnlistener_set_error_cb(evl, accept_error_cb);
+        evconnlistener_disable(evl);
     }
-    evconnlistener_set_error_cb(evl, accept_error_cb);
-    evconnlistener_disable(evl);
     s->srv = evl;
 
     /* If we don't have any PeerAddress it's finished */
@@ -440,20 +398,19 @@ server_init(struct server *s, struct event_base *evbase)
 
     for (;peers != NULL && peers != v_sockaddr_end(&serv_opts.listen_addrs);
          peers = v_sockaddr_next(peers)) {
-        bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
-        if (bev == NULL) {
+        struct mc mc;
+        err = mc_init(&mc, evbase, -1, peers, sizeof(*peers), s->server_ctx);
+        if (err == -1) {
             log_warn("unable to allocate a socket for connecting to the peer");
             return -1;
         }
-        err = bufferevent_socket_connect(bev, peers, sizeof(*peers));
+        err = bufferevent_socket_connect(mc.bev, peers, sizeof(*peers));
         if (err == -1) {
-            log_warn("unable to connect to the peer");
+            log_warn("unable to initiate a connexion to the peer");
             return -1;
         }
-        mc_init(&mctx, peers, sizeof(*peers), bev);
+        v_mc_push(&s->pending_peers, &mc);
+        bufferevent_setcb(mctx.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
     }
-
-    bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
-    v_mc_push(&s->pending_peers, &mctx);
     return 0;
 }

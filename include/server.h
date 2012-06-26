@@ -17,11 +17,24 @@
 #ifndef SERVER_KW2DIKER
 #define SERVER_KW2DIKER
 
+#include <openssl/ssl.h> /* Can not forward declare SSL* types*/
 #include "mc.h"
 
 struct evconnlistener;
 struct sockaddr;
 struct event_base;
+
+#if defined Windows
+
+# define write(A, B, C) windows_fix_write(A, B, C)
+# define read(A, B, C) windows_fix_read(A, B, C)
+# define ssize_t SSIZE_T
+
+extern OVERLAPPED gl_overlap;
+ssize_t windows_fix_write(intptr_t fd, void *buf, size_t len);
+ssize_t windows_fix_read(intptr_t fd, void *buf, size_t len);
+
+#endif
 
 #define VECTOR_TYPE struct mc
 #define VECTOR_PREFIX mc
@@ -51,6 +64,7 @@ struct server {
   struct vector_mc peers; /* The actual list of peers */
   struct vector_mc pending_peers; /* Pending in connection peers*/
   struct vector_frame frames_to_send;
+  SSL_CTX *server_ctx;
 };
 
 int server_init(struct server *, struct event_base *);

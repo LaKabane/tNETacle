@@ -102,6 +102,7 @@ if (Windows)
 		sys/wnt/tntsocket.c
 		sys/wnt/winstrtonum.c
 		sys/wnt/main.c
+                sys/wnt/util.c
 	)
 endif()
 

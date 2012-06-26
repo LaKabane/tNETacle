@@ -98,15 +98,14 @@ tnt_priv_drop(struct passwd *pw) {
 	log_errx(1, "_tnetacle's home has unsafe owner");
     if ((ss.st_mode & (S_IWGRP | S_IWOTH)) != 0)
 	log_errx(1, "_tnetacle's home has unsafe permissions");
-    if (chroot(pw->pw_dir) == -1)
+    /*if (chroot(pw->pw_dir) == -1)
 	log_err(1, "%s", pw->pw_dir);
     if (chdir("/") == -1)
-	log_err(1, "%s", pw->pw_dir);
+	log_err(1, "%s", pw->pw_dir);*/
     /*
      * TODO:
      * if debug is not set dup stdin, stdout and stderr to /dev/null
      */
-
     if (setgroups(1, &pw->pw_gid) == -1)
 	log_err(1, "can't drop privileges (setgroups)");
 #ifdef HAVE_SETRESXID
