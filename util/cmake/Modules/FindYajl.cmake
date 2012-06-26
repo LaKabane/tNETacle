@@ -19,7 +19,7 @@ libfind_pkg_check_modules(YAJL_PKGCONF libyajl)
 #message (STATUS ${PATH})
 
 find_path(YAJL_INCLUDE_DIR
-  yajl_gen.h ${YAJL_PKGCONF_INCLUDE_DIRS} /opt/local/include/yajl
+  yajl/yajl_gen.h ${YAJL_PKGCONF_INCLUDE_DIRS}
 )
 
 find_library(YAJL_LIBRARY
