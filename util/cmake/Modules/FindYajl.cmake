@@ -17,7 +17,6 @@ endif ()
 
 libfind_pkg_check_modules(YAJL_PKGCONF libyajl)
 
-
 find_path(YAJL_INCLUDE_DIR yajl_parse.h
   PATH_SUFFIX yajl
   PATHS ${YAJL_PKGCONF_INCLUDE_DIRS} 

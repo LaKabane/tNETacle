@@ -107,11 +107,13 @@ tnt_priv_drop(struct passwd *pw) {
 #ifdef HAVE_SETRESXID
     if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1 ||
 	setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
-	log_err(1, "can't drop privileges (setresid)");
+	log_err(1, "can't drop privileges (setresgid|setresuid)");
 #else
-    /* Fallback to setuid, but it might not work properly */
-    if (setuid(pw->pw_uid) == -1 || setgid(pw->pw_gid) == -1)
-	log_err(1, "can't drop privileges (setuid||setgid)");
+    /* Fallback to setuid, but it might not work */
+    if (setgid(pw->pw_gid) == -1)
+	log_err(1, "can't drop privileges (setgid)");
+    if (setuid(pw->pw_uid) == -1)
+	log_err(1, "can't drop privileges (setuid)");
 #endif
 }
 

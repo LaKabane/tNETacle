@@ -14,7 +14,6 @@ set(${CMAKE_SYSTEM_NAME} True)
 
 # CMake global options
 # ------------------
-
 # None at the moment
 
 # Global Packages search
@@ -71,7 +70,7 @@ set(SOURCES_LIST
 if(UNIX)
 	# Unix specific include directories
 	# ------------------
-	include_directories(/usr/include/ /usr/local/include)
+	include_directories(/usr/include/)
 
 	# Unix specific definitions
 	# ------------------
@@ -108,6 +107,7 @@ endif()
 # OS specific things
 # ------------------
 if(Linux)
+	include_directories(/usr/local/include)
 
 	# Linux specific Options
 	# ------------------
@@ -122,6 +122,8 @@ if(Linux)
 	# Linux specific definitions
 	# ------------------
 	add_definitions(-D_GNU_SOURCE)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 	if (BSD_FOUND)
 		add_definitions(-DHAVE_BSD_COMPAT)
 		include_directories(${BSD_INCLUDE_DIRS})
@@ -131,12 +133,21 @@ if(Linux)
 endif()
 
 if (OpenBSD)
+	include_directories(/usr/local/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (NetBSD)
+	include_directories(/usr/pkg/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+#	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (FreeBSD)
+	include_directories(/usr/local/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (Darwin)
@@ -146,8 +157,6 @@ if (Darwin)
 
 	# Darwin specific definitions
 	# ------------------
-	remove_definitions(-DHAVE_SETPROCTITLE)
-	remove_definitions(-DHAVE_SETRESXID)
 endif()
 
 # Executable definitons
