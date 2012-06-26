@@ -160,6 +160,7 @@ main(int argc, char *argv[]) {
     argv += optind;
 
     log_init();
+    log_set_prefix("pre-fork");
 
     if (geteuid()) {
 	(void)fprintf(stderr, "need root privileges\n");
@@ -211,15 +212,15 @@ main(int argc, char *argv[]) {
     event_add(sigterm, NULL);
     event_add(sigchld, NULL);
 
-    /* if we received a sigchild from here, we don't need to start the event loop
-     * as the child is stillborn.. :(
+    /*
+     * if we received a sigchild now, we don't need to start the event loop
+     * as the child is stillborn.
      */
     if (sigchld_recv != 1)
 	event_base_dispatch(evbase);
     else
-	fprintf(stderr, "The tNETacle initialisation phase failed."
-		" Check the logs to find out why.");
-    
+	log_notice("tNETacle initialisation failed");
+
     signal(SIGCHLD, SIG_DFL);
 
     if (chld_pid != 0)

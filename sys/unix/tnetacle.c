@@ -93,21 +93,25 @@ tnt_priv_drop(struct passwd *pw) {
 
     /* All this part is a preparation to the privileges dropping */
     if (stat(pw->pw_dir, &ss) == -1)
-	log_err(1, "stat");
+	log_err(1, "%s", pw->pw_dir);
     if (ss.st_uid != 0 || (ss.st_mode & (S_IWGRP | S_IWOTH)) != 0)
-	log_errx(1, "bad permissions");
+	log_errx(1, "_tnetacle's home has unsafe permissions");
     if (chroot(pw->pw_dir) == -1)
-	log_err(1, "chroot");
+	log_err(1, "%s", pw->pw_dir);
     if (chdir("/") == -1)
-	log_err(1, "chdir(\"/\")");
-    /* TODO: dup stdin, stdout and stdlog_err to /dev/null */
+	log_err(1, "%s", pw->pw_dir);
+    /*
+     * TODO:
+     * if debug is not set dup stdin, stdout and stderr to /dev/null
+     */
 
     if (setgroups(1, &pw->pw_gid) == -1)
 	log_err(1, "can't drop privileges (setgroups)");
 #ifdef HAVE_SETRESXID
-    if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1 ||
-	setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
-	log_err(1, "can't drop privileges (setresgid|setresuid)");
+    if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1)
+	log_err(1, "can't drop privileges (setresgid)");
+    if (setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
+	log_err(1, "can't drop privileges (setresuid)");
 #else
     /* Fallback to setuid, but it might not work */
     if (setgid(pw->pw_gid) == -1)
@@ -118,9 +122,7 @@ tnt_priv_drop(struct passwd *pw) {
 }
 
 static struct event *
-init_pipe_endpoint(int imsg_fds[2],
-		   struct imsg_data *data) {
-
+init_pipe_endpoint(int imsg_fds[2], struct imsg_data *data) {
     struct event *event = NULL;
 
     if (close(imsg_fds[0]))
@@ -150,7 +152,7 @@ tnt_fork(int imsg_fds[2]) {
 
     switch ((pid = fork())) {
     case -1:
-	log_err(TNT_OSERR, "tnt_fork: ");
+	log_err(TNT_OSERR, "fork");
 	break;
     case 0:
 	tnt_setproctitle("[unpriv]");
@@ -205,8 +207,9 @@ tnt_fork(int imsg_fds[2]) {
     msgbuf_clear(&ibuf.w);
 
     /*
-     * It may look like we freed this one twice, once here and once in tnetacled.c
-     * but this is not the case. Please don't erase this !
+     * It may look like we freed this one twice,
+     * once here and once in tnetacled.c but this is not the case.
+     * Please don't erase this !
      */
 
     event_free(sigterm);
@@ -220,7 +223,7 @@ tnt_fork(int imsg_fds[2]) {
 
 /*
  * The purpose of this function is to handle requests sent by the
- * root level process.
+ * root privileged process.
  */
 int
 tnt_dispatch_imsg(struct imsg_data *data) {
