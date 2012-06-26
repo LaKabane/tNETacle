@@ -33,8 +33,11 @@ Requirements
 Add the tNETacle default user (_tnetacle) with '/var/empty' as home,
 owned by root with permission 700, or the tNETacle will refuse to start.
 
-Install OpenSSL, Libevent-2.x (both _core and _openssl), Yajl 2.x and zlib.
+Install OpenSSL, Libevent-2.0.x (both _core and _openssl), Yajl 2.x and zlib.
 If you are under Linux you might install libbsd too, but it's not mandatory.
+
+Depending of your system you should now install either tapcfg or libtuntap.
+libtuntap is prefered but not available on FreeBSD, Windows and Mac OS X.
 
 Install CMake, then run something like
     mkdir build && cd build && cmake .. && make
@@ -64,5 +67,8 @@ Licence
      check here for more details: <http://www.zlib.net/zlib_license.html>;
    * The libyajl is distributed under the ISC license;
    * The libbsd library is distrbitued under BSD and MIT license,
-     check here for more details: <http://libbsd.freedesktop.org/wiki/#License>
+     check here for more details: <http://libbsd.freedesktop.org/wiki/#License>;
+   * The tapcfg library is distributed under the LGPL license,
+     check here for more details: <http://code.google.com/p/tapcfg/>;
+   * The libtuntap library is distributed under the ISC license;
 
