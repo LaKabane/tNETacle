@@ -46,7 +46,6 @@
 #include "server.h"
 #include "log.h"
 #include "compress.h"
-#include "compress_unix.h"
 
 extern struct options serv_opts;
 

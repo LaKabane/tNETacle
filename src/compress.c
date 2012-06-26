@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -128,4 +129,36 @@ tnt_uncompress(uchar *in, const size_t in_size, const size_t orignal_len)
     }
     (void)inflateEnd(&strm);
     return out;
+}
+
+uchar *tnt_compress_sized(uchar *uncompressed_data, const int size,
+  size_t *compressed_size)
+{
+    uchar *compressed_data = tnt_compress(uncompressed_data, size, compressed_size);
+    if (compressed_data == NULL)
+    {
+        log_warn("Compress failed. Sending uncompressed data.");
+        return NULL;
+    }
+    log_debug("Compressed from %d to %d + int size.",
+      size, *compressed_size);
+    if ((compressed_data = reallocf(compressed_data,
+          *compressed_size + sizeof(size))) == NULL)
+    {
+        log_warn("reallocf failed. Sending uncompressed data");
+        return NULL;
+    }
+    memcpy(compressed_data + *compressed_size, &size,
+      sizeof(size));
+    compressed_size += sizeof(size);
+    return compressed_data;
+}
+
+uchar *tnt_uncompress_sized(uchar *compressed_data, const size_t size,
+  size_t *uncompressed_size)
+{
+    *uncompressed_size = ntohl((int)
+      (compressed_data + size - sizeof(int)));
+        return tnt_uncompress(compressed_data,
+      size - sizeof(uncompressed_size), *uncompressed_size);
 }
