@@ -165,7 +165,7 @@ tnt_fork(int imsg_fds[2]) {
     }
 
     if ((pw = getpwnam(TNETACLE_USER)) == NULL) {
-	log_errx(1, "Unknown user " TNETACLE_USER ".\n");
+	log_errx(1, "Unknown user " TNETACLE_USER);
 	return TNT_NOUSER;
     }
 
