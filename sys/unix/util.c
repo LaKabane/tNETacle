@@ -28,7 +28,7 @@ tnt_setproctitle(const char *s) {
 #ifdef HAVE_SETPROCTITLE
     setproctitle(s);
 #else
-    log_info("Your system does not have setproctitle syscall");
+    log_info("your system does not have setproctitle syscall");
     (void)s;
 #endif
 }

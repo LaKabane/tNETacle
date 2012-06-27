@@ -167,14 +167,14 @@ tnt_fork(int imsg_fds[2]) {
     }
 
     if ((pw = getpwnam(TNETACLE_USER)) == NULL) {
-	log_errx(1, "Unknown user " TNETACLE_USER);
+	log_errx(1, "unknown user " TNETACLE_USER);
 	return TNT_NOUSER;
     }
 
     tnt_priv_drop(pw);
 
     if ((evbase = event_base_new()) == NULL) {
-	log_err(-1, "Failed to init the event library");
+	log_err(1, "libevent");
     }
 
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
@@ -185,7 +185,7 @@ tnt_fork(int imsg_fds[2]) {
     signal(SIGCHLD, SIG_DFL);
 
     if (server_init(&server, evbase) == -1)
-	log_err(-1, "Failed to init the server socket");
+	log_errx(1, "failed to init the server socket");
 
     data.ibuf = &ibuf;
     data.evbase = evbase;
@@ -201,7 +201,7 @@ tnt_fork(int imsg_fds[2]) {
     /* Immediately request the creation of a tun interface */
     imsg_compose(&ibuf, IMSG_CREATE_DEV, 0, 0, -1, NULL, 0);
 
-    log_info("Starting event loop");
+    log_info("starting event loop");
     event_base_dispatch(evbase);
 
     /* cleanely exit */
