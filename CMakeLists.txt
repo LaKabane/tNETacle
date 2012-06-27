@@ -12,10 +12,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set(${CMAKE_SYSTEM_NAME} True)
 
-if(EXISTS ${CMAKE_SOURCE_DIR}/CMakeLists.txt.local)
-        include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local)
-endif()
-
 # CMake global options
 # ------------------
 # None at the moment
