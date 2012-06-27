@@ -135,4 +135,3 @@ void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const
 void ClientGUI::rootNodeGuiDeleted() {
     _rootNode = 0;
 }
-
