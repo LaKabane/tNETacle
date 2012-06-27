@@ -112,11 +112,10 @@ endif()
 if(Linux)
         set(CMAKE_SYSTEM_INCLUDE_PATH
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
-	include_directories(/usr/local/include)
 
 	# Linux specific Options
 	# ------------------
-	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
+        option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" OFF)
 
 	# Linux specific package search
 	# ------------------
@@ -127,13 +126,16 @@ if(Linux)
 	# Linux specific definitions
 	# ------------------
 	add_definitions(-D_GNU_SOURCE)
-	add_definitions(-DHAVE_SETPROCTITLE)
 	add_definitions(-DHAVE_SETRESXID)
-	if (BSD_FOUND)
+        if (ENABLE_BSDCOMPAT AND BSD_FOUND)
 		add_definitions(-DHAVE_BSD_COMPAT)
-		include_directories(${BSD_INCLUDE_DIRS})
-	else()
-		remove_definitions(-DHAVE_SETPROCTITLE)
+	endif()
+
+        # Linux specifig include directories
+	# ----------------------------------
+	include_directories(/usr/local/include)
+        if (ENABLE_BSDCOMPAT AND BSD_FOUND)
+                include_directories(${BSD_INCLUDE_DIRS})
 	endif()
 endif()
 
