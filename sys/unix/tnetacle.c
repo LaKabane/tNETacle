@@ -94,7 +94,9 @@ tnt_priv_drop(struct passwd *pw) {
     /* All this part is a preparation to the privileges dropping */
     if (stat(pw->pw_dir, &ss) == -1)
 	log_err(1, "%s", pw->pw_dir);
-    if (ss.st_uid != 0 || (ss.st_mode & (S_IWGRP | S_IWOTH)) != 0)
+    if (ss.st_uid != 0) 
+	log_errx(1, "_tnetacle's home has unsafe owner");
+    if (ss.st_mode & (S_IWGRP | S_IWOTH) != 0)
 	log_errx(1, "_tnetacle's home has unsafe permissions");
     if (chroot(pw->pw_dir) == -1)
 	log_err(1, "%s", pw->pw_dir);
