@@ -73,8 +73,6 @@ if(UNIX)
 
 	# Unix specific definitions
 	# ------------------
-        set(CMAKE_C_FLAGS "-W -Wall"
-                CACHE string "Flag used by the compiler during all build type")
   	add_definitions(-DUnix)
 
 	# Unix specific source files
@@ -199,3 +197,5 @@ endif()
 if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
+
+include(CMakeLists.txt.local OPTIONAL)
