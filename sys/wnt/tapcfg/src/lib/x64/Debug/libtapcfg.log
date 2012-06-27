@@ -1,0 +1,38 @@
+﻿Build started 27/04/2012 17:42:05.
+     1>Project "C:\Users\Arty-Work\tapcfg\src\lib\libtapcfg.vcxproj" on node 2 (rebuild target(s)).
+     1>InitializeBuildStatus:
+         Creating "x64\Debug\libtapcfg.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\CL.exe /c /I../include/ /Zi /nologo /W3 /WX- /Od /D WIN32 /D _DEBUG /D _WINDOWS /D _USRDLL /D LIBTAPCFG_EXPORTS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Debug\\" /Fd"x64\Debug\vc100.pdb" /Gd /TC /errorReport:prompt dlpi.c tapcfg.c taplog.c
+         taplog.c
+     1>taplog.c(94): warning C4996: 'vsnprintf': This function or variable may be unsafe. Consider using vsnprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\stdio.h(354) : see declaration of 'vsnprintf'
+         tapcfg.c
+     1>c:\users\arty-work\tapcfg\src\lib\tapcfg_windows_fixup.h(130): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _strdup. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(238) : see declaration of 'strdup'
+     1>c:\users\arty-work\tapcfg\src\lib\tapcfg_windows_fixup.h(233): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _strdup. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(238) : see declaration of 'strdup'
+     1>c:\users\arty-work\tapcfg\src\lib\tapcfg_windows_fixup.h(337): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _strdup. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(238) : see declaration of 'strdup'
+     1>c:\users\arty-work\tapcfg\src\lib\tapcfg_windows_fixup.h(339): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _strdup. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(238) : see declaration of 'strdup'
+     1>c:\users\arty-work\tapcfg\src\lib\tapcfg_windows_fixup.h(345): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _strdup. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(238) : see declaration of 'strdup'
+     1>c:\users\arty-work\tapcfg\src\lib\tapcfg_windows_fixup.h(347): warning C4996: 'strdup': The POSIX name for this item is deprecated. Instead, use the ISO C++ conformant name: _strdup. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include\string.h(238) : see declaration of 'strdup'
+     1>c:\users\arty-work\tapcfg\src\lib\tapcfg_windows.c(330): warning C4018: '<' : signed/unsigned mismatch
+         dlpi.c
+         Generating Code...
+       Lib:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\x86_amd64\Lib.exe /OUT:"C:\Users\Arty-Work\tapcfg\src\lib\x64\Debug\libtapcfg.lib" /NOLOGO x64\Debug\dlpi.obj
+         x64\Debug\tapcfg.obj
+         x64\Debug\taplog.obj
+         libtapcfg.vcxproj -> C:\Users\Arty-Work\tapcfg\src\lib\x64\Debug\libtapcfg.lib
+       FinalizeBuildStatus:
+         Deleting file "x64\Debug\libtapcfg.unsuccessfulbuild".
+         Touching "x64\Debug\libtapcfg.lastbuildstate".
+     1>Done Building Project "C:\Users\Arty-Work\tapcfg\src\lib\libtapcfg.vcxproj" (rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.89

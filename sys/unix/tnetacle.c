@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 
 #include <grp.h>
 #include <pwd.h>
@@ -29,6 +30,7 @@
 #include "tntexits.h"
 #include "tnetacle.h"
 #include "log.h"
+#include "options.h"
 #include "server.h"
 
 /* imsg specific includes */
@@ -38,7 +40,7 @@
 
 #include <event2/event.h>
 
-extern char conf_address[25];
+extern struct options serv_opts;
 
 struct imsg_data {
     struct imsgbuf *ibuf;
@@ -55,7 +57,7 @@ int tnt_dispatch_imsg(struct imsg_data *);
 static void
 tnt_imsg_callback(evutil_socket_t fd, short events, void *args) {
     (void)fd;
-    struct imsg_data *data = args; 
+    struct imsg_data *data = args;
     struct imsgbuf *ibuf = data->ibuf;
 
     if (events & EV_READ || data->is_ready_read == 1) {
@@ -69,20 +71,6 @@ tnt_imsg_callback(evutil_socket_t fd, short events, void *args) {
 	    if (msgbuf_write(&ibuf->w) == -1)
 		data->is_ready_write = 0;
 	}
-    }
-}
-
-void
-device_cb(evutil_socket_t fd, short events, void *args)
-{
-    (void)fd;
-    (void)args;
-    printf("%s\n", __PRETTY_FUNCTION__);
-    if (events & EV_READ) {
-	printf("%s::[READ EVENTS]\n", __PRETTY_FUNCTION__);
-    }
-    if (events & EV_WRITE) {
-	printf("%s::[WRITE EVENTS]\n", __PRETTY_FUNCTION__);
     }
 }
 
@@ -105,32 +93,38 @@ tnt_priv_drop(struct passwd *pw) {
 
     /* All this part is a preparation to the privileges dropping */
     if (stat(pw->pw_dir, &ss) == -1)
-	log_err(1, "stat");
-    if (ss.st_uid != 0 || (ss.st_mode & (S_IWGRP | S_IWOTH)) != 0)
-	log_errx(1, "bad permissions");
+	log_err(1, "%s", pw->pw_dir);
+    if (ss.st_uid != 0) 
+	log_errx(1, "_tnetacle's home has unsafe owner");
+    if ((ss.st_mode & (S_IWGRP | S_IWOTH)) != 0)
+	log_errx(1, "_tnetacle's home has unsafe permissions");
     if (chroot(pw->pw_dir) == -1)
-	log_err(1, "chroot");
+	log_err(1, "%s", pw->pw_dir);
     if (chdir("/") == -1)
-	log_err(1, "chdir(\"/\")");
-    /* TODO: dup stdin, stdout and stdlog_err to /dev/null */
+	log_err(1, "%s", pw->pw_dir);
+    /*
+     * TODO:
+     * if debug is not set dup stdin, stdout and stderr to /dev/null
+     */
 
     if (setgroups(1, &pw->pw_gid) == -1)
 	log_err(1, "can't drop privileges (setgroups)");
 #ifdef HAVE_SETRESXID
-    if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1 ||
-	setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
-	log_err(1, "can't drop privileges (setresid)");
+    if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1)
+	log_err(1, "can't drop privileges (setresgid)");
+    if (setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
+	log_err(1, "can't drop privileges (setresuid)");
 #else
-    /* Fallback to setuid, but it might not work properly */
-    if (setuid(pw->pw_uid) == -1 || setgid(pw->pw_gid) == -1)
-	log_err(1, "can't drop privileges (setuid||setgid)");
+    /* Fallback to setuid, but it might not work */
+    if (setgid(pw->pw_gid) == -1)
+	log_err(1, "can't drop privileges (setgid)");
+    if (setuid(pw->pw_uid) == -1)
+	log_err(1, "can't drop privileges (setuid)");
 #endif
 }
 
 static struct event *
-init_pipe_endpoint(int imsg_fds[2], 
-		   struct imsg_data *data) {
-
+init_pipe_endpoint(int imsg_fds[2], struct imsg_data *data) {
     struct event *event = NULL;
 
     if (close(imsg_fds[0]))
@@ -147,11 +141,11 @@ init_pipe_endpoint(int imsg_fds[2],
 }
 
 int
-tnt_fork(int imsg_fds[2], struct passwd *pw) {
+tnt_fork(int imsg_fds[2]) {
     pid_t pid;
     struct imsgbuf ibuf;
-    /* XXX: To remove when Mota will bring his network code */
     struct imsg_data data;
+    struct passwd *pw;
     struct event_base *evbase = NULL;
     struct event *sigterm = NULL;
     struct event *sigint = NULL;
@@ -160,7 +154,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 
     switch ((pid = fork())) {
     case -1:
-	log_err(TNT_OSERR, "tnt_fork: ");
+	log_err(TNT_OSERR, "fork");
 	break;
     case 0:
 	tnt_setproctitle("[unpriv]");
@@ -172,10 +166,15 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 	return pid;
     }
 
+    if ((pw = getpwnam(TNETACLE_USER)) == NULL) {
+	log_errx(1, "unknown user " TNETACLE_USER);
+	return TNT_NOUSER;
+    }
+
     tnt_priv_drop(pw);
 
     if ((evbase = event_base_new()) == NULL) {
-	log_err(-1, "Failed to init the event library");
+	log_err(1, "libevent");
     }
 
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
@@ -186,7 +185,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
     signal(SIGCHLD, SIG_DFL);
 
     if (server_init(&server, evbase) == -1)
-	log_err(-1, "Failed to init the server socket");
+	log_errx(1, "failed to init the server socket");
 
     data.ibuf = &ibuf;
     data.evbase = evbase;
@@ -202,7 +201,7 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
     /* Immediately request the creation of a tun interface */
     imsg_compose(&ibuf, IMSG_CREATE_DEV, 0, 0, -1, NULL, 0);
 
-    log_info("Starting event loop");
+    log_info("starting event loop");
     event_base_dispatch(evbase);
 
     /* cleanely exit */
@@ -210,14 +209,15 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
     msgbuf_clear(&ibuf.w);
 
     /*
-     * It may look like we freed this one twice, once here and once in tnetacled.c
-     * but this is not the case. Please don't erase this !
+     * It may look like we freed this one twice,
+     * once here and once in tnetacled.c but this is not the case.
+     * Please don't erase this !
      */
-    event_base_free(evbase);
 
     event_free(sigterm);
     event_free(sigint);
     event_free(imsg_event);
+    event_base_free(evbase);
 
     log_info("tnetacle exiting");
     exit(TNT_OK);
@@ -225,16 +225,14 @@ tnt_fork(int imsg_fds[2], struct passwd *pw) {
 
 /*
  * The purpose of this function is to handle requests sent by the
- * root level process.
+ * root privileged process.
  */
 int
 tnt_dispatch_imsg(struct imsg_data *data) {
     struct imsg imsg;
     ssize_t n;
-    int tun_fd;
+    int device_fd;
     struct imsgbuf *ibuf = data->ibuf;
-    struct event_base *evbase = data->evbase;
-    struct event *ievent = NULL;
 
     n = imsg_read(ibuf);
     if (n == -1) {
@@ -252,21 +250,14 @@ tnt_dispatch_imsg(struct imsg_data *data) {
     while ((n = imsg_get(ibuf, &imsg)) != 0 && n != -1) {
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
-	    if (imsg.hdr.len != IMSG_HEADER_SIZE + sizeof(tun_fd))
-		log_errx(1, "invalid IMSG_CREATE_DEV received");
-	    (void)memcpy(&tun_fd, imsg.data, sizeof tun_fd);
-	    log_info("receive IMSG_CREATE_DEV: fd %i", tun_fd);
-	    ievent = event_new(evbase, tun_fd,
-			       EV_READ | EV_PERSIST,
-			       &device_cb, &data);
-	    event_add(ievent, NULL);
+            device_fd = imsg.fd;
+	    log_info("receive IMSG_CREATE_DEV: fd %i", device_fd);
 
-	    server_set_device(data->server, ievent);
+	    server_set_device(data->server, device_fd);
 
 	    /* directly ask to configure the tun device */
-
 	    imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
-			 conf_address, strlen(conf_address));
+			serv_opts.addr , strlen(serv_opts.addr));
 	    break;
 	default:
 	    break;

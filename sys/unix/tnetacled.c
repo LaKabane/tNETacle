@@ -28,6 +28,10 @@
 # endif
 #endif
 
+#ifdef OpenBSD
+# include <pwd.h> /* for getpwnam */
+#endif
+
 #include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
@@ -37,6 +41,7 @@
 
 #include "tnetacle.h"
 #include "tntexits.h"
+#include "options.h"
 #include "log.h"
 #include "tun.h"
 
@@ -44,11 +49,13 @@
 #include <sys/uio.h>
 #include <sys/queue.h>
 #include <imsg.h>
+#include <pwd.h>
 
 #include <event2/event.h>
 
-int conf_debug;
+int debug;
 volatile sig_atomic_t sigchld_recv;
+extern struct options serv_opts;
 
 /* XXX: clean that after the TA2 */
 struct device *dev = NULL;
@@ -74,17 +81,22 @@ _sighdlr(int sig) {
 static void
 sighdlr(evutil_socket_t sig, short events, void *args) {
     struct event_base *evbase = args;
+    char *name = "unknow";
     (void)events;
 
     switch (sig) {
     case SIGCHLD:
-    case SIGTERM:
-    case SIGINT:
-	log_warn("Received signal %d, stoping.\n", sig);
-	event_base_loopbreak(evbase);
+        name = "sigchld";
 	break;
-    /* TODO: SIGHUP */
+    case SIGTERM:
+        name = "sigterm";
+	break;
+    case SIGINT:
+        name = "sigint";
+	break;
     }
+    log_warnx("received signal %d(%s), stopping", sig, name);
+    event_base_loopbreak(evbase);
 }
 
 static void
@@ -112,7 +124,6 @@ int
 main(int argc, char *argv[]) {
     int ch;
     pid_t chld_pid;
-    struct passwd *pw;
     int imsg_fds[2];
     struct imsgbuf ibuf;
     struct imsg_data data;
@@ -122,40 +133,43 @@ main(int argc, char *argv[]) {
     struct event *sigterm = NULL;
     struct event *sigchld = NULL;
 
-    /* Parse configuration files and then command line switches */
-    tnt_conf();
+    /* Parse configuration file and then command line switches */
+    tnt_parse_file(NULL);
 
-    while ((ch = getopt(argc, argv, "dh")) != -1) {
-	switch(ch) {
-	    case 'd':
-		conf_debug = 1;
-		break;
-	    case 'h':
-	    default:
-		usage();
-	}
+    while ((ch = getopt(argc, argv, "dhf:")) != -1) {
+        switch(ch) {
+        case 'd':
+            debug = 1;
+        break;
+        case 'f':
+            if (tnt_parse_file(optarg) == -1) {
+                fprintf(stderr, "%s: invalid file\n", optarg);
+                return 1;
+            }
+        break;
+        case 'h':
+        default:
+            usage();
+        }
     }
     argc -= optind;
     argv += optind;
 
     log_init();
+    log_set_prefix("pre-fork");
 
     if (geteuid()) {
 	(void)fprintf(stderr, "need root privileges\n");
 	return 1;
     }
 
-    if ((pw = getpwnam(TNETACLE_USER)) == NULL) {
-	(void)fprintf(stderr, "unknown user " TNETACLE_USER "\n");
-	return TNT_NOUSER;
-    }
 
     if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1) {
 	perror("socketpair");
 	return 1;
     }
 
-    if (conf_debug == 0) {
+    if (debug == 0) {
 	if (tnt_daemonize() == -1) {
 		fprintf(stderr, "can't daemonize\n");
 		return 1;
@@ -165,10 +179,10 @@ main(int argc, char *argv[]) {
      * monitor for SIGCHLD by signal
      */
     signal(SIGCHLD, _sighdlr);
-    chld_pid = tnt_fork(imsg_fds, pw);
+    chld_pid = tnt_fork(imsg_fds);
 
     if ((evbase = event_base_new()) == NULL) {
-	log_err(-1, "Failed to init the event library");
+	log_err(1, "libevent");
     }
 
     sigint = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
@@ -194,26 +208,26 @@ main(int argc, char *argv[]) {
     event_add(sigterm, NULL);
     event_add(sigchld, NULL);
 
-    /* if we received a sigchild from here, we don't need to start the event loop
-     * as the child is stillborn.. :(
+    /*
+     * if we received a sigchild now, we don't need to start the event loop
+     * as the child is stillborn.
      */
     if (sigchld_recv != 1)
 	event_base_dispatch(evbase);
     else
-	fprintf(stderr, "The tNETalce initialisation phase failed."
-		" Check the logs to find out why.");
-    
+	log_notice("tNETacle initialisation failed");
+
     signal(SIGCHLD, SIG_DFL);
 
     if (chld_pid != 0)
 	kill(chld_pid, SIGTERM);
 
     msgbuf_clear(&ibuf.w);
-    event_base_free(evbase);
     event_free(event);
     event_free(sigint);
     event_free(sigterm);
     event_free(sigchld);
+    event_base_free(evbase);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
@@ -222,7 +236,7 @@ static void
 usage(void) {
     char *progname = tnt_getprogname();
 
-    (void)fprintf(stderr, "%s: [-dh]\n", progname);
+    (void)fprintf(stderr, "%s: [-dh -f file]\n", progname);
     exit(TNT_USAGE);
 }
 
@@ -260,10 +274,10 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
-	    dev = tnt_ttc_open();
+	    dev = tnt_ttc_open(serv_opts.tunnel);
 	    fd = tnt_ttc_get_fd(dev);
-	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, -1,
-	      &fd, sizeof(int));
+	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
+	      NULL, 0);
 	    break;
 	case IMSG_SET_IP:
 	    if (dev == NULL) {
@@ -272,11 +286,12 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    }
 	    datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
 	    (void)memset(buf, '\0', sizeof buf);
-	    (void)memcpy(buf, imsg.data, sizeof buf);
+	    (void)memcpy(buf, imsg.data, datalen);
 	    buf[datalen] = '\0';
 	    
 	    log_info("receive IMSG_SET_IP: %s", buf);
 	    tnt_ttc_set_ip(dev, buf);
+            tnt_ttc_up(dev);
 	    break;
 	default:
 	    break;
