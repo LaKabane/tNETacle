@@ -293,26 +293,26 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
                 if (family == AF_INET || family == AF_UNSPEC) {
                     sin.sin_family = AF_INET;
                     sin.sin_port = htons(serv_opts.ports[i]);
-                    if (inet_pton(AF_INET, "127.0.0.1",
+                    if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
                       &sin.sin_addr.s_addr) == -1)
                         return -1;
 		    v_sockaddr_push(&serv_opts.listen_addrs,
 		      (struct sockaddr *)&sin);
 		    if (debug == 1)
-                        fprintf(stderr, "ListenAddr: Added 127.0.0.1:%i\n",
-                          serv_opts.ports[i]);
+                        fprintf(stderr, "ListenAddr: Added %s:%i\n",
+                          TNETACLE_DEFAULT_LISTEN_IPV4, serv_opts.ports[i]);
                 }
                 if (family == AF_INET6 || family == AF_UNSPEC) {
                     sin6.sin6_family = AF_INET6;
                     sin6.sin6_port = htons(serv_opts.ports[i]);
-                    if (inet_pton(AF_INET6, "::1",
+                    if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
                       &sin6.sin6_addr.s6_addr) == -1)
                         return -1;
 		    v_sockaddr_push(&serv_opts.listen_addrs,
 		      (struct sockaddr *)&sin6);
 		    if (debug == 1)
-                        fprintf(stderr, "ListenAddr: Added [::1]:%i\n",
-                          serv_opts.ports[i]);
+                        fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
+                          TNETACLE_DEFAULT_LISTEN_IPV6, serv_opts.ports[i]);
                 }
             }
         } else

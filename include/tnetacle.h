@@ -33,6 +33,8 @@ struct passwd;
 
 #define TNETACLE_DEFAULT_PORT	4242
 #define TNETACLE_MAX_PORTS	256
+#define TNETACLE_DEFAULT_LISTEN_IPV4 "0.0.0.0"
+#define TNETACLE_DEFAULT_LISTEN_IPV6 "::"
 
 /*
  * Definition of types for our imsg.
