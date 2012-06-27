@@ -23,7 +23,7 @@
 void		 log_init(void);
 void		 log_set_prefix(char *);
 void		 log_err(int, const char *, ...);
-void		 log_errx(int, const char *);
+void		 log_errx(int, const char *, ...);
 void		 log_warn(const char *, ...);
 void		 log_warnx(const char *, ...);
 void		 log_notice(const char *, ...);

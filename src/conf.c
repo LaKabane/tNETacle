@@ -183,7 +183,8 @@ int yajl_number(void *ctx, const char *num, size_t len) {
 
     ret = strtol(nptr, &errstr, 10);
     if (*errstr != '\0' || ret < 0 || ret > 65535) {
-        fprintf(stderr, "[%s] TunnelIndex or Port has not a valid value\n", nptr);
+        fprintf(stderr, "[%s] TunnelIndex or Port has not a valid value\n",
+	  nptr);
         return -1;
     }
 
@@ -297,8 +298,9 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
                         return -1;
 		    v_sockaddr_push(&serv_opts.listen_addrs,
 		      (struct sockaddr *)&sin);
-                    fprintf(stderr, "ListenAddr: Added 127.0.0.1:%i\n",
-                      serv_opts.ports[i]);
+		    if (debug == 1)
+                        fprintf(stderr, "ListenAddr: Added 127.0.0.1:%i\n",
+                          serv_opts.ports[i]);
                 }
                 if (family == AF_INET6 || family == AF_UNSPEC) {
                     sin6.sin6_family = AF_INET6;
@@ -308,8 +310,9 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
                         return -1;
 		    v_sockaddr_push(&serv_opts.listen_addrs,
 		      (struct sockaddr *)&sin6);
-                    fprintf(stderr, "ListenAddr: Added [::1]:%i\n",
-                      serv_opts.ports[i]);
+		    if (debug == 1)
+                        fprintf(stderr, "ListenAddr: Added [::1]:%i\n",
+                          serv_opts.ports[i]);
                 }
             }
         } else

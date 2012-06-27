@@ -95,7 +95,7 @@ sighdlr(evutil_socket_t sig, short events, void *args) {
         name = "sigint";
 	break;
     }
-    log_warn("Received signal %d(%s) stoping.\n", sig, name);
+    log_warnx("received signal %d(%s), stopping", sig, name);
     event_base_loopbreak(evbase);
 }
 
@@ -136,14 +136,10 @@ main(int argc, char *argv[]) {
     /* Parse configuration file and then command line switches */
     tnt_parse_file(NULL);
 
-    while ((ch = getopt(argc, argv, "dhD:f:")) != -1) {
+    while ((ch = getopt(argc, argv, "dhf:")) != -1) {
         switch(ch) {
         case 'd':
             debug = 1;
-        break;
-        case 'D':
-            /*TODO */
-            /*tnt_parse_line(optarg);*/
         break;
         case 'f':
             if (tnt_parse_file(optarg) == -1) {
@@ -160,6 +156,7 @@ main(int argc, char *argv[]) {
     argv += optind;
 
     log_init();
+    log_set_prefix("pre-fork");
 
     if (geteuid()) {
 	(void)fprintf(stderr, "need root privileges\n");
@@ -185,7 +182,7 @@ main(int argc, char *argv[]) {
     chld_pid = tnt_fork(imsg_fds);
 
     if ((evbase = event_base_new()) == NULL) {
-	log_err(-1, "Failed to init the event library");
+	log_err(1, "libevent");
     }
 
     sigint = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
@@ -211,15 +208,15 @@ main(int argc, char *argv[]) {
     event_add(sigterm, NULL);
     event_add(sigchld, NULL);
 
-    /* if we received a sigchild from here, we don't need to start the event loop
-     * as the child is stillborn.. :(
+    /*
+     * if we received a sigchild now, we don't need to start the event loop
+     * as the child is stillborn.
      */
     if (sigchld_recv != 1)
 	event_base_dispatch(evbase);
     else
-	fprintf(stderr, "The tNETacle initialisation phase failed."
-		" Check the logs to find out why.");
-    
+	log_notice("tNETacle initialisation failed");
+
     signal(SIGCHLD, SIG_DFL);
 
     if (chld_pid != 0)
@@ -239,7 +236,7 @@ static void
 usage(void) {
     char *progname = tnt_getprogname();
 
-    (void)fprintf(stderr, "%s: [-dh]\n", progname);
+    (void)fprintf(stderr, "%s: [-dh -f file]\n", progname);
     exit(TNT_USAGE);
 }
 

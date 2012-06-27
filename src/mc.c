@@ -30,7 +30,7 @@ mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     (void)bev;
     (void)ctx;
-    log_debug("No callback set for read");
+    log_debug("no callback set for read");
 }
 
 void
@@ -38,7 +38,7 @@ mc_write_cb(struct bufferevent *bev, void *ctx)
 {
     (void)bev;
     (void)ctx;
-    log_debug("No callback set for write");
+    log_debug("no callback set for write");
 }
 
 void
@@ -47,7 +47,7 @@ mc_event_cb(struct bufferevent *bev, short events, void *ctx)
     (void)bev;
     (void)events;
     (void)ctx;
-    log_debug("No callback set for special events");
+    log_debug("no callback set for special events");
 }
 
 void
@@ -57,7 +57,7 @@ mc_init(struct mc *self, struct sockaddr *s, socklen_t len, struct bufferevent *
 
     if (tmp == NULL)
     {
-        log_notice("Failed to allocate the memory needed to establish a new "
+        log_notice("failed to allocate the memory needed to establish a new "
                    "meta-connection");
         return;
     }
