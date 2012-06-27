@@ -19,19 +19,23 @@ set(${CMAKE_SYSTEM_NAME} True)
 # Global Packages search
 # ------------------
 find_package(ZLIB REQUIRED)
-find_package(Event COMPONENTS core REQUIRED)
-find_package(Tapcfg REQUIRED)
-find_package(Tuntap REQUIRED)
+find_package(Event COMPONENTS core openssl REQUIRED)
 find_package(Yajl REQUIRED)
+find_package(Tuntap)
+
+if (NOT TUNTAP_FOUND)
+    find_package(Tapcfg REQUIRED)
+endif()
 
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
-if (${TUNTAP_FOUND})
-	add_definitions(-DUSE_LIBTUNTAP)
+
+
+if (TUNTAP_FOUND)
+    add_definitions(-DUSE_LIBTUNTAP)
 else()
-    find_package(Tapcfg)
-    if (${TAPCFG_FOUND})
-	add_definitions(-DUSE_TAPCFG)
+    if (TAPCFG_FOUND)
+        add_definitions(-DUSE_TAPCFG)
     endif()
 endif()
 
@@ -41,11 +45,10 @@ include_directories(${CMAKE_HOME_DIRECTORY}/include)
 include_directories(${EVENT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
-if (${TUNTAP_FOUND})
+if (TUNTAP_FOUND)
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
-	find_package(Tapcfg REQUIRED)
-	if (${TAPCFG_FOUND})
+	if (TAPCFG_FOUND)
 		include_directories(${TAPCFG_INCLUDE_DIRS})
 	endif()
 endif()
@@ -71,7 +74,8 @@ if(UNIX)
 
 	# Unix specific definitions
 	# ------------------
-	set(CMAKE_C_FLAGS "-W -Wall")
+        set(CMAKE_C_FLAGS "-W -Wall"
+                CACHE string "Flag used by the compiler during all build type")
   	add_definitions(-DUnix)
 
 	# Unix specific source files
@@ -104,6 +108,8 @@ endif()
 # OS specific things
 # ------------------
 if(Linux)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 	include_directories(/usr/local/include)
 
 	# Linux specific Options
@@ -113,7 +119,7 @@ if(Linux)
 	# Linux specific package search
 	# ------------------
 	if (ENABLE_BSDCOMPAT)
-		find_package(Bsd)
+                find_package(Bsd)
 	endif()
 
 	# Linux specific definitions
@@ -130,19 +136,23 @@ if(Linux)
 endif()
 
 if (OpenBSD)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 	include_directories(/usr/local/include)
 	add_definitions(-DHAVE_SETPROCTITLE)
 	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (NetBSD)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/pkg/include)
 	include_directories(/usr/pkg/include)
 	add_definitions(-DHAVE_SETPROCTITLE)
-#	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (FreeBSD)
-  add_definitions(-DHAS_REALLOCF)
+  set(CMAKE_SYSTEM_INCLUDE_PATH
+    ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
   include_directories(/usr/local/include)
   add_definitions(-DHAVE_SETPROCTITLE)
   add_definitions(-DHAVE_SETRESXID)
@@ -152,6 +162,8 @@ if (Darwin)
   add_definitions(-DHAS_REALLOCF)
 	# Darwin specific include directories (macport)
 	# ------------------
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /opt/local/include)
 	include_directories(/opt/local/include)
 
 	# Darwin specific definitions
@@ -167,7 +179,10 @@ add_executable(tNETacle ${SOURCES_LIST})
 # ------------------
 
 target_link_libraries(tNETacle
-    ${EVENT_LIBRARIES} ${ZLIB_LIBRARY} ${YAJL_LIBRARIES})
+        ${EVENT_LIBRARIES}
+        ${ZLIB_LIBRARY}
+        ${YAJL_LIBRARIES}
+)
 
 if (TUNTAP_FOUND)
   target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
@@ -175,6 +190,8 @@ elseif(TAPCFG_FOUND)
   target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
 endif()
 
+# Linux linked libraries
+# ------------------------
 if (ENABLE_BSDCOMPAT AND BSD_FOUND)
   target_link_libraries(tNETacle ${BSD_LIBRARIES})
 endif()
