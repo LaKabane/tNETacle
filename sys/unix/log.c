@@ -81,22 +81,37 @@ log_init(void) {
 
 void
 log_err(int eval, const char *emsg, ...) {
+	char	*nfmt;
+	va_list	 ap;
+	int	 ret;
+
+	/* best effort to even work in out of memory situations */
 	if (emsg == NULL)
 		flog(LOG_ERR, "error: %s", strerror(errno));
-	else
-		if (errno)
-			flog(LOG_ERR, "error: %s: %s",
-			    emsg, strerror(errno));
-		else
-			flog(LOG_ERR, "error: %s", emsg);
-
+	else {
+		va_start(ap, emsg);
+		ret = asprintf(&nfmt, "error: %s: %s", emsg, strerror(errno));
+		if (ret == -1) {
+			/* we tried it... */
+			vlog(LOG_ERR, emsg, ap);
+			flog(LOG_ERR, "error: %s", strerror(errno));
+		} else {
+			vlog(LOG_ERR, nfmt, ap);
+			free(nfmt);
+		}
+		va_end(ap);
+	}
 	exit(eval);
 }
 
 void
-log_errx(int eval, const char *emsg) {
-	errno = 0;
-	log_err(eval, emsg);
+log_errx(int eval, const char *emsg, ...) {
+	va_list	 ap;
+
+	va_start(ap, emsg);
+	vlog(LOG_ERR, emsg, ap);
+	va_end(ap);
+	exit(eval);
 }
 
 void

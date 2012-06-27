@@ -86,12 +86,10 @@ init_options(struct options *opt) {
 
     for (i = 0; i < TNETACLE_MAX_PORTS; ++i)
         opt->ports[i] = -1;
-    opt->addr_family = AF_UNSPEC;
-    opt->listen_addrs = NULL;
-    opt->listen_addrs_num = 0;
 
-    opt->peer_addrs = NULL;
-    opt->peer_addrs_num = 0;
+    opt->addr_family = AF_UNSPEC;
+    v_sockaddr_init(&serv_opts.listen_addrs);
+    v_sockaddr_init(&serv_opts.peer_addrs);
 
     opt->addr = NULL;
 
@@ -102,28 +100,8 @@ init_options(struct options *opt) {
 }
 
 static int
-add_sockaddr(struct sockaddr **sock, size_t *index, struct sockaddr *bufaddr) {
-    size_t newsize;
-    struct sockaddr *newsock;
-
-    newsize = *index + 1;
-    if ((newsock = realloc(*sock, newsize)) == NULL) {
-        free(*sock);
-        *sock = NULL;
-        *index = 0;
-        return -1;
-    }
-    *sock = newsock;
-    (*sock)[*index] = *bufaddr;
-    *index = newsize;
-    return 0;
-}
-
-static int
-add_sockaddr_buf(struct sockaddr **sock, size_t *index, char *bufaddr) {
+add_addr_text(struct vector_sockaddr *vsp, char *bufaddr) {
     int socklen;
-    size_t newsize;
-    struct sockaddr *newsock;
     struct sockaddr out;
 
     (void)memset(&out, '\0', sizeof out);
@@ -131,20 +109,11 @@ add_sockaddr_buf(struct sockaddr **sock, size_t *index, char *bufaddr) {
     socklen = sizeof(struct sockaddr);
     /* TODO: Sanity check with socklen */
     if (evutil_parse_sockaddr_port(bufaddr, &out, &socklen) == -1) {
-        fprintf(stderr, "%s: not a valid IP address\n", bufaddr);
+        (void)fprintf(stderr, "%s: not a valid IP address\n", bufaddr);
         return -1;
     }
 
-    newsize = *index + 1;
-    if ((newsock = realloc(*sock, newsize)) == NULL) {
-        free(sock);
-        *sock = NULL;
-        *index = 0;
-        return -1;
-    }
-    *sock = newsock;
-    (*sock)[*index] = out;
-    *index = newsize;
+    v_sockaddr_push(vsp, &out);
     return 0;
 }
 
@@ -214,7 +183,8 @@ int yajl_number(void *ctx, const char *num, size_t len) {
 
     ret = strtol(nptr, &errstr, 10);
     if (*errstr != '\0' || ret < 0 || ret > 65535) {
-        fprintf(stderr, "[%s] TunnelIndex or Port has not a valid value\n", nptr);
+        fprintf(stderr, "[%s] TunnelIndex or Port has not a valid value\n",
+	  nptr);
         return -1;
     }
 
@@ -303,8 +273,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
-        add_sockaddr_buf(&serv_opts.peer_addrs,
-          &serv_opts.peer_addrs_num, bufaddr);
+        add_addr_text(&serv_opts.peer_addrs, bufaddr);
     } else if (strncmp("ListenAddress", map, map_len) == 0) {
         char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
@@ -321,33 +290,33 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
                 (void)memset(&sin, 0, sizeof sin);
                 (void)memset(&sin6, 0, sizeof sin6);
 
-				fprintf(stderr, "Ohoh\n");
-				if (family == AF_INET || family == AF_UNSPEC) {
+                if (family == AF_INET || family == AF_UNSPEC) {
                     sin.sin_family = AF_INET;
                     sin.sin_port = htons(serv_opts.ports[i]);
-                    if (inet_pton(AF_INET, "127.0.0.1",
+                    if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
                       &sin.sin_addr.s_addr) == -1)
                         return -1;
-                    add_sockaddr(&serv_opts.listen_addrs,
-                      &serv_opts.listen_addrs_num, (struct sockaddr*)&sin);
-                    fprintf(stderr, "ListenAddr: Added 127.0.0.1:%i\n",
-                      serv_opts.ports[i]);
+		    v_sockaddr_push(&serv_opts.listen_addrs,
+		      (struct sockaddr *)&sin);
+		    if (debug == 1)
+                        fprintf(stderr, "ListenAddr: Added %s:%i\n",
+                          TNETACLE_DEFAULT_LISTEN_IPV4, serv_opts.ports[i]);
                 }
                 if (family == AF_INET6 || family == AF_UNSPEC) {
                     sin6.sin6_family = AF_INET6;
                     sin6.sin6_port = htons(serv_opts.ports[i]);
-                    if (inet_pton(AF_INET6, "::1",
+                    if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
                       &sin6.sin6_addr.s6_addr) == -1)
                         return -1;
-                    add_sockaddr(&serv_opts.listen_addrs,
-                    &serv_opts.listen_addrs_num, (struct sockaddr*)&sin6);
-                    fprintf(stderr, "ListenAddr: Added [::1]:%i\n",
-                      serv_opts.ports[i]);
+		    v_sockaddr_push(&serv_opts.listen_addrs,
+		      (struct sockaddr *)&sin6);
+		    if (debug == 1)
+                        fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
+                          TNETACLE_DEFAULT_LISTEN_IPV6, serv_opts.ports[i]);
                 }
             }
         } else
-            add_sockaddr_buf(&serv_opts.listen_addrs,
-              &serv_opts.listen_addrs_num, bufaddr);
+            add_addr_text(&serv_opts.listen_addrs, bufaddr);
     } else {
         char *s;
 

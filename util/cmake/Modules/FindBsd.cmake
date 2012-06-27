@@ -17,8 +17,8 @@ endif ()
 libfind_pkg_check_modules(BSD_PKGCONF libbsd)
 
 find_path(BSD_INCLUDE_DIR bsd.h
-  PATH ${BSD_PKGCONF_INCLUDE_DIRS}
-  PATH_SUFFIXES bsd
+  PATH_SUFFIX bsd
+  PATHS ${BSD_PKGCONF_INCLUDE_DIRS}
 )
 
 find_library(BSD_LIBRARY
