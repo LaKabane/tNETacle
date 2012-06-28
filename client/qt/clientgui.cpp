@@ -21,6 +21,11 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
 ClientGUI::~ClientGUI() {
 }
 
+void ClientGUI::printError(const QString &error)
+{
+  qDebug() << error;
+}
+
 void    ClientGUI::deleteSelected()
 {
   int pos = this->ContactsList->currentRow();

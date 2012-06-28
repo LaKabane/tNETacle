@@ -20,6 +20,7 @@ RESOURCES += \
     ../share/img/client.qrc
 
 HEADERS += \
+    include/exception.h\
     include/IModel.h    \
     include/model_contacts.h    \
     include/controller.h\

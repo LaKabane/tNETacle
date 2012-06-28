@@ -1,6 +1,7 @@
 #include "clientgui.h"
 #include "Controller.h"
 #include "contact.h"
+#include "exception.h"
 
 Controller::Controller(ClientGUI & gui) :
   _view(gui),
@@ -11,22 +12,48 @@ Controller::Controller(ClientGUI & gui) :
 
 void Controller::editContact(QListWidgetItem *item)
 {
+  try {
   this->_view.createAddContact(item->text(), _model_contacts.getKey(item->text()));
+  }
+  catch (Exception *e)
+    {
+      this->_view.printError(e->getMessage());
+      delete e;
+    }
 }
 
 void Controller::deleteContact()
 {
-  this->_model_contacts.delContact(_view.getSelected());
-  this->_view.deleteSelected();
+  try
+    {
+      this->_model_contacts.delContact(_view.getSelected());
+      this->_view.deleteSelected();
+    }
+  catch (Exception *e)
+    {
+      this->_view.printError(e->getMessage());
+      delete e;
+    }
 }
 
 void Controller::addContact()
 {
+
   if (!_view.getInitialContactName().isEmpty()) // TODO if user select a different row after editing
     this->deleteContact();
-  this->_view.addContact(this->_view.getNewContactName());
-  this->_model_contacts.addContact(this->_view.getNewContactName(), this->_view.getNewContactKey());
+  try
+    {
+      this->_model_contacts.addContact(this->_view.getNewContactName(),
+                                       this->_view.getNewContactKey());
+      this->_view.addContact(this->_view.getNewContactName());
+    }
+ catch (Exception *e)
+   {
+     this->_view.printError(e->getMessage());
+     delete e;
+   }
   this->_view.deleteAddContact();
+
   // new Contact (this->e_view.getNewContactName(),
   //              this->_view.getNewContactKey());
   //TODO integrate Contact in to model, validate DATA

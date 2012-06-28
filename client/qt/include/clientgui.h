@@ -33,7 +33,7 @@ public:
 
   void    createAddContact(const QString &, const QString &);
   void    createRootNodeGui(const QString &, const QString &, const QString &);
-
+  void    printError(const QString &);
 private:
     addContactGui*  _addContact;
 	rootNodeGui*	_rootNode;
