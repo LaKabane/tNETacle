@@ -32,8 +32,6 @@
 
 #ifndef VECTOR_PREFIX
 #error "You must define the macro VECTOR_PREFIX prior to include vector.h"
-#else
-#define prefix VECTOR_PREFIX
 #endif
 
 #ifndef TYPE_SPECIFIER
@@ -82,9 +80,13 @@ specifier type *vector_(frontref)(struct vector_name *v);
 specifier type *vector_(backref)(struct vector_name *v);
 specifier type *vector_(find_if)(struct vector_name *v, type *val,
                                       int (*)(type const *, type const *));
-
 #ifdef VECTOR_TYPE_SCALAR
 specifier type *vector_(find)(struct vector_name *v, type *val);
+specifier void vector_(foreach)(struct vector_name *v,
+                                      void (*)(type));
+#else
+specifier void vector_(foreach)(struct vector_name *v,
+                                      void (*)(type const *));
 #endif
 
 
@@ -163,7 +165,7 @@ specifier void vector_(insert_range)(struct vector_name *v, type *at,
       && (at >= v->vec))
   {
     size_t inserted_size = (to - from);
-	size_t number_to_move;
+    size_t number_to_move;
     if ((v->size + inserted_size) > v->alloc_size)
     {
       /*we need to resize*/
@@ -282,10 +284,10 @@ specifier type *vector_(find_if)(struct vector_name *v, type *ptr,
        it != ite;
        it = vector_(next)(it)) {
     if (cmp(it, ptr)) {
-      break;
+      return it;
     }
   }
-  return it;
+  return ite;
 }
 
 #ifdef VECTOR_TYPE_SCALAR
@@ -300,14 +302,53 @@ specifier type * vector_(find)(struct vector_name *v, type *ptr)
        it != ite;
        it = vector_(next)(it)) {
     if (it == ptr) {
-      break;
+      return it;
     }
   }
-  return it;
+  return ite;
 }
 
+specifier void vector_(foreach)(struct vector_name *v,
+                                      void (*each)(type))
+{
+    type *it = NULL;
+    type *ite = NULL;
+
+  for (it = vector_(begin)(v),
+       ite = vector_(end)(v);
+       it != ite;
+       it = vector_(next)(it))
+  {
+      each(*it);
+  }
+}
+
+#else
+
+specifier void vector_(foreach)(struct vector_name *v,
+                                      void (*each)(type const *))
+{
+    type *it = NULL;
+    type *ite = NULL;
+
+  for (it = vector_(begin)(v),
+       ite = vector_(end)(v);
+       it != ite;
+       it = vector_(next)(it))
+  {
+      each((type const *)it);
+  }
+}
 #endif
 
 #undef type
 #undef specifier
-#undef prefix
+
+#ifndef VECTOR_DEV_MODE
+# undef vector_
+# undef vector_name
+# undef DEFAULT_ALLOC_SIZE
+# undef VECTOR_TYPE
+# undef VECTOR_PREFIX
+# undef VECTOR_TYPE_SCALAR
+#endif
