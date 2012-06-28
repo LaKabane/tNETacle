@@ -19,14 +19,15 @@ RESOURCES += \
     ../share/img/client.qrc
 
 HEADERS += \
-    controller.h\
-    clientgui.h \
+    include/controller.h\
+    include/clientgui.h \
  #   ../share/controler.h \
     ../share/contactsList.h \
     ../share/contact.h \
     ../share/config.h \
-    addcontactgui.h \
-    contactgui.h \
-    rootnodegui.h
+    include/addcontactgui.h \
+    include/contactgui.h \
+    include/rootnodegui.h
 
-INCLUDEPATH += ../share/
+INCLUDEPATH += ../share/ \
+               ./include/
