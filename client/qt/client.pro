@@ -19,6 +19,7 @@ RESOURCES += \
     ../share/img/client.qrc
 
 HEADERS += \
+    include/IModel.h    \
     include/controller.h\
     include/clientgui.h \
  #   ../share/controler.h \
