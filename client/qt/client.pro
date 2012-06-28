@@ -8,7 +8,8 @@ SOURCES += \
     controller.cpp\
     addcontactgui.cpp \
     contactgui.cpp \
-    rootnodegui.cpp
+    rootnodegui.cpp\
+    model_contacts.cpp
 
 FORMS += \
     client.ui \
@@ -20,6 +21,7 @@ RESOURCES += \
 
 HEADERS += \
     include/IModel.h    \
+    include/model_contacts.h    \
     include/controller.h\
     include/clientgui.h \
  #   ../share/controler.h \

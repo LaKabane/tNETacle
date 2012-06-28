@@ -4,19 +4,19 @@
 
 Controller::Controller(ClientGUI & gui) :
   _view(gui),
-  _model()
+  _model_contacts(*this)
 {
 
 }
 
 void Controller::editContact(QListWidgetItem *item)
 {
-  this->_view.createAddContact(item->text(), _model[item->text()]);
+  this->_view.createAddContact(item->text(), _model_contacts.getKey(item->text()));
 }
 
 void Controller::deleteContact()
 {
-  this->_model.remove(this->_view.getSelected());
+  this->_model_contacts.delContact(_view.getSelected());
   this->_view.deleteSelected();
 }
 
@@ -25,7 +25,7 @@ void Controller::addContact()
   if (!_view.getInitialContactName().isEmpty()) // TODO if user select a different row after editing
     this->deleteContact();
   this->_view.addContact(this->_view.getNewContactName());
-  this->_model[this->_view.getNewContactName()] = this->_view.getNewContactKey();
+  this->_model_contacts.addContact(this->_view.getNewContactName(), this->_view.getNewContactKey());
   this->_view.deleteAddContact();
   // new Contact (this->e_view.getNewContactName(),
   //              this->_view.getNewContactKey());

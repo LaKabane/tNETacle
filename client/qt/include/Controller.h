@@ -1,7 +1,7 @@
 #include <QMap>
 #include <QObject>
 #include <QListWidgetItem>
-
+#include "model_contacts.h"
 #ifndef CONTROLLER_H_
 # define CONTROLLER_H_
 
@@ -23,7 +23,7 @@ public slots:
 
 private:
   ClientGUI &_view;
-  QMap<QString, QString> _model; // This model is temporary, waiting for the real one to be ready.
+  ModelContacts _model_contacts;
   bool  editing;
 
   // TODO : put the root node here with a correct type
