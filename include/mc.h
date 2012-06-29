@@ -34,10 +34,13 @@ struct mc
   } p;
   struct bufferevent *bev;
   SSL *client_ctx;
+  int ssl_flags;
 };
 
 int mc_init(struct mc *, struct event_base *, int fd, struct sockaddr *,
              socklen_t len, SSL_CTX *server_ctx);
 void mc_close(struct mc *);
+int mc_ssl_connect(struct mc *, struct event_base *);
+int mc_ssl_accept(struct mc *, struct event_base *);
 
 #endif /* end of include guard: MC_ENDPOINT_JU2N66SJ */

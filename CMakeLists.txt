@@ -26,6 +26,7 @@ find_package(ZLIB REQUIRED)
 find_package(Event COMPONENTS core REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
+find_package(OpenSSL REQUIRED)
 
 if (NOT TUNTAP_FOUND)
     find_package(Tapcfg REQUIRED)
@@ -184,6 +185,8 @@ target_link_libraries(tNETacle
         ${EVENT_LIBRARIES}
         ${ZLIB_LIBRARY}
         ${YAJL_LIBRARIES}
+        ${OPENSSL_LIBRARIES}
+        -lrt
 )
 
 if (TUNTAP_FOUND)
