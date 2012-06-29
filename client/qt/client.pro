@@ -1,3 +1,7 @@
+QT += script
+
+LIBS +=  -lqjson
+
 SOURCES += \
     main.cpp \
 #    ../share/controler.cpp \
@@ -5,6 +9,7 @@ SOURCES += \
     ../share/contact.cpp \
     ../share/config.cpp \
     clientgui.cpp \
+    model.cpp \
     controller.cpp\
     addcontactgui.cpp \
     contactgui.cpp \
@@ -21,7 +26,7 @@ RESOURCES += \
 
 HEADERS += \
     include/exception.h\
-    include/IModel.h    \
+    include/Model.h    \
     include/model_contacts.h    \
     include/controller.h\
     include/clientgui.h \

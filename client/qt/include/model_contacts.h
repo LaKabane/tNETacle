@@ -3,11 +3,11 @@
 
 #include <QMap>
 #include <QString>
-#include "IModel.h"
+#include "Model.h"
 
 class Controller;
 
-class ModelContacts : public IModel
+class ModelContacts : public Model
 {
  public:
   ModelContacts(Controller &);
@@ -19,6 +19,11 @@ class ModelContacts : public IModel
 private:
   QMap<QString, QString> _contacts;
   Controller    &_controller;
+  static const QString _name;
+protected: // from IModel
+  virtual const QString &getObjectName() const;
+  virtual const QMap<QString, QString> &getData() const;
+
 };
 
 #endif /* !MODEL_CONTACTS_H */
