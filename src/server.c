@@ -29,16 +29,10 @@
 #include <openssl/rand.h>
 
 #if defined Unix
-# include <sys/types.h>
-# include <sys/socket.h>
 # include <unistd.h>
-# include <netinet/in.h>
 #endif
 
-#if defined Windows
-# include <io.h>
-# include <WS2tcpip.h>
-#endif
+#include "networking.h"
 
 #include "tnetacle.h"
 #include "options.h"
