@@ -23,8 +23,14 @@
 #ifndef TNT_OPTIONS_H_ 
 #define TNT_OPTIONS_H_ 
 
-#define VECTOR_TYPE struct sockaddr
+struct cfg_sockaddress {
+    int len;
+    struct sockaddr_storage sockaddr;
+};
+
+#define VECTOR_TYPE struct cfg_sockaddress
 #define VECTOR_PREFIX sockaddr
+#define DEFAULT_ALLOC_SIZE 2
 #include "vector.h"
 #undef VECTOR_TYPE
 #undef VECTOR_PREFIX

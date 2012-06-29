@@ -39,8 +39,6 @@ ssize_t windows_fix_read(intptr_t fd, void *buf, size_t len);
 #define VECTOR_TYPE struct mc
 #define VECTOR_PREFIX mc
 #include "vector.h"
-#undef VECTOR_PREFIX
-#undef VECTOR_TYPE
 
 struct frame {
   unsigned short size;
@@ -50,11 +48,14 @@ struct frame {
 #define VECTOR_TYPE struct frame
 #define VECTOR_PREFIX frame
 #include "vector.h"
-#undef VECTOR_PREFIX
-#undef VECTOR_TYPE
+
+#define VECTOR_TYPE struct evconnlistener*
+#define VECTOR_PREFIX evl
+#define VECTOR_TYPE_SCALAR
+#include "vector.h"
 
 struct server {
-  struct evconnlistener *srv;
+  struct vector_evl srv_list; /*list of the listenners*/
   struct event *udp_endpoint;
   struct event *device;
 #if defined Windows
@@ -65,6 +66,7 @@ struct server {
   struct vector_mc pending_peers; /* Pending in connection peers*/
   struct vector_frame frames_to_send;
   SSL_CTX *server_ctx;
+  struct event_base *evbase;
 };
 
 int server_init(struct server *, struct event_base *);
