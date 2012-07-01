@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/logo">
+        <file>logo_tNETacle.png</file>
+        <file>back-tnetacle-eip-bw.jpeg</file>
+        <file>back-tnetacle-eip.jpeg</file>
+        <file>back-tnetacle.jpeg</file>
+        <file>logo_eip.jpg</file>
+    </qresource>
+    <qresource prefix="/tools">
+        <file>addcontact.png</file>
+        <file>restart.png</file>
+        <file>shutdown2.png</file>
+        <file>restart.jpg</file>
+        <file>shutdown.jpg</file>
+        <file>deletecontact.png</file>
+        <file>root.png</file>
+    </qresource>
+</RCC>
