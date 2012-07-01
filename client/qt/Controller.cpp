@@ -5,7 +5,8 @@
 
 Controller::Controller(ClientGUI & gui) :
   _view(gui),
-  _model_contacts(*this)
+  _model_contacts(*this),
+  _network()
 {
 
 }

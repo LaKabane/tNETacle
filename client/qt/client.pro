@@ -1,4 +1,5 @@
-QT += script
+QT += network
+
 
 LIBS +=  -lqjson
 
@@ -14,7 +15,8 @@ SOURCES += \
     addcontactgui.cpp \
     contactgui.cpp \
     rootnodegui.cpp\
-    model_contacts.cpp
+    model_contacts.cpp\
+    network.cpp
 
 FORMS += \
     client.ui \
@@ -26,6 +28,8 @@ RESOURCES += \
 
 HEADERS += \
     include/exception.h\
+    include/singleton.hpp\
+    include/network.h\
     include/Model.h    \
     include/model_contacts.h    \
     include/controller.h\

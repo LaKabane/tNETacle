@@ -1,10 +1,11 @@
+#ifndef CONTROLLER_H_
+# define CONTROLLER_H_
+
 #include <QMap>
 #include <QObject>
 #include <QListWidgetItem>
 #include "model_contacts.h"
-#ifndef CONTROLLER_H_
-# define CONTROLLER_H_
-
+#include "network.h"
 
 class ClientGUI;
 
@@ -30,6 +31,7 @@ private:
   QString _rootNodeName;
   QString _rootNodeIP;
   QString _rootNodePubkey;
+  Network _network;
 };
 
 
