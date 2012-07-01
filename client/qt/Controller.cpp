@@ -6,7 +6,7 @@
 Controller::Controller(ClientGUI & gui) :
   _view(gui),
   _model_contacts(*this),
-  _network()
+  _network(*this)
 {
 
 }
@@ -32,6 +32,12 @@ quint16 Controller::getPort() const
 {
   return _network.getPort();
 }
+
+void Controller::error(const QString &s)
+{
+  this->_view.printError(s);
+}
+
 void Controller::deleteContact()
 {
   try
@@ -80,6 +86,19 @@ void	Controller::changeRootNode()
 {
   // TODO QSTRing
   // _rootNodeName = this->_view.getRootName();
-  this->_network.setConnection(_view.getRootIP(), _view.getRootPort().toUShort());
+  bool ok;
+  quint16 port =  _view.getRootPort().toUShort(&ok);
+  try
+    {
+      if (ok)
+        this->_network.setConnection(_view.getRootIP(), port);
+      else
+        this->_view.printError("Error: Port is not a number");
+    }
+  catch (Exception *e)
+    {
+      this->_view.printError(e->getMessage());
+      delete e;
+    }
   this->_view.deleteRootNode();
 }

@@ -1,12 +1,17 @@
 #include "network.h"
+#include "Controller.h"
 
-Network::Network(const QString &ip, const quint16 port)
+
+Network::Network(Controller &controller, const QString &ip, const quint16 port)
   : _socket(),
     _ip(ip),
-    _port(port)
+    _port(port),
+    _controller(controller)
 {
-    _socket.connectToHost(_ip, port);
+  QObject::connect(&_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
+  _socket.connectToHost(_ip, port);
 }
+
 
 void Network::setConnection(const QString &ip, const quint16 port) // we want to set BOTH!
 {
@@ -15,6 +20,12 @@ void Network::setConnection(const QString &ip, const quint16 port) // we want to
   _socket.close();
   _socket.connectToHost(_ip, port);
 }
+
+void Network::error(QAbstractSocket::SocketError)
+{
+  _controller.error(_socket.errorString());
+}
+
 
 const QString &Network::getIp() const
 {

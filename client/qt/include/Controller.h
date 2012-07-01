@@ -16,6 +16,7 @@ public:
   Controller(ClientGUI &);
   const QString &getIp() const;
   quint16 getPort() const;
+  void error(const QString &);
 public slots:
   void addContact();
   void deleteContact();
@@ -23,7 +24,6 @@ public slots:
 
   void editRootNode();
   void changeRootNode();
-
 private:
   ClientGUI &_view;
   ModelContacts _model_contacts;
