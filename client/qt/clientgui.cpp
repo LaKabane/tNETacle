@@ -89,6 +89,14 @@ QString ClientGUI::getRootIP() const
 }
 
 
+QString ClientGUI::getRootPort() const
+{
+  if (!this->_rootNode)
+    return *new QString("");// TODO throw a fatal exception
+  return this->_rootNode->getRootPort();
+}
+
+
 
 
 void ClientGUI::createAddContact(const QString& name, const QString &key) {
@@ -112,7 +120,7 @@ void ClientGUI::createAddContact() {
 }
 
 void ClientGUI::deleteAddContact() {
-  delete _addContact;
+  _addContact->close();
 }
 
 void ClientGUI::deleteRootNode() {

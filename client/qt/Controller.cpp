@@ -78,9 +78,8 @@ void Controller::editRootNode()
 
 void	Controller::changeRootNode()
 {
-  // TODO
-  _rootNodeName = this->_view.getRootName();
-  _rootNodeIP = this->_view.getRootIP();
-  _rootNodePubkey = this->_view.getRootKey();
-   this->_view.deleteRootNode();
+  // TODO QSTRing
+  // _rootNodeName = this->_view.getRootName();
+  this->_network.setConnection(_view.getRootIP(), _view.getRootPort().toUShort());
+  this->_view.deleteRootNode();
 }

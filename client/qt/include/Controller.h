@@ -29,9 +29,10 @@ private:
   ModelContacts _model_contacts;
   bool  editing;
 
-  // TODO : put the root node here with a correct type
+  // // TODO : put the root node here with a correct type
+  // REMOVED: in _network.
   QString _rootNodeName;
-  QString _rootNodeIP;
+  // QString _rootNodeIP;
   QString _rootNodePubkey;
   Network _network;
 };

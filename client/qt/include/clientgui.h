@@ -31,6 +31,7 @@ public:
   QString getRootName() const;
   QString getRootKey() const;
   QString getRootIP() const;
+  QString getRootPort() const;
 
   void    createAddContact(const QString &, const QString &);
   void    createRootNodeGui(const QString &, const QString &, const QString &, quint16 );
