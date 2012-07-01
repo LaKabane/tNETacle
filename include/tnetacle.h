@@ -15,7 +15,12 @@
  */
 
 #include <sys/types.h>
-#include <pwd.h>
+
+#if defined Unix
+# include <pwd.h>
+#endif
+
+struct passwd;
 
 #ifndef TNETACLE_H__
 #define TNETACLE_H__
@@ -25,6 +30,11 @@
  * nologin shell and /var/empty for home.
  */
 #define TNETACLE_USER "_tnetacle"
+
+#define TNETACLE_DEFAULT_PORT	4242
+#define TNETACLE_MAX_PORTS	256
+#define TNETACLE_DEFAULT_LISTEN_IPV4 "0.0.0.0"
+#define TNETACLE_DEFAULT_LISTEN_IPV6 "::"
 
 /*
  * Definition of types for our imsg.
@@ -36,14 +46,14 @@ enum imsg_type {
 };
 
 char 		*tnt_getprogname(void);
-__inline void    tnt_setproctitle(const char *);
-int		 tnt_fork(int [2], struct passwd *);
+void    	 tnt_setproctitle(const char *);
+int		 tnt_fork(int [2]);
 int		 tnt_daemonize(void);
 
 /* src/conf.c */
-char		*tnt_parse_line(char *);
+int	 tnt_parse_buf(char *, size_t);
 /* and sys/ specific call */
-void		 tnt_conf(void);
+int	 tnt_parse_file(const char *);
 
 #endif
 

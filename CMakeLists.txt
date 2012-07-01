@@ -1,121 +1,203 @@
+# tNETacle CMakeLists.txt
+# ========================
+
 project(tNETacle)
 cmake_minimum_required(VERSION 2.8)
 
+# CMake Configuration
+# ------------------
 set(CMAKE_MODULE_PATH ${CMAME_MODULE_PATH} ${CMAKE_SOURCE_DIR}/util/cmake/Modules/)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-
 set(${CMAKE_SYSTEM_NAME} True)
 
-#find_package(ZLIB REQUIRED)
-find_package(Event COMPONENTS core REQUIRED)
-find_package(Tapcfg REQUIRED)
-find_package(Tuntap REQUIRED)
+# CMake global options
+# ------------------
+# None at the moment
+
+# Global Packages search
+# ------------------
+find_package(ZLIB REQUIRED)
+find_package(Event COMPONENTS core openssl REQUIRED)
+find_package(Yajl REQUIRED)
+find_package(Tuntap)
+
+if (NOT TUNTAP_FOUND)
+    find_package(Tapcfg REQUIRED)
+endif()
 
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
-add_definitions(-DHAVE_SETPROCTITLE)
-add_definitions(-DHAVE_SETRESXID)
+
+
+if (TUNTAP_FOUND)
+    add_definitions(-DUSE_LIBTUNTAP)
+else()
+    if (TAPCFG_FOUND)
+        add_definitions(-DUSE_TAPCFG)
+    endif()
+endif()
+
+# Global include directories
+# ------------------
+include_directories(${CMAKE_HOME_DIRECTORY}/include)
+include_directories(${EVENT_INCLUDE_DIR})
+include_directories(${ZLIB_INCLUDE_DIR})
+include_directories(${YAJL_INCLUDE_DIR})
+if (TUNTAP_FOUND)
+	include_directories(${TUNTAP_INCLUDE_DIRS})
+else()
+	if (TAPCFG_FOUND)
+		include_directories(${TAPCFG_INCLUDE_DIRS})
+	endif()
+endif()
 
 # Portable source files
+# ------------------
 set(SOURCES_LIST
   src/conf.c
-  src/tun-compat.c)
+  src/tun-compat.c
+  src/compress.c
+  #src/pipeline.c
+  src/mc.c
+  src/hexdump.c
+  src/server.c)
 
-if (Linux)
-	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
-	option(ENABLE_NETLINK "Enable the use of libnl to configure the
-	interfaces" ON)
-endif()
-
+# OS families specific things
+# ---------------------------
 if(UNIX)
-  include_directories(/usr/include/ /usr/local/include)
-  set(CMAKE_C_FLAGS "-W -Wall")
-  set(SOURCES_LIST ${SOURCES_LIST} sys/unix/log.c
-	  sys/unix/imsg.c sys/unix/imsg-buffer.c
-	  sys/unix/tnetacle.c sys/unix/tnetacled.c
-	  sys/unix/util.c sys/unix/server.c
-	  sys/unix/conf.c)
+	# Unix specific include directories
+	# ------------------
+	include_directories(/usr/include/)
+
+	# Unix specific definitions
+	# ------------------
+  	add_definitions(-DUnix)
+
+	# Unix specific source files
+	# ------------------
+	set(SOURCES_LIST ${SOURCES_LIST} sys/unix/log.c
+		sys/unix/imsg.c sys/unix/imsg-buffer.c
+		sys/unix/tnetacle.c sys/unix/tnetacled.c
+		sys/unix/util.c sys/unix/conf.c
+		sys/unix/tntsocket.c)
 endif()
 
-if (WINDOWS)
-  add_definitions(-DUSE_TAPCFG)
+if (Windows)
+	# CMake windows Configuration
+	# ------------------
+	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
+  	add_definitions(-DWnt)
 
-  set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-
-  file(GLOB WIN_SOURCES_LIST sys/wnt/*.c)
-  set(SOURCES_LIST ${SOURCES_LIST} ${WIN_SOURCES_LIST})
+	# Windows source files
+	# ------------------
+	set(SOURCES_LIST ${SOURCES_LIST}
+		sys/wnt/conf.c
+		sys/wnt/log.c
+		sys/wnt/tntsocket.c
+		sys/wnt/winstrtonum.c
+		sys/wnt/main.c
+	)
 endif()
 
+# OS specific things
+# ------------------
 if(Linux)
-  if (ENABLE_BSDCOMPAT)
-    find_package(Bsd)
-    if (BSD_FOUND)
-      add_definitions(-DHAVE_BSD_COMPAT)
-    else()
-      remove_definitions(-DHAVE_SETPROCTITLE)
-    endif()
-  else()
-    remove_definitions(-DHAVE_SETPROCTITLE)
-  endif()
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 
-  if (ENABLE_NETLINK)
-    find_package(Netlink COMPONENTS route)
-    if (NETLINK_FOUND)
-      include_directories(${NETLINK_INCLUDE_DIRS})
-      add_definitions(-DHAVE_NETLINK)
-    endif()
-  endif()
+	# Linux specific Options
+	# ------------------
+        option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" OFF)
 
-  add_definitions(-DUSE_LIBTUNTAP)
+	# Linux specific package search
+	# ------------------
+	if (ENABLE_BSDCOMPAT)
+                find_package(Bsd)
+	endif()
 
-  add_definitions(-D_GNU_SOURCE)
+	# Linux specific definitions
+	# ------------------
+	add_definitions(-D_GNU_SOURCE)
+	add_definitions(-DHAVE_SETRESXID)
+        if (ENABLE_BSDCOMPAT AND BSD_FOUND)
+		add_definitions(-DHAVE_BSD_COMPAT)
+	endif()
+
+        # Linux specifig include directories
+	# ----------------------------------
+	include_directories(/usr/local/include)
+        if (ENABLE_BSDCOMPAT AND BSD_FOUND)
+                include_directories(${BSD_INCLUDE_DIRS})
+	endif()
 endif()
 
 if (OpenBSD)
-  add_definitions(-DUSE_LIBTUNTAP)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
+	include_directories(/usr/local/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (NetBSD)
-  add_definitions(-DUSE_TAPCFG)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/pkg/include)
+	include_directories(/usr/pkg/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
 endif()
 
 if (FreeBSD)
-  add_definitions(-DUSE_TAPCFG)
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
+	include_directories(/usr/local/include)
+	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_SETRESXID)
 endif()
 
 if (Darwin)
-  add_definitions(-DUSE_TAPCFG)
-  remove_definitions(-DHAVE_SETPROCTITLE)
-  remove_definitions(-DHAVE_SETRESXID)
-#macports
-  include_directories(/opt/local/include)
+	# Darwin specific include directories (macport)
+	# ------------------
+        set(CMAKE_SYSTEM_INCLUDE_PATH
+                ${CMAKE_SYSTEM_INCLUDE_PATH} /opt/local/include)
+	include_directories(/opt/local/include)
+
+	# Darwin specific definitions
+	# ------------------
 endif()
 
-include_directories(
-${CMAKE_HOME_DIRECTORY}/include
-)
+# Executable definitons
+# ------------------
+add_executable(tNETacle ${SOURCES_LIST})
 
-add_executable(tNETacle
-	${SOURCES_LIST}
-)
 
-if (TAPCFG_FOUND)
-  target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
-elseif(TUNTAP_FOUND)
-  target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
-endif()
-
-if (Linux)
-  if (ENABLE_BSDCOMPAT AND BSD_FOUND)
-      target_link_libraries(tNETacle ${BSD_LIBRARIES})
-  endif()
-
-  if (ENABLE_NETLINK AND NETLINK_FOUND)
-      target_link_libraries(tNETacle ${NETLINK_LIBRARIES})
-  endif()
-endif()
+# Global linked libraries
+# ------------------
 
 target_link_libraries(tNETacle
-	${EVENT_LIBRARIES})
+        ${EVENT_LIBRARIES}
+        ${ZLIB_LIBRARY}
+        ${YAJL_LIBRARIES}
+)
+
+if (TUNTAP_FOUND)
+  target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
+elseif(TAPCFG_FOUND)
+  target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
+endif()
+
+# Linux linked libraries
+# ------------------------
+if (ENABLE_BSDCOMPAT AND BSD_FOUND)
+  target_link_libraries(tNETacle ${BSD_LIBRARIES})
+endif()
+
+# Windows linked libraries
+# ------------------------
+
+if (Windows)
+    target_link_libraries(tNETacle Ws2_32.lib)
+endif()
+
+include(CMakeLists.txt.local OPTIONAL)
