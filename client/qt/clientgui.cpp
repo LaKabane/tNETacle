@@ -8,7 +8,8 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
     QMainWindow(parent),
     _addContact(0),
     _rootNode(0),
-    _controller(*this)
+    _controller(*this),
+    _timer()
 {
    setupUi(this);
    QObject::connect(actionAddContact, SIGNAL(activated()), this, SLOT(createAddContact()));
@@ -16,6 +17,8 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    QObject::connect(ContactsList, SIGNAL(itemDoubleClicked(QListWidgetItem*)), &_controller, SLOT(editContact(QListWidgetItem *)));
 
    QObject::connect(actionChangeRoot, SIGNAL(activated()), &_controller, SLOT(editRootNode()));
+   error->hide();
+   QObject::connect(&_timer, SIGNAL(timeout()), error, SLOT(hide()));
 }
 
 ClientGUI::~ClientGUI() {
@@ -23,6 +26,9 @@ ClientGUI::~ClientGUI() {
 
 void ClientGUI::printError(const QString &error)
 {
+  this->error->show();
+  this->errorText->setText(error);
+  this->_timer.start(3000);
   qDebug() << error;
 }
 

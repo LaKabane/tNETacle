@@ -24,9 +24,9 @@ const QMap<QString, QString> &ModelContacts::getData() const
 void ModelContacts::addContact(const QString &name, const QString &key)
 {
   if (!name.length())
-    throw new Exception("No name");
+    throw new Exception("Error: No name");
   if (_contacts.contains(name))
-    throw new Exception("Name already exist");
+    throw new Exception("Error: Name already exist");
    _contacts[name] = key;
    qDebug() << this->toJson();
 }
@@ -34,14 +34,14 @@ void ModelContacts::addContact(const QString &name, const QString &key)
 const QString &ModelContacts::getKey(const QString &name)
 {
   if (!_contacts.contains(name))
-    throw new Exception("Name does not exist");
+    throw new Exception("Error: Name does not exist");
   return _contacts[name];
 }
 
 void ModelContacts::delContact(const QString &name)
 {
   if (_contacts.remove(name) != 1)
-    throw new Exception("Name does not exist");
+    throw new Exception("Error: Name does not exist");
 }
 
 void  ModelContacts::editContact(const QString &old, const QString &name, const QString &key)

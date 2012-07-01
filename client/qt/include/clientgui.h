@@ -2,6 +2,7 @@
 #define CLIENTGUI_H
 
 #include <QMainWindow>
+#include <QTimer>
 #include "ui_client.h"
 #include "Controller.h"
 #include "contact.h"
@@ -13,7 +14,7 @@ namespace Ui {
 class addContactGui;
 class rootNodeGui;
 
-class ClientGUI : public QMainWindow, private Ui::ClientGUI
+class ClientGUI : public QMainWindow, public Ui::ClientGUI
 {
     Q_OBJECT
 public:
@@ -35,10 +36,10 @@ public:
   void    createRootNodeGui(const QString &, const QString &, const QString &);
   void    printError(const QString &);
 private:
-    addContactGui*  _addContact;
-	rootNodeGui*	_rootNode;
-    Controller      _controller;
-
+  addContactGui*  _addContact;
+  rootNodeGui*	_rootNode;
+  Controller      _controller;
+  QTimer        _timer;
 signals:
 
 public slots:
