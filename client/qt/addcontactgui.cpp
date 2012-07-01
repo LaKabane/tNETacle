@@ -16,6 +16,7 @@ addContactGui::addContactGui(Controller &controller, ClientGUI &win)
 addContactGui::addContactGui(Controller &controller, ClientGUI &win, const QString &name, const QString &key)
   : QWidget(0), _controller(controller),_view(win), _initialName(name)
 {
+    this->setAttribute(Qt::WA_DeleteOnClose);
     setupUi(this);
     QObject::connect(okOrReject, SIGNAL(accepted()), &_controller, SLOT(addContact()));
     QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteAddContact()));

@@ -82,5 +82,5 @@ void	Controller::changeRootNode()
   _rootNodeName = this->_view.getRootName();
   _rootNodeIP = this->_view.getRootIP();
   _rootNodePubkey = this->_view.getRootKey();
-  this->_view.deleteRootNode();
+   this->_view.deleteRootNode();
 }

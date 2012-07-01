@@ -116,7 +116,7 @@ void ClientGUI::deleteAddContact() {
 }
 
 void ClientGUI::deleteRootNode() {
-  delete _rootNode;
+  _rootNode->close();
 }
 
 void ClientGUI::addContactDeleted() {
@@ -139,7 +139,7 @@ void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const
     return ;
   _rootNode = new rootNodeGui(this->_controller, *this, name, key, IP, port);
 
-  QObject::connect(_rootNode, SIGNAL(destroyed()), this, SLOT(rootNodeGuiDeleted()));
+    QObject::connect(_rootNode, SIGNAL(destroyed()), this, SLOT(rootNodeGuiDeleted()));
   _rootNode->show();
 }
 

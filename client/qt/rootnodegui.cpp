@@ -16,9 +16,10 @@ rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win)
 rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win, const QString &name, const QString &key, const QString &IP, const quint16 port)
   : QWidget(0), _controller(controller),_view(win), _initialName(name)
 {
+    this->setAttribute(Qt::WA_DeleteOnClose);
     setupUi(this);
     QObject::connect(okOrReject, SIGNAL(accepted()), &_controller, SLOT(changeRootNode()));
-    QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteRootNode()));
+    //QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteRootNode()));
     this->name->setText(name);
     this->pubKey->setText(key);
     this->IP->setText(IP);
