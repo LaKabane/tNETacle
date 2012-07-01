@@ -14,6 +14,8 @@ class Controller : public QObject
   Q_OBJECT
 public:
   Controller(ClientGUI &);
+  const QString &getIp() const;
+  quint16 getPort() const;
 public slots:
   void addContact();
   void deleteContact();

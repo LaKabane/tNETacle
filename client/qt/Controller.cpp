@@ -23,6 +23,15 @@ void Controller::editContact(QListWidgetItem *item)
     }
 }
 
+const QString &Controller::getIp() const
+{
+  return (_network.getIp());
+}
+
+quint16 Controller::getPort() const
+{
+  return _network.getPort();
+}
 void Controller::deleteContact()
 {
   try
