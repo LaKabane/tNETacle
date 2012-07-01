@@ -19,11 +19,11 @@ class rootNodeGui : public QWidget, private Ui::rootNodeGui
   Q_OBJECT
   public:
   const QString getInitialContactName() const;
-  QString getRootName() const;
-  QString getRootKey() const;
-  QString getRootIP() const;
-  explicit rootNodeGui(Controller &controller, ClientGUI &view, const QString &name, const QString &, const QString &);
-
+  const QString getRootName() const;
+  const QString getRootKey() const;
+  const QString getRootIP() const;
+  const QString getRootPort() const;
+  explicit rootNodeGui(Controller &controller, ClientGUI &view, const QString &name, const QString &, const QString &, const quint16 port);
   explicit rootNodeGui(Controller &controller, ClientGUI &view);
   virtual ~rootNodeGui();
   QDialogButtonBox* getOkOrReject() const {return okOrReject;}

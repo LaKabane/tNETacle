@@ -134,10 +134,10 @@ void ClientGUI::addContact(const QString &str)
 //     this->ContactsList->addItem(str);
 // }
 
-void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const QString &IP) {
+void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const QString &IP, quint16 port) {
   if (_rootNode)
     return ;
-  _rootNode = new rootNodeGui(this->_controller, *this, name, key, IP);
+  _rootNode = new rootNodeGui(this->_controller, *this, name, key, IP, port);
 
   QObject::connect(_rootNode, SIGNAL(destroyed()), this, SLOT(rootNodeGuiDeleted()));
   _rootNode->show();

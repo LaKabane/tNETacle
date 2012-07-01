@@ -72,7 +72,8 @@ void Controller::addContact()
 void Controller::editRootNode()
 {
   // TODO
-  this->_view.createRootNodeGui(_rootNodeName, _rootNodeIP, _rootNodePubkey);
+  this->_view.createRootNodeGui(_rootNodeName,  _rootNodePubkey, _network.getIp(), _network.getPort()
+);
 }
 
 void	Controller::changeRootNode()

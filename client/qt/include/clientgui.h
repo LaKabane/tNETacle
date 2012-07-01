@@ -33,7 +33,7 @@ public:
   QString getRootIP() const;
 
   void    createAddContact(const QString &, const QString &);
-  void    createRootNodeGui(const QString &, const QString &, const QString &);
+  void    createRootNodeGui(const QString &, const QString &, const QString &, quint16 );
   void    printError(const QString &);
 private:
   addContactGui*  _addContact;

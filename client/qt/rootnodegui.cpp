@@ -13,7 +13,7 @@ rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win)
   QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteAddContact()));
 }
 
-rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win, const QString &name, const QString &key, const QString &IP)
+rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win, const QString &name, const QString &key, const QString &IP, const quint16 port)
   : QWidget(0), _controller(controller),_view(win), _initialName(name)
 {
     setupUi(this);
@@ -22,6 +22,8 @@ rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win, const QString &
     this->name->setText(name);
     this->pubKey->setText(key);
     this->IP->setText(IP);
+    QString tmp;
+    this->port->setText(tmp.setNum(port));
 }
 
 
@@ -30,7 +32,7 @@ rootNodeGui::~rootNodeGui()
 
 }
 
-QString rootNodeGui::getRootName() const
+const QString rootNodeGui::getRootName() const
 {
   return (this->name->text());
 }
@@ -40,16 +42,21 @@ const QString rootNodeGui::getInitialContactName() const
   return this->_initialName;
 }
 
-QString rootNodeGui::getRootKey() const
+const QString rootNodeGui::getRootKey() const
 {
   return (this->pubKey->toPlainText());
 }
 
-QString rootNodeGui::getRootIP() const
+const QString rootNodeGui::getRootIP() const
 {
   return (this->IP->text());
 }
 
+
+const QString rootNodeGui::getRootPort() const
+{
+  return (this->port->text());
+}
 
 void rootNodeGui::sendRootNode() {
     // Contact* newContact = new Contact(this->nameLabel->text().toStdString(),
