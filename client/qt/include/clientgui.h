@@ -21,6 +21,7 @@ public:
     explicit ClientGUI(QMainWindow *parent = 0);
     ~ClientGUI();
   //  void addContact(Contact* c);
+  void appendLog(const QString &);
   void addContact(const QString &);
   QString getSelected() const;
   void    deleteSelected();

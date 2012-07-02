@@ -16,6 +16,7 @@ class ModelContacts : public Model
   void          delContact(const QString &);
   void          editContact(const QString&, const QString&, const QString&);
   virtual       ~ModelContacts(){};
+  virtual void  feedData(const QString &,const QMap<QString, QVariant> &);
 private:
   QMap<QString, QString> _contacts;
   Controller    &_controller;

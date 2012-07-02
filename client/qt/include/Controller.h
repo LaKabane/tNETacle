@@ -3,8 +3,10 @@
 
 #include <QMap>
 #include <QObject>
+#include <QVariant>
 #include <QListWidgetItem>
 #include "model_contacts.h"
+#include "model_log.h"
 #include "network.h"
 
 class ClientGUI;
@@ -16,12 +18,14 @@ public:
   Controller(ClientGUI &);
   const QString &getIp() const;
   quint16 getPort() const;
+  void feedData(const QVariant &);
   void error(const QString &);
+
 public slots:
   void addContact();
   void deleteContact();
   void editContact(QListWidgetItem *);
-
+  void appendLog(const QString &);
   void editRootNode();
   void changeRootNode();
 private:
@@ -35,6 +39,8 @@ private:
   // QString _rootNodeIP;
   QString _rootNodePubkey;
   Network _network;
+  ModelLog _modelLog;
+  QVector<Model *> _models;
 };
 
 

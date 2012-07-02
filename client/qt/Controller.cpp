@@ -1,14 +1,47 @@
+#include <QDebug>
 #include "clientgui.h"
 #include "Controller.h"
 #include "contact.h"
 #include "exception.h"
+#include "Model.h"
 
 Controller::Controller(ClientGUI & gui) :
   _view(gui),
   _model_contacts(*this),
-  _network(*this)
+  _network(*this),
+  _modelLog(*this),
+  _models()
 {
+  _models.append(&_model_contacts);
+  _models.append(&_modelLog);
+}
 
+void Controller::feedData(const QVariant &data)
+{
+  qDebug() << _models.size();
+  QMap<QString, QVariant> map = data.toMap();
+  QMap<QString, QVariant>::const_iterator it(map.begin());
+  for (const QMap<QString, QVariant>::const_iterator it_end = map.end(); it != it_end; ++it)
+    {
+      QString commande = it.key().left(3);
+      QString object = it.key().right(it.key().length() - 3);
+      QMap<QString, QVariant > data = it.value().toMap();
+      int end = _models.size();
+      qDebug() << end;
+      for (int i = 0; i < end ; ++i)
+        {
+          qDebug() << _models[i]->getObjectName();
+        if (_models[i]->getObjectName() == object)
+          {
+            _models[i]->feedData(commande, data);
+            break;
+          }
+        }
+    }
+}
+void Controller::appendLog(const QString &s)
+{
+  this->_view.appendLog(s);
 }
 
 void Controller::editContact(QListWidgetItem *item)

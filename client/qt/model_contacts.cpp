@@ -11,6 +11,11 @@ ModelContacts::ModelContacts(Controller &controller):
 
 }
 
+void  ModelContacts::feedData(const QString &, const QMap<QString, QVariant> &)
+{
+
+}
+
 const QString &ModelContacts::getObjectName() const
 {
   return ModelContacts::_name;

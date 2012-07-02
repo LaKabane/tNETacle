@@ -24,6 +24,13 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
 ClientGUI::~ClientGUI() {
 }
 
+
+void ClientGUI::appendLog(const QString &str)
+{
+  this->log->append(str);
+}
+
+
 void ClientGUI::printError(const QString &error)
 {
   this->error->show();

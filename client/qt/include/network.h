@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QTcpSocket>
+#include <qjson/parser.h>
 
 class Controller;
 
@@ -18,11 +19,14 @@ public:
   quint16       getPort() const;
 public slots:
   void error(QAbstractSocket::SocketError);
+private slots:
+  void read();
 private:
   QTcpSocket    _socket;
   QString       _ip;// can also be domain
   quint16       _port;
   Controller    &_controller;
+  QJson::Parser _parser;
 };
 
 
