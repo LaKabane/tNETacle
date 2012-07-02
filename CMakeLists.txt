@@ -23,7 +23,7 @@ endif()
 # Global Packages search
 # ------------------
 find_package(ZLIB REQUIRED)
-find_package(Event COMPONENTS core openssl REQUIRED)
+find_package(Event COMPONENTS core REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
 
