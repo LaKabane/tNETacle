@@ -29,6 +29,13 @@
 int debug;
 extern struct options serv_opts;
 
+typedef struct IOData {
+	HANDLE fd;
+	char enabled;
+} IODATA, *PIODATA;
+
+IODATA IOCPData;
+
 static void
 libevent_dump(struct event_base *base)
 {
@@ -56,10 +63,38 @@ libevent_dump(struct event_base *base)
 
 void init_options(struct options *);
 
+DWORD WINAPI IOCPFunc(void *lpParam)
+{
+	HANDLE hPort;
+	IODATA data = *(PIODATA)(lpParam);
+	DWORD n;
+	ULONG_PTR dummy;
+	OVERLAPPED oL;
+	BOOL ret;
+
+	hPort = CreateIoCompletionPort(data.fd, NULL, 42, 0);
+	if (hPort == NULL)
+		printf("La lose!\n");
+	else
+	{
+		while (data.enabled)
+		{
+			ret = GetQueuedCompletionStatus(hPort, &n, &dummy, (LPOVERLAPPED*)(&oL), INFINITE);
+			if (ret == TRUE)
+				printf("LOL I LIEK IOS %i %d bytes\n", dummy, n);
+			else
+				printf("This is not supposed to happen.\n");
+		}
+	}
+	return 0;
+}
+
 int
 main(int argc, char *argv[]) {
 
 	WSADATA wsaData;
+	HANDLE hIOCPThread;
+	DWORD dwThreadId;
 	int errcode;
     struct event_base *evbase = NULL;
     struct server server;
@@ -94,6 +129,19 @@ main(int argc, char *argv[]) {
     //sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     //sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);
 
+	/* start iocp thread here. */
+	IOCPData.fd = (HANDLE)tnt_ttc_get_fd(interfce);
+	IOCPData.enabled = 1;
+	hIOCPThread = CreateThread(
+		NULL,
+		0,
+		IOCPFunc,
+		&IOCPData,
+		0,
+		&dwThreadId);
+	if (hIOCPThread == NULL) {
+		log_err(-1, TEXT("CreateThread for IOCP thread failed."));
+	}
     if (server_init(&server, evbase) == -1)
 	log_err(-1, "Failed to init the server socket");
 
@@ -123,6 +171,11 @@ main(int argc, char *argv[]) {
      * but this is not the case. Please don't erase this !
      */
     event_base_free(evbase);
+
+	/* Additionnal IOCP thread collection */
+	IOCPData.enabled = 0;
+	WaitForSingleObject(hIOCPThread, INFINITE);
+	CloseHandle(hIOCPThread);
 
 	tnt_ttc_close(interfce);
     //event_free(sigterm);
