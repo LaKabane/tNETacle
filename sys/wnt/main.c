@@ -97,14 +97,13 @@ main(int argc, char *argv[]) {
     if (server_init(&server, evbase) == -1)
 	log_err(-1, "Failed to init the server socket");
 
-	if (tnt_ttc_set_ip(interfce, "10.0.0.101/24") == -1){
+	if (tnt_ttc_set_ip(interfce, serv_opts.addr) == -1){
 		log_err(-1, "Failed to set interface's ip");
 	}
 	if (tnt_ttc_up(interfce) != 0) {
 		log_err(-1, "For some reason, the interface couldn't be up'd");
 	}
 
-	/*Arty: This fails... Badly.*/
 	server_set_device(&server, tnt_ttc_get_fd(interfce));
 
     //event_add(sigterm, NULL);
