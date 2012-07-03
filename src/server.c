@@ -438,7 +438,7 @@ server_init(struct server *s, struct event_base *evbase)
     if (serv_opts.peer_addrs.size == 0)
         return 0;
 
-    for (;peers != NULL && peers != v_sockaddr_end(&serv_opts.listen_addrs);
+    for (;peers != NULL && peers != v_sockaddr_end(&serv_opts.peer_addrs);
          peers = v_sockaddr_next(peers)) {
         bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
         if (bev == NULL) {
