@@ -269,7 +269,7 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
     (void)ctx;
 }
 
-static void
+/*static */void
 broadcast_to_peers(struct server *s)
 {
     struct frame *fit = v_frame_begin(&s->frames_to_send);
@@ -354,14 +354,14 @@ server_set_device(struct server *s, int fd)
     /*Sadly, this don't work on windows :(*/
     s->devide_fd = fd;
     s->tv.tv_sec = 0;
-    s->tv.tv_usec = 5000;
+    s->tv.tv_usec = 50000;
     if (ev == NULL)
     {
         log_warn("failed to allocate the event handler for the device:");
         return;
     }
     s->device = ev;
-    event_add(s->device, &s->tv);
+    //event_add(s->device, &s->tv);
     log_notice("event handler for the device sucessfully configured");
     evconnlistener_enable(s->srv);
     log_notice("listener started");

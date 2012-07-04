@@ -25,12 +25,14 @@
 #include "options.h"
 #include "server.h"
 #include "pathnames.h"
+#include "hexdump.h"
 
 int debug;
 extern struct options serv_opts;
 
 typedef struct IOData {
 	HANDLE fd;
+	struct server *server;
 	char enabled;
 } IODATA, *PIODATA;
 
@@ -62,6 +64,34 @@ libevent_dump(struct event_base *base)
 }
 
 void init_options(struct options *);
+void broadcast_to_peers(struct server *s);
+extern OVERLAPPED gl_overlap;
+
+static int
+async_read(HANDLE fd, void *buf, size_t len)
+{
+	DWORD n = 0;
+	int err;
+
+	err = ReadFile(fd, buf, len, &n, &gl_overlap);
+	//log_debug("READ fd=%ld, buf=%p, len=%ld, n=%ld, err=%d", fd, buf, len, n, err);
+	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
+	{
+		printf("Read failed, error %d\n", GetLastError());
+		return -1;
+	}
+	else
+	{
+		if (n > 0)
+		{
+			log_debug("== READ == READ == READ == READ ==");
+			hex_dump_chk(buf, n);
+			log_debug("== READ == READ == READ == READ ==");
+		}
+		WaitForSingleObject(gl_overlap.hEvent, 1000);
+		return n;
+	}
+}
 
 DWORD WINAPI IOCPFunc(void *lpParam)
 {
@@ -71,20 +101,25 @@ DWORD WINAPI IOCPFunc(void *lpParam)
 	ULONG_PTR dummy;
 	OVERLAPPED oL;
 	BOOL ret;
+	int _n = 0;
+    struct frame tmp;
 
-	hPort = CreateIoCompletionPort(data.fd, NULL, 42, 0);
-	if (hPort == NULL)
-		printf("La lose!\n");
-	else
+	while (data.enabled == 1)
 	{
-		while (data.enabled)
+		while ((n = async_read(data.fd, &tmp.frame, sizeof(tmp.frame))) > 0)
 		{
-			ret = GetQueuedCompletionStatus(hPort, &n, &dummy, (LPOVERLAPPED*)(&oL), INFINITE);
-			if (ret == TRUE)
-				printf("LOL I LIEK IOS %i %d bytes\n", dummy, n);
-			else
-				printf("This is not supposed to happen.\n");
+			tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
+			v_frame_push(&(data.server->frames_to_send), &tmp);
+			//log_debug("Read a new frame of %d bytes.", n);
+			_n++;
 		}
+		if (n == 0 || GetLastError() == ERROR_IO_PENDING)
+		{
+			//log_debug("Read %d frames in this pass.", _n);
+			broadcast_to_peers(data.server);
+		}
+		else if (n == -1)
+			log_warn("read on the device failed:");
 	}
 	return 0;
 }
@@ -129,9 +164,13 @@ main(int argc, char *argv[]) {
     //sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     //sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);
 
+    if (server_init(&server, evbase) == -1)
+	log_err(-1, "Failed to init the server socket");
+
 	/* start iocp thread here. */
 	IOCPData.fd = (HANDLE)tnt_ttc_get_fd(interfce);
 	IOCPData.enabled = 1;
+	IOCPData.server = &server;
 	hIOCPThread = CreateThread(
 		NULL,
 		0,
@@ -142,8 +181,7 @@ main(int argc, char *argv[]) {
 	if (hIOCPThread == NULL) {
 		log_err(-1, TEXT("CreateThread for IOCP thread failed."));
 	}
-    if (server_init(&server, evbase) == -1)
-	log_err(-1, "Failed to init the server socket");
+
 
 	if (tnt_ttc_set_ip(interfce, serv_opts.addr) == -1){
 		log_err(-1, "Failed to set interface's ip");
