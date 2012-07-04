@@ -92,7 +92,7 @@ if (Windows)
 	# CMake windows Configuration
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-  	add_definitions(-DWnt)
+  	add_definitions(-DWindows)
 
 	# Windows source files
 	# ------------------

@@ -19,7 +19,7 @@
 #if defined Unix
 # include <sys/socket.h>
 # include <sys/mman.h>
-#else
+#elif defined Windows
 # define WIN32_LEAN_AND_MEAN
 # include <Windows.h>
 #endif
@@ -40,29 +40,6 @@
 
 #include <event2/util.h>
 #include <yajl/yajl_parse.h>
-
-#ifdef WIN32
-# include "winstrtonum.h"
-# define __func__ __FUNCTION__
-# define alloca _alloca
-# define snprintf _snprintf
-char *
-strndup(const char *s, size_t n)
-{
-  char *result;
-  size_t len = strlen (s);
-
-  if (n < len)
-    len = n;
-
-  result = (char *) malloc (len + 1);
-  if (!result)
-    return 0;
-
-  result[len] = '\0';
-  return (char *) memcpy (result, s, len);
-}
-#endif
 
 #include "tnetacle.h"
 #include "options.h"

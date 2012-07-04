@@ -14,8 +14,8 @@
 **/
 
 #include <sys/types.h>
-#if !defined WIN32
-#include <sys/socket.h>
+#if defined Unix
+# include <sys/socket.h>
 #endif
 
 #include <stdio.h>
@@ -25,8 +25,6 @@
 #if defined Windows
 # include <WS2tcpip.h>
 # include <io.h>
-# define write _write
-# define ssize_t SSIZE_T
 #endif
 
 #if defined Unix
@@ -38,17 +36,6 @@
 #include <event2/buffer.h>
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
-#include <errno.h>
-#include <string.h>
-#if !defined Windows
-#include <unistd.h>
-#else
-#include <io.h>
-#include <WS2tcpip.h>
-#define write(A, B, C) windows_fix_write(A, B, C)
-#define read(A, B, C) windows_fix_read(A, B, C)
-#define ssize_t SSIZE_T
-#endif
 
 #include "tnetacle.h"
 #include "options.h"
@@ -57,6 +44,7 @@
 #include "server.h"
 #include "log.h"
 #include "hexdump.h"
+#include "wincompat.h"
 
 extern struct options serv_opts;
 
@@ -64,62 +52,6 @@ union chartoshort {
     unsigned char *cptr;
     unsigned short *sptr;
 }; /* The goal of this union is to properly convert uchar* to ushort* */
-
-#if defined Windows
-
-OVERLAPPED gl_overlap;
-
-static ssize_t
-windows_fix_write(intptr_t fd, void *buf, size_t len)
-{
-	DWORD n = 0;
-	int err;
-	err = WriteFile((HANDLE)fd, buf, len, &n, &gl_overlap);
-	//log_debug("WRITE fd=%ld, buf=%p, len=%ld, n=%ld, err=%d", fd, buf, len, n, err);
-	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
-	{
-		printf("Write failed, error %d\n", GetLastError());
-		return -1;
-	}
-	else
-	{
-		if (len > 0)
-		{
-			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
-			hex_dump_chk(buf, len);
-			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
-		}
-		WaitForSingleObject(gl_overlap.hEvent, INFINITE);
-		return n;
-	}
-}
-
-static ssize_t
-windows_fix_read(intptr_t fd, void *buf, size_t len)
-{
-	DWORD n = 0;
-	int err;
-
-	err = ReadFile((HANDLE)fd, buf, len, &n, &gl_overlap);
-	//log_debug("READ fd=%ld, buf=%p, len=%ld, n=%ld, err=%d", fd, buf, len, n, err);
-	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
-	{
-		printf("Read failed, error %d\n", GetLastError());
-		return -1;
-	}
-	else
-	{
-		if (n > 0)
-		{
-			log_debug("== READ == READ == READ == READ ==");
-			hex_dump_chk(buf, n);
-			log_debug("== READ == READ == READ == READ ==");
-		}
-		WaitForSingleObject(gl_overlap.hEvent, 1000);
-		return n;
-	}
-}
-#endif
 
 static void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)

@@ -24,8 +24,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#if !defined WIN32
-#include <unistd.h>
+#if defined Unix
+# include <unistd.h>
 #endif
 
 #include "tnetacle.h"
