@@ -15,10 +15,12 @@
  */
 
 #include <sys/types.h>
-#include <sys/socket.h>
+#if !defined Windows
+# include <sys/socket.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif /* Windows */
 
 #ifndef TNT_OPTIONS_H_ 
 #define TNT_OPTIONS_H_ 

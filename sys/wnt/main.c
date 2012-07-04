@@ -64,28 +64,16 @@ main(int argc, char *argv[]) {
     struct event_base *evbase = NULL;
     struct server server;
 	struct device *interfce;
-	struct sockaddr_in sin;
+	char cnf_file[2048];
 
-	memset(&sin, 0, sizeof sin);
-	init_options(&serv_opts);
-	serv_opts.listen_addrs_num = 1;
-	serv_opts.addr_family = AF_INET;
-	serv_opts.listen_addrs = calloc(1, sizeof(struct sockaddr));
-
-	sin.sin_family = AF_INET;
-    sin.sin_port = htons(4242);
-    if (inet_pton(AF_INET, "0.0.0.0", &sin.sin_addr.s_addr) == -1)
-        return -1;
-
-	serv_opts.listen_addrs[0] = *((struct sockaddr *)&sin);
-	serv_opts.addr = strdup("10.0.0.101");
-
-	/*errcode = tnt_parse_file(_PATH_DEFAULT_CONFIG_FILE);
+	strcpy(cnf_file, getenv("APPDATA"));
+	strncat(cnf_file, _PATH_DEFAULT_CONFIG_FILE, strlen(_PATH_DEFAULT_CONFIG_FILE));
+	errcode = tnt_parse_file(cnf_file);
 	if (errcode == -1)
 	{
 		fprintf(stderr, "No conf file");
 		exit(1);
-	}*/
+	}
 
 	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
 	log_err(-1, "Failed to init WSA.");
@@ -109,14 +97,13 @@ main(int argc, char *argv[]) {
     if (server_init(&server, evbase) == -1)
 	log_err(-1, "Failed to init the server socket");
 
-	if (tnt_ttc_set_ip(interfce, "10.0.0.101/24") == -1){
+	if (tnt_ttc_set_ip(interfce, serv_opts.addr) == -1){
 		log_err(-1, "Failed to set interface's ip");
 	}
 	if (tnt_ttc_up(interfce) != 0) {
 		log_err(-1, "For some reason, the interface couldn't be up'd");
 	}
 
-	/*Arty: This fails... Badly.*/
 	server_set_device(&server, tnt_ttc_get_fd(interfce));
 
     //event_add(sigterm, NULL);

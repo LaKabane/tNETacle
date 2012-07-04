@@ -22,7 +22,8 @@
 #if defined Unix
 # define _PATH_DEFAULT_CONFIG_FILE "/etc/tNETacle.conf"
 #else
-# define _PATH_DEFAULT_CONFIG_FILE "C:\\Users\\Tristan\\AppData\\Roaming\\tNETacle\\tNETacle.conf"
+/* Append after %APPDATA% */
+# define _PATH_DEFAULT_CONFIG_FILE "\\tNETacle\\tNETacle.conf"
 #endif
 
 #endif

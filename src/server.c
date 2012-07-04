@@ -370,17 +370,17 @@ server_init(struct server *s, struct event_base *evbase)
     if (serv_opts.peer_addrs.size == 0)
         return 0;
 
-    for (;peers != NULL && peers != v_sockaddr_end(&serv_opts.listen_addrs);
+    for (;peers != NULL && peers != v_sockaddr_end(&serv_opts.peer_addrs);
          peers = v_sockaddr_next(peers)) {
         bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
         if (bev == NULL) {
             log_warn("unable to allocate a socket for connecting to the peer");
-            return -1;
+	    break;
         }
         err = bufferevent_socket_connect(bev, peers, sizeof(*peers));
         if (err == -1) {
             log_warn("unable to connect to the peer");
-            return -1;
+	    break;
         }
         mc_init(&mctx, peers, sizeof(*peers), bev);
     }

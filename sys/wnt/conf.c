@@ -49,6 +49,8 @@ tnt_parse_file(const char *file) {
 	while (ReadFile(hdl, buf, sizeof buf, &n, NULL) == TRUE) {
 		int ret;
 		fprintf(stderr, "ByteRead: %i\n", n);
+		if (n == 0)
+			break;
 		ret = tnt_parse_buf((char *)buf, n);
         if (ret == -1) {
             perror("tnt_parse_buf");
