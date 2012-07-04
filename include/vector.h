@@ -38,13 +38,15 @@
 #endif
 
 #ifndef TYPE_SPECIFIER
-#if __STDC_VERSION__ >= 199901L
-#define specifier static inline
+# if __STDC_VERSION__ >= 199901L
+#  define specifier static inline
+# elif defined __GNUC__
+#  define specifier static __inline
+# else
+#  define specifier static
+# endif
 #else
-#define specifier static
-#endif
-#else
-#define specifier TYPE_SPECIFIER
+#  define specifier TYPE_SPECIFIER
 #endif
 
 #define _XTYPE_NAME(name, pr) name ## pr
