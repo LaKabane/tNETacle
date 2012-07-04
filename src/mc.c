@@ -31,14 +31,13 @@ mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
 
     if (server_ctx != NULL)
     {
-        self->client_ctx = SSL_new(server_ctx);
-        self->bev = bufferevent_openssl_socket_new(evb, fd, self->client_ctx,
+        SSL *client_ctx = SSL_new(server_ctx);
+        self->bev = bufferevent_openssl_socket_new(evb, fd, client_ctx,
                                                    self->ssl_flags,
                                                    BEV_OPT_CLOSE_ON_FREE);
     }
     else
     {
-        self->client_ctx = NULL;
         self->bev = bufferevent_socket_new(evb, fd, BEV_OPT_CLOSE_ON_FREE);
     }
 
@@ -54,75 +53,6 @@ mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
     self->p.len = len;
     bufferevent_enable(self->bev, EV_READ | EV_WRITE);
     return 0;
-}
-
-int
-mc_ssl_connect(struct mc *self, struct event_base *evbase)
-{
-    int err;
-    struct bufferevent *ssl_bev = 
-        bufferevent_openssl_filter_new(evbase, self->bev,
-                                       self->client_ctx,
-                                       BUFFEREVENT_SSL_CONNECTING,
-                                       BEV_OPT_CLOSE_ON_FREE);
-    if (ssl_bev == NULL)
-    {
-        return -1;
-    }
-    err = SSL_connect(self->client_ctx);
-    switch (err)
-    {
-        case 1:
-            log_notice("SSL handshake sucessful, secure connexion initited.");
-            return 0;
-            break;
-        case 2:
-            log_notice("SSL handshake not sucessful");
-            log_notice("SSL Status: %s.", 
-                       ERR_reason_error_string(SSL_get_error(self->client_ctx, err)));
-            break;
-        default:
-            log_notice("Fatal error during SSL handshake");
-            log_notice("SSL Status: %s.", 
-                       ERR_reason_error_string(SSL_get_error(self->client_ctx, err)));
-            break;
-    };
-    return -1;
-}
-
-int
-mc_ssl_accept(struct mc *self, struct event_base *evbase)
-{
-    int err;
-    char buf[4096] = {0};
-    struct bufferevent *ssl_bev = 
-        bufferevent_openssl_filter_new(evbase, self->bev,
-                                       self->client_ctx,
-                                       BUFFEREVENT_SSL_ACCEPTING,
-                                       BEV_OPT_CLOSE_ON_FREE);
-    if (ssl_bev == NULL)
-    {
-        return -1;
-    }
-    err =  SSL_accept(self->client_ctx);
-    switch (err)
-    {
-        case 1:
-            log_notice("SSL handshake sucessful, secure connexion initited.");
-            return 0;
-            break;
-        case 2:
-            log_notice("SSL handshake not sucessful");
-            log_notice("SSL Status: %s.", 
-                       ERR_error_string(SSL_get_error(self->client_ctx, err), buf));
-            break;
-        default:
-            log_notice("Fatal error during SSL handshake");
-            log_notice("SSL Status: %s.", 
-                       ERR_error_string(SSL_get_error(self->client_ctx, err), buf));
-            break;
-    };
-    return -1;
 }
 
 void

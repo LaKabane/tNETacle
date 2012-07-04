@@ -363,8 +363,10 @@ evssl_init(void)
 
     server_ctx = SSL_CTX_new(SSLv23_method());
 
-    if (! SSL_CTX_use_certificate_chain_file(server_ctx, "cert") ||
-        ! SSL_CTX_use_PrivateKey_file(server_ctx, "pkey", SSL_FILETYPE_PEM)) {
+    /* Load the certificate file. This is not needed now */
+    /*if (! SSL_CTX_use_certificate_chain_file(server_ctx, "cert") ||*/
+    if (serv_opts.key_path != NULL &&
+        !SSL_CTX_use_PrivateKey_file(server_ctx, serv_opts.key_path, SSL_FILETYPE_PEM)) {
         puts("Couldn't read 'pkey' or 'cert' file.  To generate a key\n"
            "and self-signed certificate, run:\n"
            "  openssl genrsa -out pkey 2048\n"
