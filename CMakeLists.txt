@@ -12,6 +12,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set(${CMAKE_SYSTEM_NAME} True)
 
+include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local OPTIONAL)
+
 # CMake global options
 # ------------------
 # None at the moment
@@ -19,7 +21,7 @@ set(${CMAKE_SYSTEM_NAME} True)
 # Global Packages search
 # ------------------
 find_package(ZLIB REQUIRED)
-find_package(Event COMPONENTS core REQUIRED)
+find_package(Event COMPONENTS core openssl REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
 find_package(OpenSSL REQUIRED)
@@ -203,4 +205,4 @@ if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
 
-include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local OPTIONAL)
+include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.link.local OPTIONAL)
