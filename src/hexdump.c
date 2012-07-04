@@ -18,10 +18,7 @@
 #include <ctype.h>
 
 #include "log.h"
-
-#if defined Windows
-#define snprintf _snprintf
-#endif
+#include "wincompat.h"
 
 void
 hex_dump(void *data, int size)
