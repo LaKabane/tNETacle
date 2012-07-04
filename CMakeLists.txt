@@ -12,10 +12,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set(${CMAKE_SYSTEM_NAME} True)
 
-if(EXISTS ${CMAKE_SOURCE_DIR}/CMakeLists.txt.local)
-        include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local)
-endif()
-
 # CMake global options
 # ------------------
 # None at the moment
@@ -186,7 +182,6 @@ target_link_libraries(tNETacle
         ${ZLIB_LIBRARY}
         ${YAJL_LIBRARIES}
         ${OPENSSL_LIBRARIES}
-        -lrt
 )
 
 if (TUNTAP_FOUND)
@@ -208,4 +203,4 @@ if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
 
-include(CMakeLists.txt.local OPTIONAL)
+include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local OPTIONAL)
