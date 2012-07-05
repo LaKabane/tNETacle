@@ -148,17 +148,23 @@ uchar *tnt_compress_sized(uchar *uncompressed_data, const int size,
         log_warn("reallocf failed. Sending uncompressed data");
         return NULL;
     }
-    memcpy(compressed_data + *compressed_size, &size,
-      sizeof(size));
-    compressed_size += sizeof(size);
+    int n_size = htonl(size);
+    memcpy(compressed_data + *compressed_size, &n_size,
+      sizeof(n_size));
+    *compressed_size += sizeof(n_size);
     return compressed_data;
 }
 
 uchar *tnt_uncompress_sized(uchar *compressed_data, const size_t size,
   size_t *uncompressed_size)
 {
-    *uncompressed_size = ntohl((int)
-      (compressed_data + size - sizeof(int)));
-        return tnt_uncompress(compressed_data,
-      size - sizeof(uncompressed_size), *uncompressed_size);
+    int index = size - sizeof(int);
+    printf("\n%d - %d = %d\n",size, sizeof(int), index);
+    int net_size = *((int *)(compressed_data + (index)));
+    int host_size = ntohl(net_size);
+    /* i = memcpy(&i, compressed_data + (size - sizeof(int)), sizeof(int)); */
+    /* i = ntohl(i); */
+    printf("size is %d\n", host_size);
+    *uncompressed_size = host_size;
+    return tnt_uncompress(compressed_data, index, host_size);
 }
