@@ -16,7 +16,7 @@ class Controller : public QObject
   Q_OBJECT
 public:
   Controller(IClientGUI*);
-  ~Controller() {}
+  virtual ~Controller() {}
 
   const QString&	getIp() const;
   quint16		getPort() const;
@@ -24,14 +24,20 @@ public:
   void			error(const QString &);
 
 public slots:
-  void			addContact();
+  bool			addContact();
   void			deleteContact();
   void			editContact(QListWidgetItem *);
   void			appendLog(const QString &);
   void			editRootNode();
-  void			changeRootNode();
+  bool			changeRootNode();
+
+  bool			checkIP(QString&) const;
+  bool			checkName(QString&) const;
 
 private:
+  bool			checkIPv4(QString&) const;
+  bool			checkIPv6(QString&) const;
+
   IClientGUI*		_view;
   bool			editing;
   IModel*		_modelContacts;

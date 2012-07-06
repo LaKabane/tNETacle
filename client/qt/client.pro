@@ -42,5 +42,5 @@ HEADERS += \
     include/rootnodegui.h \
     include/iclientgui.h
 
-INCLUDEPATH += ../share/ \
+INCLUDEPATH += \
                ./include/

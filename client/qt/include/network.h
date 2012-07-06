@@ -13,7 +13,7 @@ class Network : public QObject
   Q_OBJECT
 public:
   Network(Controller &controller, const QString &ip = "127.0.0.1", const quint16 port = 4243);
-  virtual ~Network(){}
+  virtual ~Network() {}
   void setConnection(const QString &, const quint16); // we want to set BOTH!
   const QString &getIp() const;
   quint16       getPort() const;

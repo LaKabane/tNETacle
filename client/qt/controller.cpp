@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QRegExp>
 #include "iclientgui.h"
 #include "controller.h"
 #include "contact.h"
@@ -87,24 +88,38 @@ void Controller::deleteContact()
     }
 }
 
-void Controller::addContact()
+bool Controller::addContact()
 {
+  QString pubkey = this->_view->getNewContactKey();
+  QString name = this->_view->getNewContactName();
+
+  if (name == "" || pubkey == "")
+    {
+      qDebug() << "One of the mandatory fields is missing";
+      return false;
+    }
+  if (checkName(name) == false)
+    {
+      qDebug() << "the name is not correctly formated (only alpha-numeric and '_' characters are allowed)";
+      return false;
+    }
 
   if (!_view->getInitialContactName().isEmpty()) // TODO if user select a different row after editing
     this->deleteContact();
   try
     {
-      dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(this->_view->getNewContactName(),
-                                       this->_view->getNewContactKey());
-      this->_view->addContact(this->_view->getNewContactName());
+      dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(name, pubkey);
+      this->_view->addContact(name);
     }
  catch (Exception *e)
    {
      this->_view->printError(e->getMessage());
      delete e;
+     return false;
    }
   this->_view->deleteAddContact();
 
+  return true;
   // new Contact (this->e_view->getNewContactName(),
   //              this->_view->getNewContactKey());
   //TODO integrate Contact in to model, validate DATA
@@ -116,23 +131,89 @@ void Controller::editRootNode()
   this->_view->createRootNodeGui(/* _rootNodeName */"",  /*_rootNodePubkey*/"", _network.getIp(), _network.getPort());
 }
 
-void	Controller::changeRootNode()
+bool	Controller::changeRootNode()
 {
-  // TODO QSTRing
-  // _rootNodeName = this->_view->getRootName();
   bool ok;
   quint16 port =  _view->getRootPort().toUShort(&ok);
+  QString ip = this->_view->getRootIP();
+  QString pubkey = this->_view->getRootKey();
+  QString name = this->_view->getRootName();
+
+  if (ok == false)
+    {
+      this->_view->printError("Error: Port is not a number");
+      return false;
+    }
+  if (ip == "" || name == "" || pubkey == "")
+    {
+      qDebug() << "one of the mandatory fields is missing";
+      return false;
+    }
+  if (checkName(name) == false)
+    {
+      qDebug() << "the name is not correctly formated (only alpha-numeric and '_' characters are allowed)";
+      return false;
+    }
+  if (checkIP(ip) == false)
+    {
+      qDebug() << "the IP is not correctly formated";
+      return false;
+    }
   try
     {
-      if (ok)
-        this->_network.setConnection(_view->getRootIP(), port);
-      else
-        this->_view->printError("Error: Port is not a number");
+        this->_network.setConnection(ip, port);
     }
   catch (Exception *e)
     {
       this->_view->printError(e->getMessage());
       delete e;
+      return false;
     }
   this->_view->deleteRootNode();
+  return true;
+}
+
+bool    Controller::checkIPv4(QString& str) const
+{
+  QStringList elements = str.split(".");
+
+  if (elements.size() != 4)
+    return false;
+  for (int i = 0; i < 4; ++i)
+    {
+      bool ok = true;
+      int nb = elements[i].toInt(&ok);
+      if (ok == false || nb < 0 || nb > 255)
+	return false;
+    }
+  return true;
+}
+
+bool    Controller::checkIPv6(QString& str) const
+{
+  QStringList elements = str.split(":");
+
+  if (elements.size() != 6)
+    return false;
+  for (int i = 0; i < 6; ++i)
+    {
+      // if (elements[i].toUInt() < 0 || elements[i].toUInt() > 255)
+      //   return false;
+    }
+  return true;
+}
+
+bool    Controller::checkIP(QString& str) const
+{
+  if (checkIPv4(str))
+    return true;
+  if (checkIPv6(str))
+    return true;
+  return false;
+}
+
+bool    Controller::checkName(QString& str) const
+{
+  QRegExp rx("^[a-zA-Z0-9_]+$");
+  return str.contains(rx);
 }

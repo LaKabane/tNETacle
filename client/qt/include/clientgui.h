@@ -20,7 +20,7 @@ class ClientGUI : public QMainWindow, public Ui::ClientGUI, public IClientGUI
     Q_OBJECT
 public:
     explicit ClientGUI(QMainWindow *parent = 0);
-    ~ClientGUI();
+    virtual ~ClientGUI();
 
   void appendLog(const QString &);
   void addContact(const QString &);
