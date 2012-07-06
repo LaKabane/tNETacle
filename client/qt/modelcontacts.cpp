@@ -1,6 +1,6 @@
 #include <QDebug>
 #include "exception.h"
-#include "model_contacts.h"
+#include "modelcontacts.h"
 
 const QString ModelContacts::_name = "Contacts";
 

@@ -1,5 +1,5 @@
 #include <QDebug>
-#include "model_log.h"
+#include "modellog.h"
 #include "controller.h"
 
 const QString ModelLog::_name = "ConnectedPeer";

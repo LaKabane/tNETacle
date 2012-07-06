@@ -5,8 +5,8 @@
 #include <QObject>
 #include <QVariant>
 #include <QListWidgetItem>
-#include "model_contacts.h"
-#include "model_log.h"
+#include "modelcontacts.h"
+#include "modellog.h"
 #include "network.h"
 
 class ClientGUI;
