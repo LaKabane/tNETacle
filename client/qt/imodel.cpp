@@ -1,6 +1,6 @@
 #include <QMap>
 #include <QVariant>
-#include "model.h"
+#include "imodel.h"
 #include <qjson/serializer.h>
 
 
@@ -18,7 +18,7 @@
 // }
 
 
-const QByteArray Model::toJson() const
+const QByteArray IModel::toJson() const
 {
   // QJson::Serializer serializer;
   // QVariant name = QMap<QString, QVariant = this->getObjectName;

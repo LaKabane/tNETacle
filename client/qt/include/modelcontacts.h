@@ -3,11 +3,11 @@
 
 #include <QMap>
 #include <QString>
-#include "model.h"
+#include "imodel.h"
 
 class Controller;
 
-class ModelContacts : public Model
+class ModelContacts : public IModel
 {
  public:
   ModelContacts(Controller &);

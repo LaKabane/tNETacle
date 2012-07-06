@@ -9,7 +9,7 @@ SOURCES += \
     contact.cpp \
     config.cpp \
     clientgui.cpp \
-    model.cpp \
+    imodel.cpp \
     controller.cpp\
     addcontactgui.cpp \
     contactgui.cpp \
@@ -30,7 +30,7 @@ HEADERS += \
     include/exception.h\
     include/singleton.hpp\
     include/network.h\
-    include/Model.h    \
+    include/imodel.h    \
     include/Registry.h    \
     include/modelcontacts.h    \
     include/modellog.h    \

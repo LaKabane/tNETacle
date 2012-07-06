@@ -3,7 +3,7 @@
 #include "controller.h"
 #include "contact.h"
 #include "exception.h"
-#include "model.h"
+#include "imodel.h"
 
 Controller::Controller(ClientGUI & gui) :
   _view(gui),

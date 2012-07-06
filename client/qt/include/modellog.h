@@ -1,11 +1,11 @@
 #ifndef MODEL_LOG_H_
 # define MODEL_LOG_H_
 
-#include "model.h"
+#include "imodel.h"
 
 class Controller;
 
-class ModelLog : public Model
+class ModelLog : public IModel
 {
 public:
   ModelLog(Controller &);

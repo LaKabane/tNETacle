@@ -40,7 +40,7 @@ private:
   QString _rootNodePubkey;
   Network _network;
   ModelLog _modelLog;
-  QVector<Model *> _models;
+  QVector<IModel *> _models;
 };
 
 

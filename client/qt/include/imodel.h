@@ -11,7 +11,7 @@
 #include <QByteArray>
 #include <QVariant>
 
-class Model
+class IModel
 {
 public:
   const QByteArray toJson() const;//For debug only
