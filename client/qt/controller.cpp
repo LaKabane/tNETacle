@@ -7,13 +7,15 @@
 
 Controller::Controller(ClientGUI & gui) :
   _view(gui),
-  _model_contacts(*this),
   _network(*this),
-  _modelLog(*this),
   _models()
 {
-  _models.append(&_model_contacts);
-  _models.append(&_modelLog);
+  _modelContacts = new ModelContact(*this);
+  _modelLog = new ModelLog(*this);
+
+  _models.append(_modelContacts);
+  //  _models.append(_modelNode);
+  _models.append(_modelLog);
 }
 
 void Controller::feedData(const QVariant &data)
@@ -47,7 +49,7 @@ void Controller::appendLog(const QString &s)
 void Controller::editContact(QListWidgetItem *item)
 {
   try {
-  this->_view.createAddContact(item->text(), _model_contacts.getKey(item->text()));
+    this->_view.createAddContact(item->text(), dynamic_cast<ModelContact*>(_modelContacts)->getKey(item->text()));
   }
   catch (Exception *e)
     {
@@ -75,7 +77,7 @@ void Controller::deleteContact()
 {
   try
     {
-      this->_model_contacts.delContact(_view.getSelected());
+      dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(_view.getSelected());
       this->_view.deleteSelected();
     }
   catch (Exception *e)
@@ -92,7 +94,7 @@ void Controller::addContact()
     this->deleteContact();
   try
     {
-      this->_model_contacts.addContact(this->_view.getNewContactName(),
+      dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(this->_view.getNewContactName(),
                                        this->_view.getNewContactKey());
       this->_view.addContact(this->_view.getNewContactName());
     }
@@ -111,8 +113,7 @@ void Controller::addContact()
 void Controller::editRootNode()
 {
   // TODO
-  this->_view.createRootNodeGui(_rootNodeName,  _rootNodePubkey, _network.getIp(), _network.getPort()
-);
+  this->_view.createRootNodeGui(/* _rootNodeName */"",  /*_rootNodePubkey*/"", _network.getIp(), _network.getPort());
 }
 
 void	Controller::changeRootNode()

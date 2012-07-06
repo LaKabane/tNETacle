@@ -45,11 +45,11 @@ private:
 signals:
 
 public slots:
-    void            createAddContact();
-    void            deleteAddContact();
-    void  addContactDeleted();
-	void  rootNodeGuiDeleted();
-	void            deleteRootNode();
+    void		createAddContact();
+    void		deleteAddContact();
+    void		addContactDeleted();
+    void		rootNodeGuiDeleted();
+    void		deleteRootNode();
 
 };
 

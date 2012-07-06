@@ -5,7 +5,7 @@
 #include <QObject>
 #include <QVariant>
 #include <QListWidgetItem>
-#include "modelcontacts.h"
+#include "modelcontact.h"
 #include "modellog.h"
 #include "network.h"
 
@@ -16,6 +16,8 @@ class Controller : public QObject
   Q_OBJECT
 public:
   Controller(ClientGUI &);
+  ~Controller() {}
+
   const QString &getIp() const;
   quint16 getPort() const;
   void feedData(const QVariant &);
@@ -28,19 +30,19 @@ public slots:
   void appendLog(const QString &);
   void editRootNode();
   void changeRootNode();
+
 private:
-  ClientGUI &_view;
-  ModelContacts _model_contacts;
-  bool  editing;
+  ClientGUI&		_view;
+  bool			editing;
+  IModel*		_modelContacts;
+  IModel*		_modelNode;
+  IModel*		_modelLog;
 
   // // TODO : put the root node here with a correct type
   // REMOVED: in _network.
-  QString _rootNodeName;
-  // QString _rootNodeIP;
-  QString _rootNodePubkey;
-  Network _network;
-  ModelLog _modelLog;
-  QVector<IModel *> _models;
+  Network		_network;
+
+  QVector<IModel *>	_models;
 };
 
 
