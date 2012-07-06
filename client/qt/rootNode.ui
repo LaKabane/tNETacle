@@ -69,6 +69,13 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>name</tabstop>
+  <tabstop>IP</tabstop>
+  <tabstop>port</tabstop>
+  <tabstop>pubKey</tabstop>
+  <tabstop>okOrReject</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
