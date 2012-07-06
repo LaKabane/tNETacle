@@ -1,6 +1,6 @@
 #include <QMap>
 #include <QVariant>
-#include "Model.h"
+#include "model.h"
 #include <qjson/serializer.h>
 
 

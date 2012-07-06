@@ -1,7 +1,7 @@
 #ifndef MODEL_LOG_H_
 # define MODEL_LOG_H_
 
-#include "Model.h"
+#include "model.h"
 
 class Controller;
 

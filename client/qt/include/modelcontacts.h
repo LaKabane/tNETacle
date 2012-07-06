@@ -3,7 +3,7 @@
 
 #include <QMap>
 #include <QString>
-#include "Model.h"
+#include "model.h"
 
 class Controller;
 
