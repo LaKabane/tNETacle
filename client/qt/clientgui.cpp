@@ -8,7 +8,7 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
     QMainWindow(parent),
     _addContact(0),
     _rootNode(0),
-    _controller(*this),
+    _controller(this),
     _timer()
 {
    setupUi(this);

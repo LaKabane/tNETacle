@@ -12,7 +12,6 @@ SOURCES += \
     imodel.cpp \
     controller.cpp\
     addcontactgui.cpp \
-    contactgui.cpp \
     rootnodegui.cpp\
     modelcontact.cpp\
     modellog.cpp\
@@ -40,8 +39,8 @@ HEADERS += \
     include/contact.h \
     include/config.h \
     include/addcontactgui.h \
-    include/contactgui.h \
-    include/rootnodegui.h
+    include/rootnodegui.h \
+    include/iclientgui.h
 
 INCLUDEPATH += ../share/ \
                ./include/

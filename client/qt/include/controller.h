@@ -9,30 +9,30 @@
 #include "modellog.h"
 #include "network.h"
 
-class ClientGUI;
+class IClientGUI;
 
 class Controller : public QObject
 {
   Q_OBJECT
 public:
-  Controller(ClientGUI &);
+  Controller(IClientGUI*);
   ~Controller() {}
 
-  const QString &getIp() const;
-  quint16 getPort() const;
-  void feedData(const QVariant &);
-  void error(const QString &);
+  const QString&	getIp() const;
+  quint16		getPort() const;
+  void			feedData(const QVariant &);
+  void			error(const QString &);
 
 public slots:
-  void addContact();
-  void deleteContact();
-  void editContact(QListWidgetItem *);
-  void appendLog(const QString &);
-  void editRootNode();
-  void changeRootNode();
+  void			addContact();
+  void			deleteContact();
+  void			editContact(QListWidgetItem *);
+  void			appendLog(const QString &);
+  void			editRootNode();
+  void			changeRootNode();
 
 private:
-  ClientGUI&		_view;
+  IClientGUI*		_view;
   bool			editing;
   IModel*		_modelContacts;
   IModel*		_modelNode;
@@ -42,7 +42,7 @@ private:
   // REMOVED: in _network.
   Network		_network;
 
-  QVector<IModel *>	_models;
+  QVector<IModel*>	_models;
 };
 
 
