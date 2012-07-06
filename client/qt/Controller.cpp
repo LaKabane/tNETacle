@@ -1,6 +1,6 @@
 #include <QDebug>
 #include "clientgui.h"
-#include "Controller.h"
+#include "controller.h"
 #include "contact.h"
 #include "exception.h"
 #include "Model.h"

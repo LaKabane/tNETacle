@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QTimer>
 #include "ui_client.h"
-#include "Controller.h"
+#include "controller.h"
 #include "contact.h"
 
 namespace Ui {

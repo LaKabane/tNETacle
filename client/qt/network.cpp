@@ -1,5 +1,5 @@
 #include "network.h"
-#include "Controller.h"
+#include "controller.h"
 #include <QBuffer>
 
 Network::Network(Controller &controller, const QString &ip, const quint16 port)

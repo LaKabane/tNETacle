@@ -6,7 +6,7 @@
 #include "clientgui.h"
 #include "ui_addContact.h"
 #include "contact.h"
-#include "Controller.h"
+#include "controller.h"
 
 class ClientGUI;
 
