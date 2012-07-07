@@ -14,6 +14,7 @@ SOURCES += \
     addcontactgui.cpp \
     rootnodegui.cpp\
     modelcontact.cpp\
+    modelrootnode.cpp\
     modellog.cpp\
     network.cpp
 
@@ -32,6 +33,7 @@ HEADERS += \
     include/imodel.h    \
 #    include/Registry.h    \
     include/modelcontact.h    \
+    include/modelrootnode.h    \
     include/modellog.h    \
     include/controller.h\
     include/clientgui.h \

@@ -1,5 +1,5 @@
-#ifndef MODEL_CONTACT_H_
-# define MODEL_CONTACT_H_
+#ifndef MODELCONTACT_H_
+# define MODELCONTACT_H_
 
 #include <QMap>
 #include <QString>
@@ -17,14 +17,16 @@ class ModelContact : public IModel
   void          editContact(const QString&, const QString&, const QString&);
   virtual       ~ModelContact(){};
   virtual void  feedData(const QString &,const QMap<QString, QVariant> &);
+
 private:
   QMap<QString, QString> _contacts;
   Controller    &_controller;
   static const QString _name;
+
 protected: // from IModel
   virtual const QString &getObjectName() const;
-  virtual const QMap<QString, QString> &getData() const;
+  virtual const QMap<QString, QString>* getData() const;
 
 };
 
-#endif /* !MODEL_CONTACT_H */
+#endif /* !MODELCONTACT_H */

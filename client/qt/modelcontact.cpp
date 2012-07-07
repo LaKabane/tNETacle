@@ -8,22 +8,20 @@ ModelContact::ModelContact(Controller &controller):
   _contacts(),
   _controller(controller)
 {
-
 }
 
 void  ModelContact::feedData(const QString &, const QMap<QString, QVariant> &)
 {
-
 }
 
-const QString &ModelContact::getObjectName() const
+const QString& ModelContact::getObjectName() const
 {
   return ModelContact::_name;
 }
 
-const QMap<QString, QString> &ModelContact::getData() const
+const QMap<QString, QString>* ModelContact::getData() const
 {
-  return _contacts;
+  return &_contacts;
 }
 
 void ModelContact::addContact(const QString &name, const QString &key)
@@ -36,7 +34,7 @@ void ModelContact::addContact(const QString &name, const QString &key)
    qDebug() << this->toJson();
 }
 
-const QString &ModelContact::getKey(const QString &name)
+const QString& ModelContact::getKey(const QString &name)
 {
   if (!_contacts.contains(name))
     throw new Exception("Error: Name does not exist");

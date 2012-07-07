@@ -7,6 +7,7 @@
 #include <QListWidgetItem>
 #include "modelcontact.h"
 #include "modellog.h"
+#include "modelrootnode.h"
 #include "network.h"
 
 class IClientGUI;

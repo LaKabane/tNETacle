@@ -2,16 +2,13 @@
 #include "controller.h"
 #include <QBuffer>
 
-Network::Network(Controller &controller, const QString &ip, const quint16 port)
+Network::Network(Controller &controller)
   : _socket(),
-    _ip(ip),
-    _port(port),
     _controller(controller),
     _parser()
 {
   QObject::connect(&_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
   QObject::connect(&_socket, SIGNAL(readyRead()), this, SLOT(read()));
-  _socket.connectToHost(_ip, port);
 }
 
 
@@ -37,24 +34,11 @@ void Network::read()
 
 void Network::setConnection(const QString &ip, const quint16 port) // we want to set BOTH!
 {
-  _ip = ip;
-  _port = port;
   _socket.close();
-  _socket.connectToHost(_ip, port);
+  _socket.connectToHost(ip, port);
 }
 
 void Network::error(QAbstractSocket::SocketError)
 {
   _controller.error(_socket.errorString());
-}
-
-
-const QString &Network::getIp() const
-{
-  return _ip;
-}
-
-quint16       Network::getPort() const
-{
-  return _port;
 }

@@ -26,18 +26,22 @@ const QByteArray IModel::toJson() const
   // return serializer.serialize(obj);
 
   QByteArray json;
+  const QMap<QString, QString>* datas = this->getData();
   json += "{\n\"";
   json += this->getObjectName();
   json += "\":[";
-  QMap<QString, QString>::const_iterator it(this->getData().begin());
-  for (const QMap<QString, QString>::const_iterator it_end = this->getData().end();
-       it != it_end; ++it)
+  if (datas != 0)
     {
-      json += "{\nname:\"";
-      json += it.key();
-      json += "\"\nkey:\"";
-      json += it.value();
-      json += "\"\n}\n,";
+      QMap<QString, QString>::const_iterator it(datas->begin());
+      for (const QMap<QString, QString>::const_iterator it_end = datas->end();
+	   it != it_end; ++it)
+	{
+	  json += "{\nname:\"";
+	  json += it.key();
+	  json += "\"\nkey:\"";
+	  json += it.value();
+	  json += "\"\n}\n,";
+	}
     }
   json[json.size() - 1] = ' ';
   json += "]\n}";

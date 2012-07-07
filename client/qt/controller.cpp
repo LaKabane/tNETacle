@@ -12,10 +12,11 @@ Controller::Controller(IClientGUI*  gui) :
   _models()
 {
   _modelContacts = new ModelContact(*this);
+  _modelNode = new ModelRootNode(*this);
   _modelLog = new ModelLog(*this);
 
   _models.append(_modelContacts);
-  //  _models.append(_modelNode);
+  _models.append(_modelNode);
   _models.append(_modelLog);
 }
 
@@ -59,14 +60,14 @@ void Controller::editContact(QListWidgetItem *item)
     }
 }
 
-const QString &Controller::getIp() const
+const QString& Controller::getIp() const
 {
-  return (_network.getIp());
+  return dynamic_cast<ModelRootNode*>(_modelNode)->getIP();
 }
 
 quint16 Controller::getPort() const
 {
-  return _network.getPort();
+  return dynamic_cast<ModelRootNode*>(_modelNode)->getPort().toUShort();
 }
 
 void Controller::error(const QString &s)
@@ -95,12 +96,12 @@ bool Controller::addContact()
 
   if (name == "" || pubkey == "")
     {
-      qDebug() << "One of the mandatory fields is missing";
+      this->_view->printError("One of the mandatory fields is missing");
       return false;
     }
   if (checkName(name) == false)
     {
-      qDebug() << "the name is not correctly formated (only alpha-numeric and '_' characters are allowed)";
+      this->_view->printError("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
       return false;
     }
 
@@ -127,8 +128,9 @@ bool Controller::addContact()
 
 void Controller::editRootNode()
 {
-  // TODO
-  this->_view->createRootNodeGui(/* _rootNodeName */"",  /*_rootNodePubkey*/"", _network.getIp(), _network.getPort());
+  ModelRootNode* root = dynamic_cast<ModelRootNode*>(_modelNode);
+  bool ok;
+  this->_view->createRootNodeGui(root->getName(),  root->getKey(), root->getIP(), root->getPort().toUShort(&ok));
 }
 
 bool	Controller::changeRootNode()
@@ -141,33 +143,35 @@ bool	Controller::changeRootNode()
 
   if (ok == false)
     {
-      this->_view->printError("Error: Port is not a number");
-      return false;
+	this->_view->printError("Error: Port is not a number");
+	return false;
     }
   if (ip == "" || name == "" || pubkey == "")
     {
-      qDebug() << "one of the mandatory fields is missing";
-      return false;
+	this->_view->printError("one of the mandatory fields is missing");
+	return false;
     }
   if (checkName(name) == false)
     {
-      qDebug() << "the name is not correctly formated (only alpha-numeric and '_' characters are allowed)";
-      return false;
+	this->_view->printError("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
+	return false;
     }
   if (checkIP(ip) == false)
     {
-      qDebug() << "the IP is not correctly formated";
-      return false;
+	this->_view->printError("the IP is not correctly formated");
+	return false;
     }
+
   try
     {
+	dynamic_cast<ModelRootNode*>(this->_modelNode)->changeRootNode(name, pubkey, ip, _view->getRootPort());
         this->_network.setConnection(ip, port);
     }
-  catch (Exception *e)
+  catch (Exception* e)
     {
-      this->_view->printError(e->getMessage());
-      delete e;
-      return false;
+	this->_view->printError(e->getMessage());
+	delete e;
+	return false;
     }
   this->_view->deleteRootNode();
   return true;

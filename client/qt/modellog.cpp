@@ -17,10 +17,10 @@ const QString &ModelLog::getObjectName() const
  }
 
 
-const QMap<QString, QString> &ModelLog::getData() const
+const QMap<QString, QString>* ModelLog::getData() const
 {
   qDebug() << "asking for void data in model log";
-  return *new QMap<QString, QString>;
+  return 0;
 }
 
 void  ModelLog::feedData(const QString &commande, const QMap<QString, QVariant> &data)
