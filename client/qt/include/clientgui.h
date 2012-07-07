@@ -14,44 +14,54 @@ namespace Ui {
 
 class AddContactGui;
 class RootNodeGui;
+class ConfigGui;
 
 class ClientGUI : public QMainWindow, public Ui::ClientGUI, public IClientGUI
 {
     Q_OBJECT
 public:
-    explicit ClientGUI(QMainWindow *parent = 0);
-    virtual ~ClientGUI();
+  explicit		ClientGUI(QMainWindow *parent = 0);
+  virtual		~ClientGUI();
 
-  void appendLog(const QString &);
-  void addContact(const QString &);
-  QString getSelected() const;
-  void    deleteSelected();
-  const QString getInitialContactName() const;
-  QString getNewContactName() const;
-  QString getNewContactKey() const;
+  void			appendLog(const QString &);
+  void			addContact(const QString &);
+  QString		getSelected() const;
+  void			deleteSelected();
+  const QString		getInitialContactName() const;
+  QString		getNewContactName() const;
+  QString		getNewContactKey() const;
 
-  QString getRootName() const;
-  QString getRootKey() const;
-  QString getRootIP() const;
-  QString getRootPort() const;
+  QString		getRootName() const;
+  QString		getRootKey() const;
+  QString		getRootIP() const;
+  QString		getRootPort() const;
 
-  void    createAddContact(const QString &, const QString &);
-  void    createRootNodeGui(const QString &, const QString &, const QString &, quint16 );
-  void    printError(const QString &);
+  void			createAddContact(const QString &, const QString &);
+  void			createRootNodeGui(const QString &, const QString &, const QString &, quint16);
+
+  void			createConfigGui();
+
+  void			printError(const QString &);
 
 private:
   AddContactGui*	_addContact;
   RootNodeGui*		_rootNode;
+  ConfigGui*		_config;
   Controller		_controller;
   QTimer		_timer;
+
 signals:
 
 public slots:
     void		createAddContact();
     void		deleteAddContact();
     void		addContactDeleted();
+
     void		rootNodeGuiDeleted();
     void		deleteRootNode();
+
+    void		configGuiDeleted();
+
     void		showLogWidget();
 };
 

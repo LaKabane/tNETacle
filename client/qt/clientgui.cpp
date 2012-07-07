@@ -3,11 +3,13 @@
 #include <iostream>
 #include "addcontactgui.h"
 #include "rootnodegui.h"
+#include "configgui.h"
 
 ClientGUI::ClientGUI(QMainWindow *parent) :
     QMainWindow(parent),
     _addContact(0),
     _rootNode(0),
+    _config(0),
     _controller(this),
     _timer()
 {
@@ -22,6 +24,8 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    QObject::connect(actionCore, SIGNAL(activated()), &_controller, SLOT(editRootNode()));
 
    QObject::connect(actionLog, SIGNAL(activated()), this, SLOT(showLogWidget()));
+
+   QObject::connect(actionConfiguration, SIGNAL(activated()), &_controller, SLOT(editConfig()));
 
    error->hide();
    log->hide();
@@ -150,12 +154,6 @@ void ClientGUI::addContact(const QString &str)
   this->ContactsList->addItem(str);
 }
 
-// void ClientGUI::addContact(Contact* c) {
-//     QString str;
-//     str.append(c->getName().c_str());
-//     this->ContactsList->addItem(str);
-// }
-
 void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const QString &IP, quint16 port) {
   if (_rootNode)
     return ;
@@ -165,8 +163,21 @@ void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const
   _rootNode->show();
 }
 
+void ClientGUI::createConfigGui() {
+  if (_config)
+    return ;
+  _config = new ConfigGui(this->_controller, *this);
+
+    QObject::connect(_config, SIGNAL(destroyed()), this, SLOT(configGuiDeleted()));
+  _config->show();
+}
+
 void ClientGUI::rootNodeGuiDeleted() {
     _rootNode = 0;
+}
+
+void ClientGUI::configGuiDeleted() {
+    _config = 0;
 }
 
 void ClientGUI::showLogWidget() {

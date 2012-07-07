@@ -20,7 +20,7 @@ public:
   Controller(IClientGUI*);
   virtual ~Controller() {}
 
-  const QString&	getIp() const;
+  const QString		getIp() const;
   quint16		getPort() const;
   void			feedData(const QVariant &);
   void			error(const QString &);
@@ -32,6 +32,7 @@ public slots:
   void			editContact(QListWidgetItem *);
   void			appendLog(const QString &);
   void			editRootNode();
+  void			editConfig();
   bool			changeRootNode();
 
   bool			checkIP(QString&) const;
@@ -46,6 +47,7 @@ private:
   IModel*		_modelContacts;
   IModel*		_modelNode;
   IModel*		_modelLog;
+  IModel*		_modelConfig;
 
   // // TODO : put the root node here with a correct type
   // REMOVED: in _network.

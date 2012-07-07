@@ -14,10 +14,12 @@ Controller::Controller(IClientGUI*  gui) :
   _modelContacts = new ModelContact(*this);
   _modelNode = new ModelRootNode(*this);
   _modelLog = new ModelLog(*this);
+  //_modelConfig = new ModelConfig(*this);
 
   _models.append(_modelContacts);
   _models.append(_modelNode);
   _models.append(_modelLog);
+  //  _models.append(_modelConfig);
 }
 
 void Controller::feedData(const QVariant &data)
@@ -60,7 +62,7 @@ void Controller::editContact(QListWidgetItem *item)
     }
 }
 
-const QString& Controller::getIp() const
+const QString Controller::getIp() const
 {
   return dynamic_cast<ModelRootNode*>(_modelNode)->getIP();
 }
@@ -131,6 +133,12 @@ void Controller::editRootNode()
   ModelRootNode* root = dynamic_cast<ModelRootNode*>(_modelNode);
   bool ok;
   this->_view->createRootNodeGui(root->getName(),  root->getKey(), root->getIP(), root->getPort().toUShort(&ok));
+}
+
+void Controller::editConfig()
+{
+  //ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
+  this->_view->createConfigGui();
 }
 
 bool	Controller::changeRootNode()

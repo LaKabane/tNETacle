@@ -574,6 +574,7 @@ p, li { white-space: pre-wrap; }
      <string>File</string>
     </property>
     <addaction name="actionCore"/>
+    <addaction name="actionConfiguration"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -709,6 +710,11 @@ p, li { white-space: pre-wrap; }
   <action name="actionLog">
    <property name="text">
     <string>Log</string>
+   </property>
+  </action>
+  <action name="actionConfiguration">
+   <property name="text">
+    <string>Configuration</string>
    </property>
   </action>
  </widget>
