@@ -17,6 +17,7 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    QObject::connect(ContactsList, SIGNAL(itemDoubleClicked(QListWidgetItem*)), &_controller, SLOT(editContact(QListWidgetItem *)));
 
    QObject::connect(actionChangeRoot, SIGNAL(activated()), &_controller, SLOT(editRootNode()));
+   QObject::connect(actionCore, SIGNAL(activated()), &_controller, SLOT(editRootNode()));
    error->hide();
    QObject::connect(&_timer, SIGNAL(timeout()), error, SLOT(hide()));
 }

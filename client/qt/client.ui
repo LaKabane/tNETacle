@@ -560,13 +560,14 @@ p, li { white-space: pre-wrap; }
      <x>0</x>
      <y>0</y>
      <width>324</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionCore"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -580,7 +581,7 @@ p, li { white-space: pre-wrap; }
   </widget>
   <action name="actionExit">
    <property name="text">
-    <string>exit</string>
+    <string>Quit</string>
    </property>
   </action>
   <action name="actionShutdown">
@@ -643,6 +644,18 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="text">
     <string>changeRoot</string>
+   </property>
+   <property name="toolTip">
+    <string>Change the root node</string>
+   </property>
+  </action>
+  <action name="actionCore">
+   <property name="icon">
+    <iconset resource="../share/img/client.qrc">
+     <normaloff>:/tools/root.png</normaloff>:/tools/root.png</iconset>
+   </property>
+   <property name="text">
+    <string>Core</string>
    </property>
    <property name="toolTip">
     <string>Change the root node</string>
