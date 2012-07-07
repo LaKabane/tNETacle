@@ -96,7 +96,22 @@ if (Windows)
 
 	# Windows source files
 	# ------------------
-	set(SOURCES_LIST ${SOURCES_LIST}
+	set(HEADERS_LIST 
+	    include/compress.h
+		include/hexdump.h
+		include/log.h
+		include/mc.h
+		include/options.h
+		include/pathnames.h
+		include/server.h
+		include/tnetacle.h
+		include/tntexits.h
+		include/tntsocket.h
+		include/tun.h
+		include/vector.h
+		include/winstrtonum.h
+		include/imsg.h)
+	set(SOURCES_LIST ${SOURCES_LIST} ${HEADERS_LIST}
 		sys/wnt/conf.c
 		sys/wnt/log.c
 		sys/wnt/tntsocket.c

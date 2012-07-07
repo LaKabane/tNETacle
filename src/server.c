@@ -25,6 +25,7 @@
 #if defined Windows
 # include <WS2tcpip.h>
 # include <io.h>
+# include <stdio.h>
 # define write _write
 # define ssize_t SSIZE_T
 #endif
@@ -45,8 +46,6 @@
 #else
 #include <io.h>
 #include <WS2tcpip.h>
-#define write(A, B, C) windows_fix_write(A, B, C)
-#define read(A, B, C) windows_fix_read(A, B, C)
 #define ssize_t SSIZE_T
 #endif
 
@@ -66,58 +65,12 @@ union chartoshort {
 }; /* The goal of this union is to properly convert uchar* to ushort* */
 
 #if defined Windows
-
-OVERLAPPED gl_overlap;
-
-static ssize_t
-windows_fix_write(intptr_t fd, void *buf, size_t len)
+static void
+send_buffer_to_device_thread(struct evbuffer *buf, size_t size, struct server *s)
 {
-	DWORD n = 0;
-	int err;
-	err = WriteFile((HANDLE)fd, buf, len, &n, &gl_overlap);
-	//log_debug("WRITE fd=%ld, buf=%p, len=%ld, n=%ld, err=%d", fd, buf, len, n, err);
-	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
-	{
-		printf("Write failed, error %d\n", GetLastError());
-		return -1;
-	}
-	else
-	{
-		if (len > 0)
-		{
-			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
-			hex_dump_chk(buf, len);
-			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
-		}
-		WaitForSingleObject(gl_overlap.hEvent, INFINITE);
-		return n;
-	}
-}
+    struct evbuffer *output = bufferevent_get_output(s->pipe_endpoint);
 
-static ssize_t
-windows_fix_read(intptr_t fd, void *buf, size_t len)
-{
-	DWORD n = 0;
-	int err;
-
-	err = ReadFile((HANDLE)fd, buf, len, &n, &gl_overlap);
-	//log_debug("READ fd=%ld, buf=%p, len=%ld, n=%ld, err=%d", fd, buf, len, n, err);
-	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
-	{
-		printf("Read failed, error %d\n", GetLastError());
-		return -1;
-	}
-	else
-	{
-		if (n > 0)
-		{
-			log_debug("== READ == READ == READ == READ ==");
-			hex_dump_chk(buf, n);
-			log_debug("== READ == READ == READ == READ ==");
-		}
-		WaitForSingleObject(gl_overlap.hEvent, 1000);
-		return n;
-	}
+    evbuffer_add(output, evbuffer_pullup(buf, size), size);
 }
 #endif
 
@@ -132,11 +85,6 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     unsigned short size;
 	intptr_t device_fd;
 
-#if defined Windows
-	device_fd = s->devide_fd;
-#else
-	device_fd = event_get_fd(s->device);
-#endif
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
     {
@@ -173,9 +121,14 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
             log_debug("adding %d(%-#2x) bytes to %p's output buffer",
                       size, size, it);
         }
+#if defined Windows
+        send_buffer_to_device_thread(buf, sizeof(size) + size, s);
+        evbuffer_drain(buf, sizeof(size) + size);
+#else
         evbuffer_drain(buf, sizeof(size));
-		n = write(device_fd, evbuffer_pullup(buf, size), size);
+		n = write(event_get_fd(s->device), evbuffer_pullup(buf, size), size);
         evbuffer_drain(buf, size);
+#endif
     }
 }
 
@@ -212,9 +165,13 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
     {
         struct mc *mc;
         struct mc tmp;
+        int errcode;
 
+        errcode = evutil_socket_geterror(bufferevent_getfd(bev));
+        log_notice("%s", evutil_socket_error_to_string(errcode));
         tmp.bev = bev;
         log_notice("the socket closed with error closing the meta-connexion");
+
         mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
         if (mc != v_mc_end(&s->pending_peers))
         {
@@ -269,13 +226,43 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
     (void)ctx;
 }
 
+static char *
+peer_name(struct mc *mc, char *name, int len)
+{
+    struct sockaddr *sock = mc->p.address;
+
+    if (sock->sa_family == AF_INET)
+    {
+        struct sockaddr_in *sin = (struct sockaddr_sin *)sock;
+        char tmp[64];
+
+        evutil_inet_ntop(AF_INET, &sin->sin_addr, tmp, sizeof tmp);
+        _snprintf(name, len, "%s:%d", tmp, ntohs(sin->sin_port));
+        return name;
+    }
+    else
+    {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_sin6 *)sock;
+        char tmp[128];
+
+        evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, tmp, sizeof tmp);
+        _snprintf(name, len, "%s:%d", tmp, ntohs(sin6->sin6_port));
+        return name;
+    }
+}
+
+#if defined Windows
 /*static */void
+#else
+static void
+#endif
 broadcast_to_peers(struct server *s)
 {
     struct frame *fit = v_frame_begin(&s->frames_to_send);
     struct frame *fite = v_frame_end(&s->frames_to_send);
 	struct mc *it = NULL;
 	struct mc *ite = NULL;
+    char name[512];
 
     for (;fit != fite; fit = v_frame_next(fit))
     {
@@ -290,17 +277,17 @@ broadcast_to_peers(struct server *s)
             err = bufferevent_write(it->bev, &size_networked, sizeof(size_networked));
             if (err == -1)
             {
-                log_notice("error while crafting the buffer to send to %p", it);
+                log_notice("error while crafting the buffer to send to %s", peer_name(it, name, sizeof name));
                 break;
             }
             err = bufferevent_write(it->bev, fit->frame, fit->size);
             if (err == -1)
             {
-                log_notice("error while crafting the buffer to send to %p", it);
+                log_notice("error while crafting the buffer to send to %s", peer_name(it, name, sizeof name));
                 break;
             }
-            log_debug("adding %d(%-#2x) bytes to %p's output buffer",
-                      fit->size, fit->size, it);
+            log_debug("adding %d(%-#2x) bytes to %s's output buffer",
+                      fit->size, fit->size, peer_name(it, name, sizeof name));
         }
     }
     v_frame_erase_range(&s->frames_to_send, v_frame_begin(&s->frames_to_send), fite);
@@ -311,12 +298,7 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
 {
     struct server *s = (struct server *)ctx;
 
-#if defined Windows
-	device_fd =	s->devide_fd;
-	if (events & EV_TIMEOUT)
-#else
     if (events & EV_READ)
-#endif
     {
         int _n = 0;
         ssize_t n;
@@ -329,11 +311,7 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
             //log_debug("Read a new frame of %d bytes.", n);
             _n++;
         }
-#if defined Windows
-		if (n == 0 || GetLastError() == ERROR_IO_PENDING)
-#else
         if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
-#endif
         {
             //log_debug("Read %d frames in this pass.", _n);
             broadcast_to_peers(s);
@@ -347,21 +325,6 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
 void
 server_set_device(struct server *s, int fd)
 {
-    struct event_base *evbase = evconnlistener_get_base(s->srv);
-	struct event *ev = event_new(evbase, -1, EV_PERSIST, server_device_cb, s);
-    int err;
-
-    /*Sadly, this don't work on windows :(*/
-    s->devide_fd = fd;
-    s->tv.tv_sec = 0;
-    s->tv.tv_usec = 50000;
-    if (ev == NULL)
-    {
-        log_warn("failed to allocate the event handler for the device:");
-        return;
-    }
-    s->device = ev;
-    //event_add(s->device, &s->tv);
     log_notice("event handler for the device sucessfully configured");
     evconnlistener_enable(s->srv);
     log_notice("listener started");
@@ -404,12 +367,6 @@ server_init(struct server *s, struct event_base *evbase)
     int err;
     size_t i;
 
-#if defined Windows
-	gl_overlap.hEvent = CreateEvent(NULL, /*Auto reset*/FALSE,
-		                                  /*Initial state*/FALSE,
-										  TEXT("Device event"));
-#endif
-
     peers = v_sockaddr_begin(&serv_opts.peer_addrs);
 
     v_mc_init(&s->peers);
@@ -443,17 +400,17 @@ server_init(struct server *s, struct event_base *evbase)
         bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
         if (bev == NULL) {
             log_warn("unable to allocate a socket for connecting to the peer");
-	    break;
+            break;
         }
         err = bufferevent_socket_connect(bev, peers, sizeof(*peers));
         if (err == -1) {
             log_warn("unable to connect to the peer");
-	    break;
+            break;
         }
         mc_init(&mctx, peers, sizeof(*peers), bev);
+        bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
+        v_mc_push(&s->pending_peers, &mctx);
     }
 
-    bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
-    v_mc_push(&s->pending_peers, &mctx);
     return 0;
 }

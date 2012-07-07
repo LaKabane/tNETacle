@@ -21,6 +21,7 @@
 
 struct evconnlistener;
 struct sockaddr;
+struct bufferevent;
 struct event_base;
 
 #define VECTOR_TYPE struct mc
@@ -44,16 +45,19 @@ struct server {
   struct evconnlistener *srv;
   struct event *udp_endpoint;
   struct event *device;
-#if defined Windows
-  intptr_t devide_fd;
-  struct timeval tv;
-#endif
   struct vector_mc peers; /* The actual list of peers */
   struct vector_mc pending_peers; /* Pending in connection peers*/
   struct vector_frame frames_to_send;
+#if defined Windows
+  struct bufferevent *pipe_endpoint;
+#endif
 };
 
 int server_init(struct server *, struct event_base *);
 void server_set_device(struct server *, int fd);
+
+#if defined Windows
+void broadcast_to_peers(struct server *s);
+#endif
 
 #endif /* end of include guard: SERVER_KW2DIKER */
