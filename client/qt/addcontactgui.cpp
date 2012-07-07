@@ -8,9 +8,11 @@ AddContactGui::AddContactGui(Controller &controller, ClientGUI &win)
   : QWidget(0), _controller(controller),_view(win), _initialName("")
 {
   this->setAttribute(Qt::WA_DeleteOnClose);
+
   setupUi(this);
   QObject::connect(okOrReject, SIGNAL(accepted()), &_controller, SLOT(addContact()));
   QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteAddContact()));
+  QObject::connect(selectPubKey->button(QDialogButtonBox::Open), SIGNAL(clicked()), this, SLOT(openPubKey()));
 }
 
 AddContactGui::AddContactGui(Controller &controller, ClientGUI &win, const QString &name, const QString &key)
@@ -22,13 +24,11 @@ AddContactGui::AddContactGui(Controller &controller, ClientGUI &win, const QStri
     QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteAddContact()));
     this->name->setText(name);
     this->pubKey->setText(key);
-
 }
 
 
 AddContactGui::~AddContactGui()
 {
-
 }
 
 QString AddContactGui::getNewContactName() const
@@ -50,6 +50,10 @@ QString AddContactGui::getNewContactKey() const
 void AddContactGui::sendContact() {
     // Contact* newContact = new Contact(this->nameLabel->text().toStdString(),
     //                                   this->keyText->toPlainText().toStdString());
-    // std::cout << "Lololilolilol" << *newContact << std::endl;
     // _clientGui->addContact(newContact);
+}
+
+void	AddContactGui::openPubKey()
+{
+  this->pubKey->setText(_controller.openPubKey());
 }

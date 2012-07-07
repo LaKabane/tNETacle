@@ -10,7 +10,8 @@ RootNodeGui::RootNodeGui(Controller &controller, ClientGUI &win)
   this->setAttribute(Qt::WA_DeleteOnClose);
   setupUi(this);
   QObject::connect(okOrReject, SIGNAL(accepted()), &_controller, SLOT(changeRootNode()));
-  QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteAddContact()));
+  QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteRootNode()));
+  QObject::connect(selectPubKey->button(QDialogButtonBox::Open), SIGNAL(clicked()), this, SLOT(openPubKey()));
 }
 
 RootNodeGui::RootNodeGui(Controller &controller, ClientGUI &win, const QString &name, const QString &key, const QString &IP, const quint16 port)
@@ -20,6 +21,7 @@ RootNodeGui::RootNodeGui(Controller &controller, ClientGUI &win, const QString &
     setupUi(this);
     QObject::connect(okOrReject, SIGNAL(accepted()), &_controller, SLOT(changeRootNode()));
     //QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteRootNode()));
+    QObject::connect(selectPubKey->button(QDialogButtonBox::Open), SIGNAL(clicked()), this, SLOT(openPubKey()));
     this->name->setText(name);
     this->pubKey->setText(key);
     this->IP->setText(IP);
@@ -64,4 +66,9 @@ void RootNodeGui::sendRootNode() {
     //                                   this->keyText->toPlainText().toStdString());
     // std::cout << "Lololilolilol" << *newContact << std::endl;
     // _clientGui->rootNode(newContact);
+}
+
+void	RootNodeGui::openPubKey()
+{
+  this->pubKey->setText(_controller.openPubKey());
 }

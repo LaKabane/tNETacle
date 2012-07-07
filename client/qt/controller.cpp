@@ -221,3 +221,20 @@ bool    Controller::checkName(QString& str) const
   QRegExp rx("^[a-zA-Z0-9_]+$");
   return str.contains(rx);
 }
+
+QString	Controller::openPubKey()
+{
+  //TODO : make this part more secure and check size/validity
+  QString fileName = QFileDialog::getOpenFileName(0, tr("Open File"));
+
+  QString key = "";
+  QFile file(fileName);
+  if (!file.open(QIODevice::ReadOnly))
+    return key;
+
+  while (!file.atEnd()) {
+    key += file.readLine();
+  }
+
+  return key;
+}

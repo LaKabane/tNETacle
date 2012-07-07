@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QVariant>
 #include <QListWidgetItem>
+#include <QFileDialog>
 #include "modelcontact.h"
 #include "modellog.h"
 #include "modelrootnode.h"
@@ -23,6 +24,7 @@ public:
   quint16		getPort() const;
   void			feedData(const QVariant &);
   void			error(const QString &);
+  QString		openPubKey();
 
 public slots:
   bool			addContact();

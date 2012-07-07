@@ -27,10 +27,14 @@ class AddContactGui : public QWidget, public Ui::AddContactGui
   virtual ~AddContactGui();
   QDialogButtonBox* getOkOrReject() const {return okOrReject;}
 
+public slots:
+  void	openPubKey();
+
 private:
   Controller  &_controller;
   ClientGUI &_view;
   const QString _initialName;
+
 private slots:
   void sendContact();
 };

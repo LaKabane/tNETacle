@@ -28,6 +28,9 @@ class RootNodeGui : public QWidget, private Ui::RootNodeGui
   virtual ~RootNodeGui();
   QDialogButtonBox* getOkOrReject() const {return okOrReject;}
 
+public slots:
+  void	openPubKey();
+
 private:
   Controller  &_controller;
   ClientGUI &_view;
