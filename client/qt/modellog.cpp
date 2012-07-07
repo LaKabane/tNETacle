@@ -10,14 +10,13 @@ ModelLog::ModelLog(Controller &c)
 
 }
 
-
 const QString &ModelLog::getObjectName() const
- {
-   return _name;
- }
+{
+  return _name;
+}
 
 
-const QMap<QString, QString>* ModelLog::getData() const
+const QMap<QString, QVariant>* ModelLog::getData() const
 {
   qDebug() << "asking for void data in model log";
   return 0;
@@ -26,11 +25,4 @@ const QMap<QString, QString>* ModelLog::getData() const
 void  ModelLog::feedData(const QString &commande, const QMap<QString, QVariant> &data)
 {
   qDebug() << commande;
-  if (commande == "Add")
-    {
-      QString line = "New client at address :";
-      line += data["IP"].toString();
-      _controller.appendLog(line);
-      qDebug() << line;
-    }
 }

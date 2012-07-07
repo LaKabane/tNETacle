@@ -24,11 +24,11 @@ class ModelRootNode : public IModel
 private:
   Controller&			_controller;
   static const QString		_name;
-  QMap<QString, QString>	_details;
+  QMap<QString, QVariant>	_details;
 
 protected: // from IModel
   virtual const QString&		getObjectName() const;
-  virtual const QMap<QString, QString>*	getData() const;
+  virtual const QMap<QString, QVariant>*	getData() const;
 };
 
 #endif /* !MODELROOTNODE_H */
