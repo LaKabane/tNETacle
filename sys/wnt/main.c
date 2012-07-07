@@ -103,7 +103,7 @@ void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct serve
         return ;
     memcpy(packet, &frame_size, sizeof(frame_size));
     memcpy(packet + sizeof(frame_size), frame, frame_size);
-    //log_debug("Handle frame of size %d", frame_size);
+    log_debug("Handle frame of size %d", frame_size);
     //hex_dump(frame, size);
 
     overlapped = (LPOVERLAPPED)malloc(sizeof(OVERLAPPED));
@@ -117,7 +117,8 @@ void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct serve
         buf[0].buf = packet;
         buf[0].len = packet_size;
         //errcode = WriteFile(pipe_fd, packet, packet_size, NULL, overlapped);
-        errcode = WSASend((SOCKET)pipe_fd, buf, 1, NULL, 0, overlapped, NULL);
+        //errcode = WSASend((SOCKET)pipe_fd, buf, 1, NULL, 0, overlapped, NULL);
+        errcode = send(pipe_fd, packet, packet_size, 0);
         if (errcode != 0)
             log_debug("Write %d on the pipe", frame_size);
         else if ((errcode = WSAGetLastError() != WSA_IO_PENDING))
@@ -241,7 +242,7 @@ pipe_read_cb(struct bufferevent *bev, void *data)
         if (frame_size > evbuffer_get_length(input))
             return ;
         
-        printf("Have a frame of size %d to send !!", frame_size);
+        log_debug("Have a frame of size %d to send !!", frame_size);
         evbuffer_drain(input, sizeof(short));
         frame_ptr = evbuffer_pullup(input, frame_size);
         memcpy(tmp.frame, frame_ptr, frame_size);
@@ -382,7 +383,7 @@ int
             log_err(-1, "Failed to init WSA.");
         }
 
-        event_config_set_flag(cfg, EVENT_BASE_FLAG_STARTUP_IOCP);
+        //event_config_set_flag(cfg, EVENT_BASE_FLAG_STARTUP_IOCP);
         if ((evbase = event_base_new_with_config(cfg)) == NULL) {
             log_err(-1, "Failed to init the event library");
         } else {
