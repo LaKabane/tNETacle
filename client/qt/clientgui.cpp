@@ -14,6 +14,8 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    setupUi(this);
    QObject::connect(actionAddContact, SIGNAL(activated()), this, SLOT(createAddContact()));
    QObject::connect(actionDeleteContact, SIGNAL(activated()), &_controller, SLOT(deleteContact()));
+   QObject::connect(actionAddAContact, SIGNAL(activated()), this, SLOT(createAddContact()));
+   QObject::connect(actionDeleteAContact, SIGNAL(activated()), &_controller, SLOT(deleteContact()));
    QObject::connect(ContactsList, SIGNAL(itemDoubleClicked(QListWidgetItem*)), &_controller, SLOT(editContact(QListWidgetItem *)));
 
    QObject::connect(actionChangeRoot, SIGNAL(activated()), &_controller, SLOT(editRootNode()));

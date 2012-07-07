@@ -576,7 +576,15 @@ p, li { white-space: pre-wrap; }
     </property>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuContact">
+    <property name="title">
+     <string>Contact</string>
+    </property>
+    <addaction name="actionAddAContact"/>
+    <addaction name="actionDeleteAContact"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuContact"/>
    <addaction name="menuHelp"/>
   </widget>
   <action name="actionExit">
@@ -659,6 +667,30 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="toolTip">
     <string>Change the root node</string>
+   </property>
+  </action>
+  <action name="actionAddAContact">
+   <property name="icon">
+    <iconset resource="../share/img/client.qrc">
+     <normaloff>:/tools/addcontact.png</normaloff>:/tools/addcontact.png</iconset>
+   </property>
+   <property name="text">
+    <string>Add a contact</string>
+   </property>
+   <property name="toolTip">
+    <string>Add a contact</string>
+   </property>
+  </action>
+  <action name="actionDeleteAContact">
+   <property name="icon">
+    <iconset resource="../share/img/client.qrc">
+     <normaloff>:/tools/deletecontact.png</normaloff>:/tools/deletecontact.png</iconset>
+   </property>
+   <property name="text">
+    <string>Delete a contact</string>
+   </property>
+   <property name="toolTip">
+    <string>Delete a contact</string>
    </property>
   </action>
  </widget>
