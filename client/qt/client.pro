@@ -20,8 +20,8 @@ SOURCES += \
 
 FORMS += \
     client.ui \
-    addContact.ui \
-    rootNode.ui
+    addcontact.ui \
+    rootnode.ui
 
 RESOURCES += \
     ../share/img/client.qrc

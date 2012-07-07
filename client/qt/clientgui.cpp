@@ -116,7 +116,7 @@ QString ClientGUI::getRootPort() const
 void ClientGUI::createAddContact(const QString& name, const QString &key) {
   if (_addContact)
     return ;
-  _addContact = new addContactGui(this->_controller, *this, name, key);
+  _addContact = new AddContactGui(this->_controller, *this, name, key);
 
   QObject::connect(_addContact, SIGNAL(destroyed()), this, SLOT(addContactDeleted()));
   _addContact->show();
@@ -127,7 +127,7 @@ void ClientGUI::createAddContact(const QString& name, const QString &key) {
 void ClientGUI::createAddContact() {
   if (_addContact)
     return ;
-  _addContact = new addContactGui(this->_controller, *this);
+  _addContact = new AddContactGui(this->_controller, *this);
 
   QObject::connect(_addContact, SIGNAL(destroyed()), this, SLOT(addContactDeleted()));
   _addContact->show();
@@ -159,7 +159,7 @@ void ClientGUI::addContact(const QString &str)
 void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const QString &IP, quint16 port) {
   if (_rootNode)
     return ;
-  _rootNode = new rootNodeGui(this->_controller, *this, name, key, IP, port);
+  _rootNode = new RootNodeGui(this->_controller, *this, name, key, IP, port);
 
     QObject::connect(_rootNode, SIGNAL(destroyed()), this, SLOT(rootNodeGuiDeleted()));
   _rootNode->show();

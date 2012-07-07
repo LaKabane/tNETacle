@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>addContactGui</class>
- <widget class="QWidget" name="addContactGui">
+ <class>AddContactGui</class>
+ <widget class="QWidget" name="AddContactGui">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -59,7 +59,7 @@
   <connection>
    <sender>okOrReject</sender>
    <signal>rejected()</signal>
-   <receiver>addContactGui</receiver>
+   <receiver>AddContactGui</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">

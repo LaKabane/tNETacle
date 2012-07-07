@@ -4,7 +4,7 @@
 #include "contact.h"
 #include "clientgui.h"
 
-rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win)
+RootNodeGui::RootNodeGui(Controller &controller, ClientGUI &win)
   : QWidget(0), _controller(controller),_view(win), _initialName("")
 {
   this->setAttribute(Qt::WA_DeleteOnClose);
@@ -13,7 +13,7 @@ rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win)
   QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteAddContact()));
 }
 
-rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win, const QString &name, const QString &key, const QString &IP, const quint16 port)
+RootNodeGui::RootNodeGui(Controller &controller, ClientGUI &win, const QString &name, const QString &key, const QString &IP, const quint16 port)
   : QWidget(0), _controller(controller),_view(win), _initialName(name)
 {
     this->setAttribute(Qt::WA_DeleteOnClose);
@@ -28,38 +28,38 @@ rootNodeGui::rootNodeGui(Controller &controller, ClientGUI &win, const QString &
 }
 
 
-rootNodeGui::~rootNodeGui()
+RootNodeGui::~RootNodeGui()
 {
 
 }
 
-const QString rootNodeGui::getRootName() const
+const QString RootNodeGui::getRootName() const
 {
   return (this->name->text());
 }
 
-const QString rootNodeGui::getInitialContactName() const
+const QString RootNodeGui::getInitialContactName() const
 {
   return this->_initialName;
 }
 
-const QString rootNodeGui::getRootKey() const
+const QString RootNodeGui::getRootKey() const
 {
   return (this->pubKey->toPlainText());
 }
 
-const QString rootNodeGui::getRootIP() const
+const QString RootNodeGui::getRootIP() const
 {
   return (this->IP->text());
 }
 
 
-const QString rootNodeGui::getRootPort() const
+const QString RootNodeGui::getRootPort() const
 {
   return (this->port->text());
 }
 
-void rootNodeGui::sendRootNode() {
+void RootNodeGui::sendRootNode() {
     // Contact* newContact = new Contact(this->nameLabel->text().toStdString(),
     //                                   this->keyText->toPlainText().toStdString());
     // std::cout << "Lololilolilol" << *newContact << std::endl;

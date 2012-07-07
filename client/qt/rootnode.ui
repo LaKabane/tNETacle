@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>rootNodeGui</class>
- <widget class="QWidget" name="rootNodeGui">
+ <class>RootNodeGui</class>
+ <widget class="QWidget" name="RootNodeGui">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -81,7 +81,7 @@
   <connection>
    <sender>okOrReject</sender>
    <signal>rejected()</signal>
-   <receiver>rootNodeGui</receiver>
+   <receiver>RootNodeGui</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">

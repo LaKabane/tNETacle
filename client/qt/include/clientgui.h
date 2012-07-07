@@ -12,8 +12,8 @@ namespace Ui {
     class ClientGUI;
 }
 
-class addContactGui;
-class rootNodeGui;
+class AddContactGui;
+class RootNodeGui;
 
 class ClientGUI : public QMainWindow, public Ui::ClientGUI, public IClientGUI
 {
@@ -39,8 +39,8 @@ public:
   void    createRootNodeGui(const QString &, const QString &, const QString &, quint16 );
   void    printError(const QString &);
 private:
-  addContactGui*	_addContact;
-  rootNodeGui*		_rootNode;
+  AddContactGui*	_addContact;
+  RootNodeGui*		_rootNode;
   Controller		_controller;
   QTimer		_timer;
 signals:

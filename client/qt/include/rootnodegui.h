@@ -4,17 +4,17 @@
 #include <QString>
 #include <QWidget>
 #include "clientgui.h"
-#include "ui_rootNode.h"
+#include "ui_rootnode.h"
 #include "contact.h"
 #include "controller.h"
 
 class ClientGUI;
 
 namespace UI {
-    class rootNodeGui;
+    class RootNodeGui;
 }
 
-class rootNodeGui : public QWidget, private Ui::rootNodeGui
+class RootNodeGui : public QWidget, private Ui::RootNodeGui
 {
   Q_OBJECT
   public:
@@ -23,9 +23,9 @@ class rootNodeGui : public QWidget, private Ui::rootNodeGui
   const QString getRootKey() const;
   const QString getRootIP() const;
   const QString getRootPort() const;
-  explicit rootNodeGui(Controller &controller, ClientGUI &view, const QString &name, const QString &, const QString &, const quint16 port);
-  explicit rootNodeGui(Controller &controller, ClientGUI &view);
-  virtual ~rootNodeGui();
+  explicit RootNodeGui(Controller &controller, ClientGUI &view, const QString &name, const QString &, const QString &, const quint16 port);
+  explicit RootNodeGui(Controller &controller, ClientGUI &view);
+  virtual ~RootNodeGui();
   QDialogButtonBox* getOkOrReject() const {return okOrReject;}
 
 private:
