@@ -51,7 +51,7 @@ public slots:
     void		addContactDeleted();
     void		rootNodeGuiDeleted();
     void		deleteRootNode();
-
+    void		showLogWidget();
 };
 
 #endif // CLIENTGUI_H

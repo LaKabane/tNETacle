@@ -20,7 +20,11 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
 
    QObject::connect(actionChangeRoot, SIGNAL(activated()), &_controller, SLOT(editRootNode()));
    QObject::connect(actionCore, SIGNAL(activated()), &_controller, SLOT(editRootNode()));
+
+   QObject::connect(actionLog, SIGNAL(activated()), this, SLOT(showLogWidget()));
+
    error->hide();
+   log->hide();
    QObject::connect(&_timer, SIGNAL(timeout()), error, SLOT(hide()));
 }
 
@@ -163,4 +167,11 @@ void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const
 
 void ClientGUI::rootNodeGuiDeleted() {
     _rootNode = 0;
+}
+
+void ClientGUI::showLogWidget() {
+  if (log->isVisible() == true)
+    log->hide();
+  else
+    log->show();
 }
