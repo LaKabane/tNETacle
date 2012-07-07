@@ -37,7 +37,7 @@ public:
 
   void    createAddContact(const QString &, const QString &);
   void    createRootNodeGui(const QString &, const QString &, const QString &, quint16 );
-  void    printError(const QString &);
+  void    printError(const QString &, const int time = 5);
 private:
   addContactGui*	_addContact;
   rootNodeGui*		_rootNode;

@@ -34,11 +34,11 @@ void ClientGUI::appendLog(const QString &str)
 }
 
 
-void ClientGUI::printError(const QString &error)
+void ClientGUI::printError(const QString &error, const int time)
 {
   this->error->show();
   this->errorText->setText(error);
-  this->_timer.start(3000);
+  this->_timer.start(time * 1000);
   qDebug() << error;
 }
 
