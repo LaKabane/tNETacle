@@ -33,6 +33,7 @@ public slots:
   virtual void		rootNodeGuiDeleted() = 0;
   virtual void		deleteRootNode() = 0;
   virtual void		configGuiDeleted() = 0;
+  virtual void		deleteConfig() = 0;
 };
 
 #endif // CLIENTGUI_H

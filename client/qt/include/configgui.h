@@ -20,9 +20,12 @@ class ConfigGui : public QWidget, public Ui::Config
   ConfigGui(Controller&, ClientGUI&);
   ~ConfigGui();
 
+  const QMap<QString, QVariant>* getChanges() const;
+
   private:
   Controller&	_controller;
   ClientGUI&	_view;
+  QMap<QString, QVariant>	_changes;
 };
 
 #endif // CONFIGGUI_H

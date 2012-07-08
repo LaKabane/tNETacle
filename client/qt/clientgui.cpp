@@ -27,6 +27,7 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    QObject::connect(actionLog, SIGNAL(activated()), this, SLOT(showLogWidget()));
 
    QObject::connect(actionConfiguration, SIGNAL(activated()), &_controller, SLOT(editConfig()));
+   QObject::connect(actionConfig, SIGNAL(activated()), &_controller, SLOT(editConfig()));
 
    QObject::connect(actionShutdown, SIGNAL(activated()), this, SLOT(shutdown()));
    QObject::connect(actionRestart, SIGNAL(activated()), this, SLOT(restart()));
@@ -113,12 +114,17 @@ QString ClientGUI::getRootIP() const
 
 QString ClientGUI::getRootPort() const
 {
-  if (!this->_rootNode)
+  if (this->_rootNode == 0)
     return *new QString("");// TODO throw a fatal exception
   return this->_rootNode->getRootPort();
 }
 
-
+const QMap<QString, QVariant>* ClientGUI::getChangesInConfig() const
+{
+  if (this->_config == 0)
+    return 0;
+  return this->_config->getChanges();
+}
 
 
 void ClientGUI::createAddContact(const QString& name, const QString &key) {
@@ -147,6 +153,10 @@ void ClientGUI::deleteAddContact() {
 
 void ClientGUI::deleteRootNode() {
   _rootNode->close();
+}
+
+void ClientGUI::deleteConfig() {
+  _config->close();
 }
 
 void ClientGUI::addContactDeleted() {

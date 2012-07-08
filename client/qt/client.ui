@@ -559,6 +559,8 @@ p, li { white-space: pre-wrap; }
    <addaction name="separator"/>
    <addaction name="actionAddContact"/>
    <addaction name="actionDeleteContact"/>
+   <addaction name="separator"/>
+   <addaction name="actionConfig"/>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -715,6 +717,18 @@ p, li { white-space: pre-wrap; }
   <action name="actionConfiguration">
    <property name="text">
     <string>Configuration</string>
+   </property>
+  </action>
+  <action name="actionConfig">
+   <property name="icon">
+    <iconset resource="../share/img/client.qrc">
+     <normaloff>:/tools/config.png</normaloff>:/tools/config.png</iconset>
+   </property>
+   <property name="text">
+    <string>config</string>
+   </property>
+   <property name="toolTip">
+    <string>Open window for the configuration</string>
    </property>
   </action>
  </widget>

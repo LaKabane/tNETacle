@@ -38,6 +38,8 @@ public slots:
   void			editConfig();
   bool			changeRootNode();
 
+  void			changeConfig();
+
   bool			checkIP(QString&) const;
   bool			checkName(QString&) const;
 

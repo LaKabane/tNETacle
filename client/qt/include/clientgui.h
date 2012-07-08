@@ -40,6 +40,7 @@ public:
   void			createRootNodeGui(const QString &, const QString &, const QString &, quint16);
 
   void			createConfigGui();
+  const QMap<QString, QVariant>* getChangesInConfig() const;
 
   void			printError(const QString &);
 
@@ -66,6 +67,8 @@ public slots:
 
     void		shutdown();
     void		restart();
+
+    void		deleteConfig();
 };
 
 #endif // CLIENTGUI_H

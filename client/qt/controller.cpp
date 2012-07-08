@@ -206,6 +206,19 @@ void		Controller::restart()
     }
 }
 
+void Controller::changeConfig()
+{
+  //TODO : get QMAP<QString, QVariant>* changes = _view->getChangesInConfig();
+  //if (changes != 0)
+  // {
+  //   for every change in changes {
+  //     if exists in modelconfig
+  //        write change in modelConfig
+  //   }
+  // }
+  this->_view->deleteConfig();
+}
+
 bool    Controller::checkIPv4(QString& str) const
 {
   QStringList elements = str.split(".");
