@@ -14,12 +14,12 @@ Controller::Controller(IClientGUI*  gui) :
   _modelContacts = new ModelContact(*this);
   _modelNode = new ModelRootNode(*this);
   _modelLog = new ModelLog(*this);
-  //_modelConfig = new ModelConfig(*this);
+  _modelConfig = new ModelConfig(*this);
 
   _models.append(_modelContacts);
   _models.append(_modelNode);
   _models.append(_modelLog);
-  //  _models.append(_modelConfig);
+  _models.append(_modelConfig);
 }
 
 void Controller::feedData(const QVariant &data)
@@ -137,7 +137,7 @@ void Controller::editRootNode()
 
 void Controller::editConfig()
 {
-  //ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
+  ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
   this->_view->createConfigGui();
 }
 

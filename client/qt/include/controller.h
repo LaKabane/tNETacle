@@ -7,6 +7,7 @@
 #include <QListWidgetItem>
 #include <QFileDialog>
 #include "modelcontact.h"
+#include "modelconfig.h"
 #include "modellog.h"
 #include "modelrootnode.h"
 #include "network.h"

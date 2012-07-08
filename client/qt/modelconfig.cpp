@@ -2,7 +2,7 @@
 #include "modelconfig.h"
 #include "controller.h"
 
-const QString Modelconfig::_name = "Configuration";
+const QString ModelConfig::_name = "Configuration";
 
 ModelConfig::ModelConfig(Controller &c)
   :_controller(c)
