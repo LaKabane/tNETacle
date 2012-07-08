@@ -34,9 +34,9 @@ void ModelContact::addContact(const QString &name, const QString &key)
    qDebug() << this->toJson();
 }
 
-const QString& ModelContact::getKey(const QString &name)
+const QString ModelContact::getKey(const QString &name)
 {
-  if (!_contacts.contains(name))
+  if (_contacts.contains(name) == 0)
     throw new Exception("Error: Name does not exist");
   return _contacts[name].toString();
 }

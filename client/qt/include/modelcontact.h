@@ -12,7 +12,7 @@ class ModelContact : public IModel
  public:
   ModelContact(Controller &);
   void          addContact(const QString&, const QString&);
-  const QString &getKey(const QString &);
+  const QString getKey(const QString &);
   void          delContact(const QString &);
   void          editContact(const QString&, const QString&, const QString&);
   virtual       ~ModelContact(){};
