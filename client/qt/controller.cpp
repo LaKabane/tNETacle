@@ -185,6 +185,27 @@ bool	Controller::changeRootNode()
   return true;
 }
 
+void		Controller::shutdown()
+{
+  _network.shutdown();
+}
+
+void		Controller::restart()
+{
+  try
+    {
+      ModelRootNode* node = dynamic_cast<ModelRootNode*>(this->_modelNode);
+      bool ok;
+      quint16 port = node->getPort().toUShort(&ok);
+      this->_network.resetConnection(node->getIP(), port);
+    }
+  catch (Exception* e)
+    {
+	this->_view->printError(e->getMessage());
+	delete e;
+    }
+}
+
 bool    Controller::checkIPv4(QString& str) const
 {
   QStringList elements = str.split(".");

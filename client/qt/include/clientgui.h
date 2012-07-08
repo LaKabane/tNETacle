@@ -63,6 +63,9 @@ public slots:
     void		configGuiDeleted();
 
     void		showLogWidget();
+
+    void		shutdown();
+    void		restart();
 };
 
 #endif // CLIENTGUI_H

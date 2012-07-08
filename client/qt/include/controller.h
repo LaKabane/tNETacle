@@ -26,6 +26,9 @@ public:
   void			error(const QString &);
   QString		openPubKey();
 
+  void			shutdown();
+  void			restart();
+
 public slots:
   bool			addContact();
   void			deleteContact();

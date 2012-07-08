@@ -32,7 +32,12 @@ void Network::read()
   _controller.feedData(var);
 }
 
-void Network::setConnection(const QString &ip, const quint16 port) // we want to set BOTH!
+void Network::setConnection(const QString& ip, const quint16 port) // we want to set BOTH!
+{
+  _socket.connectToHost(ip, port);
+}
+
+void Network::resetConnection(const QString& ip, const quint16 port) // we want to set BOTH!
 {
   _socket.close();
   _socket.connectToHost(ip, port);
@@ -41,4 +46,9 @@ void Network::setConnection(const QString &ip, const quint16 port) // we want to
 void Network::error(QAbstractSocket::SocketError)
 {
   _controller.error(_socket.errorString());
+}
+
+void Network::shutdown()
+{
+  _socket.close();
 }

@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QMessageBox>
 #include "clientgui.h"
 #include <iostream>
 #include "addcontactgui.h"
@@ -26,6 +27,9 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    QObject::connect(actionLog, SIGNAL(activated()), this, SLOT(showLogWidget()));
 
    QObject::connect(actionConfiguration, SIGNAL(activated()), &_controller, SLOT(editConfig()));
+
+   QObject::connect(actionShutdown, SIGNAL(activated()), this, SLOT(shutdown()));
+   QObject::connect(actionRestart, SIGNAL(activated()), this, SLOT(restart()));
 
    error->hide();
    log->hide();
@@ -185,4 +189,30 @@ void ClientGUI::showLogWidget() {
     log->hide();
   else
     log->show();
+}
+
+void ClientGUI::shutdown()
+{
+  QMessageBox msgBox;
+  msgBox.setIcon(QMessageBox::Warning);
+  msgBox.setText("Shutdown!");
+  msgBox.setInformativeText("Do you want to shutdown?");
+  msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+  msgBox.setDefaultButton(QMessageBox::Ok);
+  int ret = msgBox.exec();
+  if (ret == QMessageBox::Ok)
+    _controller.shutdown();
+}
+
+void ClientGUI::restart()
+{
+  QMessageBox msgBox;
+  msgBox.setIcon(QMessageBox::Warning);
+  msgBox.setText("Restart!");
+  msgBox.setInformativeText("Do you want to restart the connection with the node?");
+  msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+  msgBox.setDefaultButton(QMessageBox::Ok);
+  int ret = msgBox.exec();
+  if (ret == QMessageBox::Ok)
+    _controller.restart();
 }
