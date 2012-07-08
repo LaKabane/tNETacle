@@ -18,8 +18,7 @@ public:
   virtual const QString &getObjectName() const  = 0;
   virtual void  feedData(const QString &, const QMap<QString, QVariant> &) = 0;
 protected:
-  virtual const QMap<QString, QString>* getData() const = 0;
-  // TODO:  MUST change to pointer, and find a better type to return.
+  virtual const QMap<QString, QVariant>* getData() const = 0;
 private:
   //  static const QMap<QString, QVariant> mapToVar(const QMap<QString, QString> &);
 };

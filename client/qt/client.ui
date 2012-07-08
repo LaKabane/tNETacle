@@ -530,6 +530,12 @@ p, li { white-space: pre-wrap; }
     </item>
     <item row="2" column="0">
      <widget class="QTextEdit" name="log">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="acceptDrops">
+       <bool>true</bool>
+      </property>
       <property name="textInteractionFlags">
        <set>Qt::TextBrowserInteraction</set>
       </property>
@@ -553,6 +559,8 @@ p, li { white-space: pre-wrap; }
    <addaction name="separator"/>
    <addaction name="actionAddContact"/>
    <addaction name="actionDeleteContact"/>
+   <addaction name="separator"/>
+   <addaction name="actionConfig"/>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -568,6 +576,7 @@ p, li { white-space: pre-wrap; }
      <string>File</string>
     </property>
     <addaction name="actionCore"/>
+    <addaction name="actionConfiguration"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -583,8 +592,15 @@ p, li { white-space: pre-wrap; }
     <addaction name="actionAddAContact"/>
     <addaction name="actionDeleteAContact"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionLog"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuContact"/>
+   <addaction name="menuView"/>
    <addaction name="menuHelp"/>
   </widget>
   <action name="actionExit">
@@ -691,6 +707,28 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="toolTip">
     <string>Delete a contact</string>
+   </property>
+  </action>
+  <action name="actionLog">
+   <property name="text">
+    <string>Log</string>
+   </property>
+  </action>
+  <action name="actionConfiguration">
+   <property name="text">
+    <string>Configuration</string>
+   </property>
+  </action>
+  <action name="actionConfig">
+   <property name="icon">
+    <iconset resource="../share/img/client.qrc">
+     <normaloff>:/tools/config.png</normaloff>:/tools/config.png</iconset>
+   </property>
+   <property name="text">
+    <string>config</string>
+   </property>
+   <property name="toolTip">
+    <string>Open window for the configuration</string>
    </property>
   </action>
  </widget>

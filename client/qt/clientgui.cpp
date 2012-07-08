@@ -1,13 +1,16 @@
 #include <QDebug>
+#include <QMessageBox>
 #include "clientgui.h"
 #include <iostream>
 #include "addcontactgui.h"
 #include "rootnodegui.h"
+#include "configgui.h"
 
 ClientGUI::ClientGUI(QMainWindow *parent) :
     QMainWindow(parent),
     _addContact(0),
     _rootNode(0),
+    _config(0),
     _controller(this),
     _timer()
 {
@@ -20,7 +23,17 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
 
    QObject::connect(actionChangeRoot, SIGNAL(activated()), &_controller, SLOT(editRootNode()));
    QObject::connect(actionCore, SIGNAL(activated()), &_controller, SLOT(editRootNode()));
+
+   QObject::connect(actionLog, SIGNAL(activated()), this, SLOT(showLogWidget()));
+
+   QObject::connect(actionConfiguration, SIGNAL(activated()), &_controller, SLOT(editConfig()));
+   QObject::connect(actionConfig, SIGNAL(activated()), &_controller, SLOT(editConfig()));
+
+   QObject::connect(actionShutdown, SIGNAL(activated()), this, SLOT(shutdown()));
+   QObject::connect(actionRestart, SIGNAL(activated()), this, SLOT(restart()));
+
    error->hide();
+   log->hide();
    QObject::connect(&_timer, SIGNAL(timeout()), error, SLOT(hide()));
 }
 
@@ -101,18 +114,23 @@ QString ClientGUI::getRootIP() const
 
 QString ClientGUI::getRootPort() const
 {
-  if (!this->_rootNode)
+  if (this->_rootNode == 0)
     return *new QString("");// TODO throw a fatal exception
   return this->_rootNode->getRootPort();
 }
 
-
+const QMap<QString, QVariant>* ClientGUI::getChangesInConfig() const
+{
+  if (this->_config == 0)
+    return 0;
+  return this->_config->getChanges();
+}
 
 
 void ClientGUI::createAddContact(const QString& name, const QString &key) {
   if (_addContact)
     return ;
-  _addContact = new addContactGui(this->_controller, *this, name, key);
+  _addContact = new AddContactGui(this->_controller, *this, name, key);
 
   QObject::connect(_addContact, SIGNAL(destroyed()), this, SLOT(addContactDeleted()));
   _addContact->show();
@@ -123,7 +141,7 @@ void ClientGUI::createAddContact(const QString& name, const QString &key) {
 void ClientGUI::createAddContact() {
   if (_addContact)
     return ;
-  _addContact = new addContactGui(this->_controller, *this);
+  _addContact = new AddContactGui(this->_controller, *this);
 
   QObject::connect(_addContact, SIGNAL(destroyed()), this, SLOT(addContactDeleted()));
   _addContact->show();
@@ -137,6 +155,10 @@ void ClientGUI::deleteRootNode() {
   _rootNode->close();
 }
 
+void ClientGUI::deleteConfig() {
+  _config->close();
+}
+
 void ClientGUI::addContactDeleted() {
     _addContact = 0;
 }
@@ -146,21 +168,61 @@ void ClientGUI::addContact(const QString &str)
   this->ContactsList->addItem(str);
 }
 
-// void ClientGUI::addContact(Contact* c) {
-//     QString str;
-//     str.append(c->getName().c_str());
-//     this->ContactsList->addItem(str);
-// }
-
 void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const QString &IP, quint16 port) {
   if (_rootNode)
     return ;
-  _rootNode = new rootNodeGui(this->_controller, *this, name, key, IP, port);
+  _rootNode = new RootNodeGui(this->_controller, *this, name, key, IP, port);
 
     QObject::connect(_rootNode, SIGNAL(destroyed()), this, SLOT(rootNodeGuiDeleted()));
   _rootNode->show();
 }
 
+void ClientGUI::createConfigGui() {
+  if (_config)
+    return ;
+  _config = new ConfigGui(this->_controller, *this);
+
+    QObject::connect(_config, SIGNAL(destroyed()), this, SLOT(configGuiDeleted()));
+  _config->show();
+}
+
 void ClientGUI::rootNodeGuiDeleted() {
     _rootNode = 0;
+}
+
+void ClientGUI::configGuiDeleted() {
+    _config = 0;
+}
+
+void ClientGUI::showLogWidget() {
+  if (log->isVisible() == true)
+    log->hide();
+  else
+    log->show();
+}
+
+void ClientGUI::shutdown()
+{
+  QMessageBox msgBox;
+  msgBox.setIcon(QMessageBox::Warning);
+  msgBox.setText("Shutdown!");
+  msgBox.setInformativeText("Do you want to shutdown?");
+  msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+  msgBox.setDefaultButton(QMessageBox::Ok);
+  int ret = msgBox.exec();
+  if (ret == QMessageBox::Ok)
+    _controller.shutdown();
+}
+
+void ClientGUI::restart()
+{
+  QMessageBox msgBox;
+  msgBox.setIcon(QMessageBox::Warning);
+  msgBox.setText("Restart!");
+  msgBox.setInformativeText("Do you want to restart the connection with the node?");
+  msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+  msgBox.setDefaultButton(QMessageBox::Ok);
+  int ret = msgBox.exec();
+  if (ret == QMessageBox::Ok)
+    _controller.restart();
 }

@@ -14,10 +14,12 @@ Controller::Controller(IClientGUI*  gui) :
   _modelContacts = new ModelContact(*this);
   _modelNode = new ModelRootNode(*this);
   _modelLog = new ModelLog(*this);
+  //_modelConfig = new ModelConfig(*this);
 
   _models.append(_modelContacts);
   _models.append(_modelNode);
   _models.append(_modelLog);
+  //  _models.append(_modelConfig);
 }
 
 void Controller::feedData(const QVariant &data)
@@ -60,7 +62,7 @@ void Controller::editContact(QListWidgetItem *item)
     }
 }
 
-const QString& Controller::getIp() const
+const QString Controller::getIp() const
 {
   return dynamic_cast<ModelRootNode*>(_modelNode)->getIP();
 }
@@ -133,6 +135,12 @@ void Controller::editRootNode()
   this->_view->createRootNodeGui(root->getName(),  root->getKey(), root->getIP(), root->getPort().toUShort(&ok));
 }
 
+void Controller::editConfig()
+{
+  //ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
+  this->_view->createConfigGui();
+}
+
 bool	Controller::changeRootNode()
 {
   bool ok;
@@ -175,6 +183,40 @@ bool	Controller::changeRootNode()
     }
   this->_view->deleteRootNode();
   return true;
+}
+
+void		Controller::shutdown()
+{
+  _network.shutdown();
+}
+
+void		Controller::restart()
+{
+  try
+    {
+      ModelRootNode* node = dynamic_cast<ModelRootNode*>(this->_modelNode);
+      bool ok;
+      quint16 port = node->getPort().toUShort(&ok);
+      this->_network.resetConnection(node->getIP(), port);
+    }
+  catch (Exception* e)
+    {
+	this->_view->printError(e->getMessage());
+	delete e;
+    }
+}
+
+void Controller::changeConfig()
+{
+  //TODO : get QMAP<QString, QVariant>* changes = _view->getChangesInConfig();
+  //if (changes != 0)
+  // {
+  //   for every change in changes {
+  //     if exists in modelconfig
+  //        write change in modelConfig
+  //   }
+  // }
+  this->_view->deleteConfig();
 }
 
 bool    Controller::checkIPv4(QString& str) const
@@ -220,4 +262,21 @@ bool    Controller::checkName(QString& str) const
 {
   QRegExp rx("^[a-zA-Z0-9_]+$");
   return str.contains(rx);
+}
+
+QString	Controller::openPubKey()
+{
+  //TODO : make this part more secure and check size/validity
+  QString fileName = QFileDialog::getOpenFileName(0, tr("Open File"));
+
+  QString key = "";
+  QFile file(fileName);
+  if (!file.open(QIODevice::ReadOnly))
+    return key;
+
+  while (!file.atEnd()) {
+    key += file.readLine();
+  }
+
+  return key;
 }

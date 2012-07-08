@@ -19,13 +19,13 @@ class ModelContact : public IModel
   virtual void  feedData(const QString &,const QMap<QString, QVariant> &);
 
 private:
-  QMap<QString, QString> _contacts;
+  QMap<QString, QVariant> _contacts;
   Controller    &_controller;
   static const QString _name;
 
 protected: // from IModel
   virtual const QString &getObjectName() const;
-  virtual const QMap<QString, QString>* getData() const;
+  virtual const QMap<QString, QVariant>* getData() const;
 
 };
 

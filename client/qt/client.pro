@@ -9,6 +9,7 @@ SOURCES += \
     contact.cpp \
     config.cpp \
     clientgui.cpp \
+    configgui.cpp \
     imodel.cpp \
     controller.cpp\
     addcontactgui.cpp \
@@ -20,8 +21,9 @@ SOURCES += \
 
 FORMS += \
     client.ui \
-    addContact.ui \
-    rootNode.ui
+    config.ui \
+    addcontact.ui \
+    rootnode.ui
 
 RESOURCES += \
     ../share/img/client.qrc
@@ -41,6 +43,7 @@ HEADERS += \
     include/contact.h \
     include/config.h \
     include/addcontactgui.h \
+    include/configgui.h \
     include/rootnodegui.h \
     include/iclientgui.h
 

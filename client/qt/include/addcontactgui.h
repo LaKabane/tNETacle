@@ -4,33 +4,37 @@
 #include <QString>
 #include <QWidget>
 #include "clientgui.h"
-#include "ui_addContact.h"
+#include "ui_addcontact.h"
 #include "contact.h"
 #include "controller.h"
 
-class ClientGUI;
-
-namespace UI {
-    class addContactGui;
+namespace Ui {
+    class AddContactGui;
 }
 
-class addContactGui : public QWidget, private Ui::addContactGui
+class ClientGUI;
+
+class AddContactGui : public QWidget, public Ui::AddContactGui
 {
   Q_OBJECT
   public:
   QString getNewContactName() const;
   const QString getInitialContactName() const;
   QString getNewContactKey() const;
-  explicit addContactGui(Controller &controller, ClientGUI &view, const QString &name, const QString &key);
+  explicit AddContactGui(Controller &controller, ClientGUI &view, const QString &name, const QString &key);
 
-  explicit addContactGui(Controller &controller, ClientGUI &view);
-  virtual ~addContactGui();
+  explicit AddContactGui(Controller &controller, ClientGUI &view);
+  virtual ~AddContactGui();
   QDialogButtonBox* getOkOrReject() const {return okOrReject;}
+
+public slots:
+  void	openPubKey();
 
 private:
   Controller  &_controller;
   ClientGUI &_view;
   const QString _initialName;
+
 private slots:
   void sendContact();
 };

@@ -11,9 +11,12 @@ class Network : public QObject
 {
   Q_OBJECT
 public:
-  Network(Controller &controller);
+  Network(Controller& controller);
   virtual ~Network() {}
+
   void setConnection(const QString &, const quint16); // we want to set BOTH!
+  void resetConnection(const QString &, const quint16);
+  void shutdown();
 
 public slots:
   void error(QAbstractSocket::SocketError);

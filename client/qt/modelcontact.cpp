@@ -19,7 +19,7 @@ const QString& ModelContact::getObjectName() const
   return ModelContact::_name;
 }
 
-const QMap<QString, QString>* ModelContact::getData() const
+const QMap<QString, QVariant>* ModelContact::getData() const
 {
   return &_contacts;
 }
@@ -38,7 +38,7 @@ const QString& ModelContact::getKey(const QString &name)
 {
   if (!_contacts.contains(name))
     throw new Exception("Error: Name does not exist");
-  return _contacts[name];
+  return _contacts[name].toString();
 }
 
 void ModelContact::delContact(const QString &name)
