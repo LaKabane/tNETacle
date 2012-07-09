@@ -59,7 +59,7 @@ private:
   // REMOVED: in _network.
   Network		_network;
 
-  QVector<IModel*>	_models;
+  QMap<QString, IModel*>	_models;
 
 
   static QMap<QString, QString> _correspondence;

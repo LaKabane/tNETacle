@@ -23,7 +23,7 @@ const QMap<QString, QVariant>* ModelRootNode::getData() const
   return &_details;
 }
 
-void		ModelRootNode::feedData(const QString&, const QMap<QString, QVariant>&)
+void		ModelRootNode::feedData(const QString&, const QVariant&)
 {
 }
 

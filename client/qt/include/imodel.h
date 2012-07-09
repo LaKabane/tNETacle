@@ -16,7 +16,7 @@ class IModel
 public:
   const QByteArray toJson() const;//For debug only
   virtual const QString &getObjectName() const  = 0;
-  virtual void  feedData(const QString &, const QMap<QString, QVariant> &) = 0;
+  virtual void  feedData(const QString &, const QVariant&) = 0;
 protected:
   virtual const QMap<QString, QVariant>* getData() const = 0;
 private:

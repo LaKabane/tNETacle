@@ -22,7 +22,7 @@ const QMap<QString, QVariant>* ModelLog::getData() const
   return 0;
 }
 
-void  ModelLog::feedData(const QString &commande, const QMap<QString, QVariant> &data)
+void  ModelLog::feedData(const QString &commande, const QVariant&)
 {
   qDebug() << commande;
 }

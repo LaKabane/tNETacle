@@ -13,15 +13,15 @@ Controller::Controller(IClientGUI*  gui) :
   _network(*this),
   _models()
 {
-  _modelContacts = new ModelContact(*this);
+  _modelContacts = new ModelContact(*this, gui);
   _modelNode = new ModelRootNode(*this);
   _modelLog = new ModelLog(*this);
   _modelConfig = new ModelConfig(*this);
 
-  _models.append(_modelContacts);
-  _models.append(_modelNode);
-  _models.append(_modelLog);
-  _models.append(_modelConfig);
+  _models[_modelContacts->getObjectName()] = _modelContacts;
+  _models[_modelNode->getObjectName()] = _modelNode;
+  _models[_modelLog->getObjectName()] = _modelLog;
+  _models[_modelConfig->getObjectName()] = _modelConfig;
 
   _correspondence["AddContact"] = "Contact";
 }
@@ -33,20 +33,8 @@ void Controller::feedData(const QVariant& data)
   const QMap<QString, QVariant>::const_iterator it_end = map.end();
   for (; it != it_end; ++it)
     {
-      QString commande = it.key().left(3);
-      QString object = it.key().right(it.key().length() - 3);
-      QMap<QString, QVariant > data = it.value().toMap();
-      int end = _models.size();
-      qDebug() << end;
-      for (int i = 0; i < end ; ++i)
-        {
-          qDebug() << _models[i]->getObjectName();
-        if (_models[i]->getObjectName() == object)
-          {
-            _models[i]->feedData(commande, data);
-            break;
-          }
-        }
+      QString commande = it.key();
+      _models[_correspondence[commande]]->feedData(commande, it.value());
     }
 }
 void Controller::appendLog(const QString &s)
@@ -116,7 +104,7 @@ bool Controller::addContact()
   try
     {
       dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(name, pubkey);
-      this->_view->addContact(name);
+      //this->_view->addContact(name);
     }
  catch (Exception *e)
    {
