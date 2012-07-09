@@ -7,6 +7,10 @@ const QString ModelRootNode::_name = "RootNode";
 ModelRootNode::ModelRootNode(Controller& c)
   : _controller(c), _details()
 {
+  _details["name"] = "test";
+  _details["pubkey"] = "pubkey";
+  _details["ip"] = "127.0.0.1";
+  _details["port"] = "4243";
 }
 
 const QString&	ModelRootNode::getObjectName() const

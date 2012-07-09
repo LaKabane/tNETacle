@@ -2,7 +2,7 @@
 #include "exception.h"
 #include "modelcontact.h"
 
-const QString ModelContact::_name = "Contacts";
+const QString ModelContact::_name = "Contact";
 
 ModelContact::ModelContact(Controller &controller):
   _contacts(),

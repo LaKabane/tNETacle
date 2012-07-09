@@ -6,6 +6,8 @@
 #include "exception.h"
 #include "imodel.h"
 
+QMap<QString, QString> Controller::_correspondence = QMap<QString, QString>();
+
 Controller::Controller(IClientGUI*  gui) :
   _view(gui),
   _network(*this),
@@ -14,20 +16,22 @@ Controller::Controller(IClientGUI*  gui) :
   _modelContacts = new ModelContact(*this);
   _modelNode = new ModelRootNode(*this);
   _modelLog = new ModelLog(*this);
-  //_modelConfig = new ModelConfig(*this);
+  _modelConfig = new ModelConfig(*this);
 
   _models.append(_modelContacts);
   _models.append(_modelNode);
   _models.append(_modelLog);
-  //  _models.append(_modelConfig);
+  _models.append(_modelConfig);
+
+  _correspondence["AddContact"] = "Contact";
 }
 
-void Controller::feedData(const QVariant &data)
+void Controller::feedData(const QVariant& data)
 {
-  qDebug() << _models.size();
   QMap<QString, QVariant> map = data.toMap();
   QMap<QString, QVariant>::const_iterator it(map.begin());
-  for (const QMap<QString, QVariant>::const_iterator it_end = map.end(); it != it_end; ++it)
+  const QMap<QString, QVariant>::const_iterator it_end = map.end();
+  for (; it != it_end; ++it)
     {
       QString commande = it.key().left(3);
       QString object = it.key().right(it.key().length() - 3);

@@ -7,6 +7,7 @@
 #include <QListWidgetItem>
 #include <QFileDialog>
 #include "modelcontact.h"
+#include "modelconfig.h"
 #include "modellog.h"
 #include "modelrootnode.h"
 #include "network.h"
@@ -59,6 +60,9 @@ private:
   Network		_network;
 
   QVector<IModel*>	_models;
+
+
+  static QMap<QString, QString> _correspondence;
 };
 
 
