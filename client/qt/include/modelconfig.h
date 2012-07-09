@@ -13,7 +13,7 @@ public:
 
   virtual const QString &getObjectName() const;
   virtual const QMap<QString, QVariant>* getData() const;
-  virtual void feedData(const QString &, const QMap<QString, QVariant> &);
+  virtual void feedData(const QString &, const QVariant&);
 
 private:
   static const QString _name;

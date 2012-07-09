@@ -13,7 +13,7 @@ class ModelRootNode : public IModel
   ModelRootNode(Controller &);
   virtual		~ModelRootNode() {}
 
-  virtual void		feedData(const QString&, const QMap<QString, QVariant>&);
+  virtual void		feedData(const QString&, const QVariant&);
 
   const QString		getKey() const;
   const QString		getName() const;

@@ -21,7 +21,7 @@ const QMap<QString, QVariant>* ModelConfig::getData() const
   return _config;
 }
 
-void  ModelConfig::feedData(const QString &commande, const QMap<QString, QVariant>&)
+void  ModelConfig::feedData(const QString &commande, const QVariant&)
 {
   qDebug() << commande;
 }

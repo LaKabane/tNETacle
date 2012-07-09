@@ -2,16 +2,39 @@
 #include "exception.h"
 #include "modelcontact.h"
 
-const QString ModelContact::_name = "Contacts";
+const QString ModelContact::_name = "Contact";
+ModelContact::mapfun ModelContact::_commands = mapfun();
 
-ModelContact::ModelContact(Controller &controller):
+ModelContact::ModelContact(Controller& controller, IClientGUI* gui):
   _contacts(),
-  _controller(controller)
+  _controller(controller),
+  _view(gui)
+{
+  _commands["AddContact"] = &ModelContact::addContact;
+}
+
+void  ModelContact::print()
 {
 }
 
-void  ModelContact::feedData(const QString &, const QMap<QString, QVariant> &)
+void  ModelContact::feedData(const QString& command, const QVariant& data)
 {
+  if (_commands.contains(command) == true)
+    {
+      QMap<QString, QVariant> people = data.toMap();
+      QMap<QString, QVariant>::const_iterator it_p(people.begin());
+      const QMap<QString, QVariant>::const_iterator ite_p(people.end());
+      for (; it_p != ite_p; ++it_p)
+	{
+	  QMap<QString, QVariant> person = (*it_p).toMap();
+	  QString key = "";
+	  if (person.contains("Key") == true)
+	    key = person["Key"].toString();
+	  (this->*_commands[command])(it_p.key(), key);
+	}
+    }
+  else
+    qDebug() << command << "does not exist";
 }
 
 const QString& ModelContact::getObjectName() const
@@ -30,8 +53,9 @@ void ModelContact::addContact(const QString &name, const QString &key)
     throw new Exception("Error: No name");
   if (_contacts.contains(name))
     throw new Exception("Error: Name already exist");
-   _contacts[name] = key;
-   qDebug() << this->toJson();
+  _contacts[name] = key;
+  _view->addContact(name);
+  //qDebug() << this->toJson();
 }
 
 const QString ModelContact::getKey(const QString &name)
