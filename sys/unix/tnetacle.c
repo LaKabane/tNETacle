@@ -98,10 +98,11 @@ tnt_priv_drop(struct passwd *pw) {
 	log_errx(1, "_tnetacle's home has unsafe owner");
     if ((ss.st_mode & (S_IWGRP | S_IWOTH)) != 0)
 	log_errx(1, "_tnetacle's home has unsafe permissions");
-    /*if (chroot(pw->pw_dir) == -1)
+
+    if (chroot(pw->pw_dir) == -1)
 	log_err(1, "%s", pw->pw_dir);
     if (chdir("/") == -1)
-	log_err(1, "%s", pw->pw_dir);*/
+	log_err(1, "%s", pw->pw_dir);
     /*
      * TODO:
      * if debug is not set dup stdin, stdout and stderr to /dev/null
@@ -169,6 +170,11 @@ tnt_fork(int imsg_fds[2]) {
 	log_errx(1, "unknown user " TNETACLE_USER);
 	return TNT_NOUSER;
     }
+
+    if (serv_opts.encryption)
+        server.server_ctx = evssl_init();
+    else
+        server.server_ctx = NULL;
 
     tnt_priv_drop(pw);
 
@@ -269,4 +275,3 @@ tnt_dispatch_imsg(struct imsg_data *data) {
     }
     return 0;
 }
-

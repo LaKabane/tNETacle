@@ -349,7 +349,7 @@ server_set_device(struct server *s, int fd)
 }
 #endif
 
-static SSL_CTX *
+SSL_CTX *
 evssl_init(void)
 {
     SSL_CTX  *server_ctx;
@@ -402,10 +402,10 @@ server_init(struct server *s, struct event_base *evbase)
     v_evl_init(&s->srv_list);
     s->evbase = evbase;
 
-    if (serv_opts.encryption)
-        s->server_ctx = evssl_init();
-    else
-        s->server_ctx = NULL;
+    /* if (serv_opts.encryption) */
+    /*     s->server_ctx = evssl_init(); */
+    /* else */
+    /*     s->server_ctx = NULL; */
 
     /*evbase = evconnlistener_get_base(s->srv);*/
 
