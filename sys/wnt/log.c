@@ -19,7 +19,7 @@ log_err(int eval, const char *str, ...) {
 
 void
 log_errx(int eval, const char *str) {
-	vprintf("%s\n", str);
+	printf("%s\n", str);
 }
 
 void
