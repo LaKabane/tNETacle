@@ -15,58 +15,44 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <event2/bufferevent.h>
 #include <event2/event.h>
+#include <event2/bufferevent.h>
+#include <event2/bufferevent_ssl.h>
+
+#include <openssl/err.h>
 
 #include "mc.h"
 #include "log.h"
-
-void mc_read_cb(struct bufferevent *, void *);
-void mc_write_cb(struct bufferevent *, void *);
-void mc_event_cb(struct bufferevent *, short, void *);
-
-void
-mc_read_cb(struct bufferevent *bev, void *ctx)
-{
-    (void)bev;
-    (void)ctx;
-    log_debug("no callback set for read");
-}
-
-void
-mc_write_cb(struct bufferevent *bev, void *ctx)
-{
-    (void)bev;
-    (void)ctx;
-    log_debug("no callback set for write");
-}
-
-void
-mc_event_cb(struct bufferevent *bev, short events, void *ctx)
-{
-    (void)bev;
-    (void)events;
-    (void)ctx;
-    log_debug("no callback set for special events");
-}
-
-void
-mc_init(struct mc *self, struct sockaddr *s, socklen_t len, struct bufferevent *bev)
+int
+mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
+        socklen_t len, SSL_CTX *server_ctx)
 {
     struct sockaddr *tmp = malloc(len);
 
-    if (tmp == NULL)
+    if (server_ctx != NULL)
+    {
+        SSL *client_ctx = SSL_new(server_ctx);
+        self->bev = bufferevent_openssl_socket_new(evb, fd, client_ctx,
+                                                   self->ssl_flags,
+                                                   BEV_OPT_CLOSE_ON_FREE);
+    }
+    else
+    {
+        self->bev = bufferevent_socket_new(evb, fd, BEV_OPT_CLOSE_ON_FREE);
+    }
+
+    
+    if (tmp == NULL || self->bev == NULL)
     {
         log_notice("failed to allocate the memory needed to establish a new "
                    "meta-connection");
-        return;
+        return -1;
     }
     memcpy(tmp, s, len);
-    self->bev = bev;
     self->p.address = tmp;
     self->p.len = len;
-    bufferevent_setcb(bev, mc_read_cb, mc_write_cb, mc_event_cb, self);
-    bufferevent_enable(bev, EV_READ | EV_WRITE);
+    bufferevent_enable(self->bev, EV_READ | EV_WRITE);
+    return 0;
 }
 
 void

@@ -94,6 +94,11 @@ main(int argc, char *argv[]) {
     //sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     //sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);
 
+    if (serv_opts.encryption)
+        server.server_ctx = evssl_init();
+    else
+        server.server_ctx = NULL;
+
     if (server_init(&server, evbase) == -1)
 	log_err(-1, "Failed to init the server socket");
 

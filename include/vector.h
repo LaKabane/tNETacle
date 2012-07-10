@@ -38,13 +38,15 @@
 #endif
 
 #ifndef TYPE_SPECIFIER
-#if __STDC_VERSION__ >= 199901L
-#define specifier static inline
+# if __STDC_VERSION__ >= 199901L
+#  define specifier static inline
+# elif defined __GNUC__
+#  define specifier static __inline
+# else
+#  define specifier static
+# endif
 #else
-#define specifier static
-#endif
-#else
-#define specifier TYPE_SPECIFIER
+#  define specifier TYPE_SPECIFIER
 #endif
 
 #define _XTYPE_NAME(name, pr) name ## pr
@@ -62,7 +64,6 @@ struct vector_name {
 #define vector_(name) NAME_(v, VECTOR_PREFIX, name)
 
 specifier void vector_(init)(struct vector_name *v);
-specifier void vector_(push)(struct vector_name *v, type *val);
 specifier int vector_(resize)(struct vector_name *v, size_t);
 specifier void vector_(insert_range)(struct vector_name *, type *,
                                            type *, type *);
@@ -87,9 +88,11 @@ specifier type *vector_(find_if)(struct vector_name *v, type *val,
 specifier type *vector_(find)(struct vector_name *v, type *val);
 specifier void vector_(foreach)(struct vector_name *v,
                                       void (*)(type));
+specifier void vector_(push)(struct vector_name *v, type val);
 #else
 specifier void vector_(foreach)(struct vector_name *v,
                                       void (*)(type const *));
+specifier void vector_(push)(struct vector_name *v, type *val);
 #endif
 
 
@@ -100,6 +103,7 @@ specifier void vector_(init)(struct vector_name  *v)
   v->vec = (type*)calloc(v->alloc_size, sizeof(type));
 }
 
+#ifndef VECTOR_TYPE_SCALAR
 specifier void vector_(push)(struct vector_name  *v, type *val)
 {
   if (v->size < v->alloc_size) {
@@ -115,6 +119,23 @@ specifier void vector_(push)(struct vector_name  *v, type *val)
     }
   }
 }
+#else
+specifier void vector_(push)(struct vector_name  *v, type val)
+{
+  if (v->size < v->alloc_size) {
+    v->vec[v->size] = val;
+    v->size += 1;
+  } else {
+    int err;
+    err = vector_(resize)(v, default_alloc_size);
+    if (err != -1)
+    {
+      v->vec[v->size] = val;
+      v->size += 1;
+    }
+  }
+}
+#endif
 
 specifier int vector_(resize)(struct vector_name *v, size_t size)
 {
@@ -351,6 +372,7 @@ specifier void vector_(foreach)(struct vector_name *v,
 # undef vector_
 # undef vector_name
 # undef DEFAULT_ALLOC_SIZE
+# undef default_alloc_size
 # undef VECTOR_TYPE
 # undef VECTOR_PREFIX
 # undef VECTOR_TYPE_SCALAR
