@@ -366,12 +366,13 @@ evssl_init(void)
     /* Load the certificate file. This is not needed now */
     /*if (! SSL_CTX_use_certificate_chain_file(server_ctx, "cert") ||*/
     if (serv_opts.key_path != NULL &&
-        !SSL_CTX_use_PrivateKey_file(server_ctx, serv_opts.key_path, SSL_FILETYPE_PEM)) {
-        log_notice("Couldn't read 'pkey' or 'cert' file.  To generate a key\n"
-           "and self-signed certificate, run:\n"
-           "  openssl genrsa -out pkey 2048\n"
-           "  openssl req -new -key pkey -out cert.req\n"
-           "  openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert");
+        !SSL_CTX_use_PrivateKey_file(server_ctx, serv_opts.key_path, SSL_FILETYPE_PEM))
+    {
+        log_notice("Couldn't read 'pkey' or 'cert' file.  To generate a key");
+        log_notice("and self-signed certificate, run:");
+        log_notice("  openssl genrsa -out pkey 2048");
+        log_notice("  openssl req -new -key pkey -out cert.req");
+        log_notice("  openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert");
         return NULL;
     }
     return server_ctx;

@@ -259,7 +259,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
         }
     } else if (strncmp("PrivateKey", map, map_len) == 0) {
         /* XXX: Should we check for the existence of the key now ? */
-        serv_opts.key_path = strndup(map, map_len);
+        serv_opts.key_path = strndup(str, len);
         if (serv_opts.key_path == NULL) {
             perror(__func__);
             return -1;
