@@ -174,7 +174,7 @@ DWORD WINAPI IOCPFunc(void *lpParam)
     OVERLAPPED deviceOl;
     OVERLAPPED pipeOl;
     char device_buf[4096];
-    char pipe_buf[8196];
+    char pipe_buf[8192]; /*Don't change this value ! It's just magic */
     struct evbuffer *evb_pipe;
     OVERLAPPED_ENTRY entries[2];
     BOOL iocp_status;
@@ -222,9 +222,16 @@ DWORD WINAPI IOCPFunc(void *lpParam)
                     if (current->lpOverlapped->hEvent != (HANDLE)0x42)
                     {
                         DWORD size;
+                        int errcode;
 
-                        GetOverlappedResult(data.fd, &deviceOl, &size, TRUE);
-                        handle_frames(device_buf, size, current, data.server, data.pipe_fd);
+                        errcode = GetOverlappedResult(data.fd, &deviceOl, &size, FALSE);
+                        if (errcode == 0 && (GetLastError() == ERROR_IO_INCOMPLETE))
+                        {
+                            /*IOCP IS A FUCKING LIAR !!*/
+                            continue;
+                        }
+                        else
+                            handle_frames(device_buf, size, current, data.server, data.pipe_fd);
                     }
                     else
                     {
@@ -236,12 +243,21 @@ DWORD WINAPI IOCPFunc(void *lpParam)
                     if (current->lpOverlapped->hEvent != (HANDLE)0xDEADEAD)
                     {
                         DWORD size;
+                        int errcode;
 
-                        GetOverlappedResult((HANDLE)data.pipe_fd, &pipeOl, &size, TRUE);
-                        log_debug("GetOverlappedResult(pipefd) = %d", size);
-                        evbuffer_add(evb_pipe, pipe_buf, size);
-                        pipe_read(evb_pipe, current, data.fd);
-                        log_debug("evbuffer_get_length(evb_pipe) = %d", evbuffer_get_length(evb_pipe));
+                        errcode = GetOverlappedResult((HANDLE)data.pipe_fd, &pipeOl, &size, FALSE);
+                        if (errcode == 0 && (GetLastError() == ERROR_IO_INCOMPLETE))
+                        {
+                            /*IOCP IS A FUCKING LIAR !!*/
+                            continue;
+                        }
+                        else
+                        {
+                            log_debug("GetOverlappedResult(pipefd) = %d", size);
+                            evbuffer_add(evb_pipe, pipe_buf, size);
+                            pipe_read(evb_pipe, current, data.fd);
+                            log_debug("evbuffer_get_length(evb_pipe) = %d", evbuffer_get_length(evb_pipe));
+                        }
                     }
                     else
                     {
