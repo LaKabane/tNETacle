@@ -14,54 +14,18 @@
 **/
 
 
-OVERLAPPED gl_overlap;
+#include <stdlib.h>
+#include <string.h>
+#include "wincompat.h"
 
-ssize_t
-windows_fix_write(intptr_t fd, void *buf, size_t len)
+char *strndup(const char *s, size_t n)
 {
-	DWORD n = 0;
-	int err;
-	err = WriteFile((HANDLE)fd, buf, len, &n, &gl_overlap);
-	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
-	{
-		printf("Write failed, error %d\n", GetLastError());
-		return -1;
-	}
-	else
-	{
-		if (len > 0)
-		{
-			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
-			hex_dump_chk(buf, len);
-			log_debug("== WRITE == WRITE == WRITE == WRITE ==");
-		}
-		WaitForSingleObject(gl_overlap.hEvent, INFINITE);
-		return n;
-	}
+  size_t len = strnlen(s, n);
+  char *tmp = (char *)malloc(len + 1);
+
+  if (tmp == NULL)
+    return NULL;
+
+  tmp[len] = '\0';
+  return (char *)memcpy(tmp, s, len);
 }
-
-ssize_t
-windows_fix_read(intptr_t fd, void *buf, size_t len)
-{
-	DWORD n = 0;
-	int err;
-
-	err = ReadFile((HANDLE)fd, buf, len, &n, &gl_overlap);
-	if (err == 0 && GetLastError() != ERROR_IO_PENDING)
-	{
-		printf("Read failed, error %d\n", GetLastError());
-		return -1;
-	}
-	else
-	{
-		if (n > 0)
-		{
-			log_debug("== READ == READ == READ == READ ==");
-			hex_dump_chk(buf, n);
-			log_debug("== READ == READ == READ == READ ==");
-		}
-		WaitForSingleObject(gl_overlap.hEvent, 1000);
-		return n;
-	}
-}
-

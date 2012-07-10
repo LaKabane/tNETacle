@@ -26,8 +26,6 @@
 # define write(A, B, C) windows_fix_write(A, B, C)
 # define read(A, B, C) windows_fix_read(A, B, C)
 
-ssize_t windows_fix_write(intptr_t, void *, size_t);
-ssize_t windows_fix_read(intptr_t, void *, size_t);
 long long strtonum(const char *, long long, long long, const char **);
 char * strndup(const char *, size_t);
 

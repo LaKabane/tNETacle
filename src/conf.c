@@ -16,21 +16,19 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#if defined Unix
-# include <sys/socket.h>
-# include <sys/mman.h>
-#elif defined Windows
-# define WIN32_LEAN_AND_MEAN
-# include <Windows.h>
-#endif
 
 #if defined Unix
 # include <netdb.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
+# include <sys/socket.h>
+# include <sys/mman.h>
 #else
-# include <winsock2.h>
+# define WIN32_LEAN_AND_MEAN
+# include <Windows.h>
+# include <Winsock2.h>
 # include <Ws2tcpip.h>
+# include "wincompat.h"
 #endif
 
 #include <fcntl.h>

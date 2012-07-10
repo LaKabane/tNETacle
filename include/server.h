@@ -22,18 +22,11 @@
 
 struct evconnlistener;
 struct sockaddr;
+struct bufferevent;
 struct event_base;
 
 #if defined Windows
-
-# define write(A, B, C) windows_fix_write(A, B, C)
-# define read(A, B, C) windows_fix_read(A, B, C)
 # define ssize_t SSIZE_T
-
-extern OVERLAPPED gl_overlap;
-ssize_t windows_fix_write(intptr_t fd, void *buf, size_t len);
-ssize_t windows_fix_read(intptr_t fd, void *buf, size_t len);
-
 #endif
 
 #define VECTOR_TYPE struct mc
@@ -58,19 +51,22 @@ struct server {
   struct vector_evl srv_list; /*list of the listenners*/
   struct event *udp_endpoint;
   struct event *device;
-#if defined Windows
-  intptr_t devide_fd;
-  struct timeval tv;
-#endif
   struct vector_mc peers; /* The actual list of peers */
   struct vector_mc pending_peers; /* Pending in connection peers*/
   struct vector_frame frames_to_send;
   SSL_CTX *server_ctx;
   struct event_base *evbase;
+#if defined Windows
+  struct bufferevent *pipe_endpoint;
+#endif
 };
 
 SSL_CTX *evssl_init(void);
 int server_init(struct server *, struct event_base *);
 void server_set_device(struct server *, int fd);
+
+#if defined Windows
+void broadcast_to_peers(struct server *s);
+#endif
 
 #endif /* end of include guard: SERVER_KW2DIKER */

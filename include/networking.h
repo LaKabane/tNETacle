@@ -22,7 +22,7 @@
 # include <netinet/in.h>
 #elif defined Windows
 # include <io.h>
-# include <WS2api.h>
+# include <WinSock2.h>
 # include <WS2tcpip.h>
 #endif
 

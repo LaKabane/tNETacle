@@ -28,9 +28,12 @@
 # include <unistd.h>
 #endif
 
+#include <event2/util.h>
+
 #include "tnetacle.h"
 #include "options.h"
 #include "tun.h"
+#include "log.h"
 
 /* Will search the first available tap device with both libraries */
 struct device *

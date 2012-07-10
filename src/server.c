@@ -20,6 +20,12 @@
 
 #include <sys/types.h>
 
+#if defined Windows
+# include <WS2tcpip.h>
+# include <io.h>
+# define ssize_t SSIZE_T
+#endif
+
 #if defined Unix
 # include <unistd.h>
 # include <sys/socket.h>
@@ -59,6 +65,16 @@ union chartoshort {
     unsigned short *sptr;
 }; /* The goal of this union is to properly convert uchar* to ushort* */
 
+#if defined Windows
+static void
+send_buffer_to_device_thread(struct evbuffer *buf, size_t size, struct server *s)
+{
+    struct evbuffer *output = bufferevent_get_output(s->pipe_endpoint);
+
+    evbuffer_add(output, evbuffer_pullup(buf, size), size);
+}
+#endif
+
 static void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
@@ -70,11 +86,6 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     unsigned short size;
     intptr_t device_fd;
 
-#if defined Windows
-    device_fd = s->devide_fd;
-#else
-    device_fd = event_get_fd(s->device);
-#endif
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
     {
@@ -111,9 +122,14 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
             log_debug("adding %d(%-#2x) bytes to %p's output buffer",
                       size, size, it);
         }
+#if defined Windows
+        send_buffer_to_device_thread(buf, sizeof(size) + size, s);
+        evbuffer_drain(buf, sizeof(size) + size);
+#else
         evbuffer_drain(buf, sizeof(size));
-        n = write(device_fd, evbuffer_pullup(buf, size), size);
+		n = write(event_get_fd(s->device), evbuffer_pullup(buf, size), size);
         evbuffer_drain(buf, size);
+#endif
     }
 }
 
@@ -219,13 +235,43 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
     (void)ctx;
 }
 
+static char *
+peer_name(struct mc *mc, char *name, int len)
+{
+    struct sockaddr *sock = mc->p.address;
+
+    if (sock->sa_family == AF_INET)
+    {
+        struct sockaddr_in *sin = (struct sockaddr_sin *)sock;
+        char tmp[64];
+
+        evutil_inet_ntop(AF_INET, &sin->sin_addr, tmp, sizeof tmp);
+        _snprintf(name, len, "%s:%d", tmp, ntohs(sin->sin_port));
+        return name;
+    }
+    else
+    {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_sin6 *)sock;
+        char tmp[128];
+
+        evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, tmp, sizeof tmp);
+        _snprintf(name, len, "%s:%d", tmp, ntohs(sin6->sin6_port));
+        return name;
+    }
+}
+
+#if defined Windows
+/*static */void
+#else
 static void
+#endif
 broadcast_to_peers(struct server *s)
 {
     struct frame *fit = v_frame_begin(&s->frames_to_send);
     struct frame *fite = v_frame_end(&s->frames_to_send);
     struct mc *it = NULL;
     struct mc *ite = NULL;
+    char name[512];
 
     for (;fit != fite; fit = v_frame_next(fit))
     {
@@ -240,57 +286,20 @@ broadcast_to_peers(struct server *s)
             err = bufferevent_write(it->bev, &size_networked, sizeof(size_networked));
             if (err == -1)
             {
-                log_notice("error while crafting the buffer to send to %p", it);
+                log_notice("error while crafting the buffer to send to %s", peer_name(it, name, sizeof name));
                 break;
             }
             err = bufferevent_write(it->bev, fit->frame, fit->size);
             if (err == -1)
             {
-                log_notice("error while crafting the buffer to send to %p", it);
+                log_notice("error while crafting the buffer to send to %s", peer_name(it, name, sizeof name));
                 break;
             }
-            log_debug("adding %d(%-#2x) bytes to %p's output buffer",
-                      fit->size, fit->size, it);
+            log_debug("adding %d(%-#2x) bytes to %s's output buffer",
+                      fit->size, fit->size, peer_name(it, name, sizeof name));
         }
     }
     v_frame_erase_range(&s->frames_to_send, v_frame_begin(&s->frames_to_send), fite);
-}
-
-static void
-server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
-{
-    struct server *s = (struct server *)ctx;
-
-#if defined Windows
-    device_fd =	s->devide_fd;
-    if (events & EV_TIMEOUT)
-#else
-    if (events & EV_READ)
-#endif
-    {
-        int _n = 0;
-        ssize_t n;
-        struct frame tmp;
-
-        while ((n = read(device_fd, &tmp.frame, sizeof(tmp.frame))) > 0)
-        {
-            tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
-            v_frame_push(&s->frames_to_send, &tmp);
-            //log_debug("Read a new frame of %d bytes.", n);
-            _n++;
-        }
-#if defined Windows
-        if (n == 0 || GetLastError() == ERROR_IO_PENDING)
-#else
-        if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
-#endif
-        {
-            //log_debug("Read %d frames in this pass.", _n);
-            broadcast_to_peers(s);
-        }
-        else if (n == -1)
-            log_warn("read on the device failed:");
-    }
 }
 
 #if defined Windows
@@ -299,22 +308,7 @@ server_set_device(struct server *s, int fd)
 {
     struct evconnlistener **it = NULL;
     struct evconnlistener **ite = NULL;
-    struct event_base *evbase = s->evbase;
-	struct event *ev = event_new(evbase, -1, EV_PERSIST, server_device_cb, s);
-    int err;
 
-    /*Sadly, this don't work on windows :(*/
-    s->devide_fd = fd;
-    s->tv.tv_sec = 0;
-    s->tv.tv_usec = 5000;
-    if (ev == NULL)
-    {
-        log_warn("failed to allocate the event handler for the device:");
-        return;
-    }
-    s->device = ev;
-    event_add(s->device, &s->tv);
-    log_notice("event handler for the device sucessfully configured");
     it = v_evl_begin(&s->srv_list);
     ite = v_evl_end(&s->srv_list);
     for (; it != ite; it = v_evl_next(it))
@@ -356,6 +350,35 @@ server_set_device(struct server *s, int fd)
     }
     log_notice("listener started");
 }
+
+static void
+server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
+{
+    struct server *s = (struct server *)ctx;
+
+    if (events & EV_READ)
+    {
+        int _n = 0;
+        ssize_t n;
+        struct frame tmp;
+
+        while ((n = read(device_fd, &tmp.frame, sizeof(tmp.frame))) > 0)
+        {
+            tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
+            v_frame_push(&s->frames_to_send, &tmp);
+            //log_debug("Read a new frame of %d bytes.", n);
+            _n++;
+        }
+        if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
+        {
+            //log_debug("Read %d frames in this pass.", _n);
+            broadcast_to_peers(s);
+        }
+        else if (n == -1)
+            log_warn("read on the device failed:");
+    }
+}
+
 #endif
 
 SSL_CTX *
@@ -397,12 +420,6 @@ server_init(struct server *s, struct event_base *evbase)
     struct cfg_sockaddress *ite_peer = NULL;
     int err;
     size_t i = 0;
-
-#if defined Windows
-	gl_overlap.hEvent = CreateEvent(NULL, /*Auto reset*/FALSE,
-		                                  /*Initial state*/FALSE,
-										  TEXT("Device event"));
-#endif
 
     it_listen = v_sockaddr_begin(&serv_opts.listen_addrs);
     ite_listen = v_sockaddr_end(&serv_opts.listen_addrs);
