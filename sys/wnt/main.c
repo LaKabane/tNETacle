@@ -20,6 +20,8 @@
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 
+#include <io.h>
+
 #include "tnetacle.h"
 #include "tntexits.h"
 #include "log.h"
@@ -103,7 +105,6 @@ void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct serve
         return ;
     memcpy(packet, &frame_size, sizeof(frame_size));
     memcpy(packet + sizeof(frame_size), frame, frame_size);
-    //hex_dump(frame, size);
 
     overlapped = (LPOVERLAPPED)malloc(sizeof(OVERLAPPED));
     if (overlapped != NULL)
@@ -112,15 +113,21 @@ void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct serve
         WSABUF buf[1];
 
         memset(overlapped, 0, sizeof(OVERLAPPED));
-        overlapped->hEvent = (HANDLE)0xDEADDEAD;
         buf[0].buf = packet;
         buf[0].len = packet_size;
-        //errcode = WriteFile(pipe_fd, packet, packet_size, NULL, overlapped);
+        //errcode = WriteFile((HANDLE)pipe_fd, packet, packet_size, NULL, overlapped);
         //errcode = WSASend((SOCKET)pipe_fd, buf, 1, NULL, 0, overlapped, NULL);
         errcode = send(pipe_fd, packet, packet_size, 0);
         if (errcode != 0)
-            log_debug("Write %d on the pipe", frame_size);
-        else if ((errcode = WSAGetLastError() != WSA_IO_PENDING))
+        {
+            //log_debug("Write %d on the pipe", frame_size);
+            /*
+            log_debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>SEND TO PIPE BEGIN>>>>>>>>>>>>>>>>>>>>>");
+            hex_dump(packet, packet_size);
+            log_debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>SEND TO PIPE END  >>>>>>>>>>>>>>>>>>>>>");
+            */
+        }
+        else if ((errcode = WSAGetLastError()) != WSA_IO_PENDING)
         {
             log_debug("Error(%d) pipe write: %s", errcode, formated_error(L"%1%0", errcode));
         }
@@ -142,9 +149,8 @@ void pipe_read(struct evbuffer *evb, LPOVERLAPPED_ENTRY Ol, HANDLE device_fd)
         overlapped = (LPOVERLAPPED)malloc(sizeof(OVERLAPPED));
         if (overlapped == NULL)
             break;
-        memset(overlapped, 0, sizeof(OVERLAPPED));
+        memset(overlapped, 0, sizeof(*overlapped));
 
-        overlapped->hEvent = (HANDLE)0x42;
         sptr = (unsigned short *)evbuffer_pullup(evb, sizeof(*sptr));
         frame_size = ntohs(*sptr);
         evbuffer_drain(evb, sizeof(*sptr));
@@ -155,60 +161,97 @@ void pipe_read(struct evbuffer *evb, LPOVERLAPPED_ENTRY Ol, HANDLE device_fd)
             break;
         }
         frame_ptr = evbuffer_pullup(evb, frame_size);
-        hex_dump(frame_ptr, frame_size);
         errcode = WriteFile(device_fd, frame_ptr, frame_size, NULL, overlapped);
         if (errcode != 0)
-            log_debug("Write %d on the device", frame_size);
-        else if ((errcode = GetLastError() != ERROR_IO_PENDING))
         {
-            log_debug("Error device write: %s", formated_error(L"%1%0", errcode));
+            log_debug("Write %d on the device", frame_size);
+        }
+        else if ((errcode = GetLastError()) != ERROR_IO_PENDING)
+        {
+            log_debug("Error device(%p) write: (%d) %s", device_fd,
+                errcode, formated_error(L"%1%0", errcode));
         }
         evbuffer_drain(evb, frame_size);
     }
 }
 
+/*
+ * Well, this function might be the most horrible chunk of code I've ever wrote.
+ * I know nothing about ICOP and WinAPI to begin with, sorry :(.
+ * So, to you, adventurous reader, take care, you're entering the dragon cave..
+ */
+
 DWORD WINAPI IOCPFunc(void *lpParam)
 {
     IODATA data = *(PIODATA)(lpParam);
     HANDLE hPort;
-    OVERLAPPED deviceOl;
-    OVERLAPPED pipeOl;
-    char device_buf[4096];
+    LPOVERLAPPED deviceOl;
+    LPOVERLAPPED pipeOl;
+    char device_buf[2048];
     char pipe_buf[8192]; /*Don't change this value ! It's just magic */
     struct evbuffer *evb_pipe;
-    OVERLAPPED_ENTRY entries[2];
+    OVERLAPPED_ENTRY entries[10];
     BOOL iocp_status;
     BOOL io_status;
+    BOOL need_new_dev_overlapped = 1;
+    BOOL need_new_pipe_overlapped = 1;
     size_t n = 0;
     int errcode;
 
     evb_pipe = evbuffer_new();
-    hPort = CreateIoCompletionPort(data.fd, NULL, 0, 0);
+    hPort = CreateIoCompletionPort(data.fd, NULL, 0xDEADDEAD, 0);
+    if (hPort == NULL)
+        log_notice("Error: %s", formated_error(L"%1", GetLastError()));
+    hPort = CreateIoCompletionPort((HANDLE)data.pipe_fd, hPort, 0xDEADBEAF, 0);
     if (hPort == NULL)
         printf("Error: %s", formated_error(L"%1", GetLastError()));
-    hPort = CreateIoCompletionPort((HANDLE)data.pipe_fd, hPort, 1, 0);
-    if (hPort == NULL)
-        printf("Error: %s", formated_error(L"%1", GetLastError()));
-    while (data.enabled == 1)
+    for (;;)
     {
-        memset(entries, 0, sizeof(entries));
-        memset(&deviceOl, 0, sizeof(deviceOl));
-        memset(&pipeOl, 0, sizeof(pipeOl));
+        if (need_new_dev_overlapped == 1)
+        {
+            deviceOl = (LPOVERLAPPED)malloc(sizeof(OVERLAPPED));
+            if (deviceOl == NULL)
+            {
+                log_notice("Memory Failure");
+                return 0;
+            }
+            memset(deviceOl, 0, sizeof(*deviceOl));
+        }
+        if (need_new_pipe_overlapped == 1)
+        {
+            pipeOl = (LPOVERLAPPED)malloc(sizeof(OVERLAPPED));
+            if (pipeOl == NULL)
+            {
+                log_notice("Memory Failure");
+                return 0;
+            }
+            memset(pipeOl, 0, sizeof(*pipeOl));
+        }
 
-        io_status = ReadFile(data.fd, device_buf, sizeof(device_buf), NULL, &deviceOl);
-        if (io_status == 0 && (errcode = GetLastError()) != ERROR_IO_PENDING)
+        memset(entries, 0, sizeof(entries));
+
+        if (need_new_dev_overlapped == 1)
         {
-            printf("Device Error: %s", formated_error(L"%1", errcode));
+            io_status = ReadFile(data.fd, device_buf, sizeof(device_buf), NULL, deviceOl);
+            if (io_status == 0 && (errcode = GetLastError()) != ERROR_IO_PENDING)
+            {
+                log_notice("ReadFile on device Error: %s", formated_error(L"%1", errcode));
+            }
+            need_new_dev_overlapped = 0;
         }
-        io_status = ReadFile((HANDLE)data.pipe_fd, pipe_buf, sizeof(pipe_buf), NULL, &pipeOl);
-        if (io_status == 0 && (errcode = GetLastError()) != ERROR_IO_PENDING)
+        if (need_new_pipe_overlapped == 1)
         {
-            printf("Pipe Error: %s", formated_error(L"%1", errcode));
+            io_status = ReadFile((HANDLE)data.pipe_fd, pipe_buf, sizeof(pipe_buf), NULL, pipeOl);
+            if (io_status == 0 && (errcode = GetLastError()) != ERROR_IO_PENDING)
+            {
+                log_notice("ReadFile on pipe Error: %s", formated_error(L"%1", errcode));
+            }
+            need_new_pipe_overlapped = 0;
         }
-        iocp_status = GetQueuedCompletionStatusEx(hPort, entries, 2, &n, INFINITE, FALSE);
+        iocp_status = GetQueuedCompletionStatusEx(hPort, entries, sizeof(entries) / sizeof(*entries), &n, INFINITE, FALSE);
         if (iocp_status == 0)
         {
-            printf("Queue Error: %s", formated_error(L"%1", GetLastError()));
+            log_notice("Queue Error: %s", formated_error(L"%1", GetLastError()));
         }
         else
         {
@@ -217,52 +260,27 @@ DWORD WINAPI IOCPFunc(void *lpParam)
                 OVERLAPPED_ENTRY *current = &entries[n - 1];
                 int key = current->lpCompletionKey;
 
-                if (key == 0)
+                /*Event on the device*/
+                if (key == 0xDEADDEAD)
                 {
-                    if (current->lpOverlapped->hEvent != (HANDLE)0x42)
-                    {
-                        DWORD size;
-                        int errcode;
+                    DWORD size;
 
-                        errcode = GetOverlappedResult(data.fd, &deviceOl, &size, FALSE);
-                        if (errcode == 0 && (GetLastError() == ERROR_IO_INCOMPLETE))
-                        {
-                            /*IOCP IS A FUCKING LIAR !!*/
-                            continue;
-                        }
-                        else
-                            handle_frames(device_buf, size, current, data.server, data.pipe_fd);
-                    }
-                    else
-                    {
-                        free(current->lpOverlapped);
-                    }
+                    size = current->dwNumberOfBytesTransferred;
+                    handle_frames(device_buf, size, current, data.server, data.pipe_fd);
+                    free(current->lpOverlapped);
+                    need_new_dev_overlapped = 1;
                 }
-                else if (key == 1)
+                /*Event on the pipe*/
+                else if (key == 0xDEADBEAF)
                 {
-                    if (current->lpOverlapped->hEvent != (HANDLE)0xDEADEAD)
-                    {
-                        DWORD size;
-                        int errcode;
+                    DWORD size;
+                    int errcode;
 
-                        errcode = GetOverlappedResult((HANDLE)data.pipe_fd, &pipeOl, &size, FALSE);
-                        if (errcode == 0 && (GetLastError() == ERROR_IO_INCOMPLETE))
-                        {
-                            /*IOCP IS A FUCKING LIAR !!*/
-                            continue;
-                        }
-                        else
-                        {
-                            log_debug("GetOverlappedResult(pipefd) = %d", size);
-                            evbuffer_add(evb_pipe, pipe_buf, size);
-                            pipe_read(evb_pipe, current, data.fd);
-                            log_debug("evbuffer_get_length(evb_pipe) = %d", evbuffer_get_length(evb_pipe));
-                        }
-                    }
-                    else
-                    {
-                        free(current->lpOverlapped);
-                    }
+                    size = current->dwNumberOfBytesTransferred;
+                    evbuffer_add(evb_pipe, pipe_buf, size);
+                    pipe_read(evb_pipe, current, data.fd);
+                    free(current->lpOverlapped);
+                    need_new_pipe_overlapped = 1;
                 }
             }
         }
@@ -284,7 +302,7 @@ pipe_read_cb(struct bufferevent *bev, void *data)
         unsigned char *frame_ptr;
 
         if (frame_size > evbuffer_get_length(input))
-            return ;
+            break ;
         
         evbuffer_drain(input, sizeof(short));
         frame_ptr = evbuffer_pullup(input, frame_size);

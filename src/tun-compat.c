@@ -125,7 +125,7 @@ tnt_ttc_down(struct device *dev) {
 #endif
 }
 
-int
+intptr_t
 tnt_ttc_get_fd(struct device *dev) {
 #if defined USE_LIBTUNTAP
 	return TUNTAP_GET_FD(dev);

@@ -269,17 +269,17 @@ broadcast_to_peers(struct server *s)
 {
     struct frame *fit = v_frame_begin(&s->frames_to_send);
     struct frame *fite = v_frame_end(&s->frames_to_send);
-    struct mc *it = NULL;
-    struct mc *ite = NULL;
     char name[512];
 
     for (;fit != fite; fit = v_frame_next(fit))
     {
         unsigned short size_networked = htons(fit->size);
-        for (it = v_mc_begin(&s->peers),
-             ite = v_mc_end(&s->peers);
-             it != ite;
-             it = v_mc_next(it))
+        struct mc *it = NULL;
+        struct mc *ite = NULL;
+
+        it = v_mc_begin(&s->peers);
+        ite = v_mc_end(&s->peers);
+        for (;it != ite; it = v_mc_next(it))
         {
             int err;
 
