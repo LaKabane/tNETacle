@@ -176,7 +176,8 @@ bool	Controller::changeRootNode()
   try
     {
 	dynamic_cast<ModelRootNode*>(this->_modelNode)->changeRootNode(name, pubkey, ip, _view->getRootPort());
-        this->_network.setConnection(ip, port);
+	if (this->_network.isConnected() == false)
+	  this->_network.setConnection(ip, port);
     }
   catch (Exception* e)
     {
