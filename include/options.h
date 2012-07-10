@@ -55,6 +55,7 @@ struct options {
     char *addr;                    /* Address on the VPN */
 
     const char *key_path;
+    const char *cert_path;
 
     /* Parsing stuff */
     const unsigned char *last_map_key;

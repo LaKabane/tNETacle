@@ -373,9 +373,10 @@ evssl_init(void)
     server_ctx = SSL_CTX_new(SSLv23_method());
 
     /* Load the certificate file. This is not needed now */
-    /*if (! SSL_CTX_use_certificate_chain_file(server_ctx, "cert") ||*/
-    if (serv_opts.key_path != NULL &&
-        !SSL_CTX_use_PrivateKey_file(server_ctx, serv_opts.key_path, SSL_FILETYPE_PEM))
+   /*! SSL_CTX_use_certificate_chain_file(server_ctx, "cert") ||*/
+    if ((serv_opts.key_path != NULL && serv_opts.cert_path != NULL) &&
+        (!SSL_CTX_use_certificate_chain_file(server_ctx, serv_opts.cert_path) ||
+        !SSL_CTX_use_PrivateKey_file(server_ctx, serv_opts.key_path, SSL_FILETYPE_PEM)))
     {
         log_notice("Couldn't read 'pkey' or 'cert' file.  To generate a key");
         log_notice("and self-signed certificate, run:");

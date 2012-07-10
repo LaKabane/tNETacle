@@ -241,6 +241,13 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
             perror(__func__);
             return -1;
         }
+    } else if (strncmp("CertFile", map, map_len) == 0) {
+        /* XXX: Should we check for the existence of the key now ? */
+        serv_opts.cert_path = strndup(str, len);
+        if (serv_opts.cert_path == NULL) {
+            perror(__func__);
+            return -1;
+        }
     } else if (strncmp("PeerAddress", map, map_len) == 0) {
         char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
