@@ -114,7 +114,8 @@ if (Windows)
 		include/tntsocket.h
 		include/tun.h
 		include/vector.h
-		include/imsg.h)
+		include/imsg.h
+		include/wincompat.h)
 	set(SOURCES_LIST ${SOURCES_LIST} ${HEADERS_LIST}
 		sys/wnt/conf.c
 		sys/wnt/log.c

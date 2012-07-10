@@ -470,7 +470,7 @@ server_init(struct server *s, struct event_base *evbase)
                                          (struct sockaddr *)&it_peer->sockaddr,
                                          it_peer->len);
         if (err == -1) {
-            log_warn("unable to connect to the peer");
+            log_warn("unable to connect to the peer:");
             break;
         }
         v_mc_push(&s->pending_peers, &mc);

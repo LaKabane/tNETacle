@@ -30,6 +30,7 @@
 #include "server.h"
 #include "pathnames.h"
 #include "hexdump.h"
+#include "wincompat.h"
 
 int debug;
 extern struct options serv_opts;
@@ -70,28 +71,6 @@ static void
 
 void init_options(struct options *);
 void broadcast_to_peers(struct server *s);
-extern OVERLAPPED gl_overlap;
-
-LPWSTR formated_error(LPWSTR pMessage, DWORD m, ...)
-{
-    LPWSTR pBuffer = NULL;
-
-    va_list args = NULL;
-    va_start(args, pMessage);
-
-    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
-                  FORMAT_MESSAGE_ALLOCATE_BUFFER,
-                  pMessage, 
-                  m,
-                  0,
-                  (LPSTR)&pBuffer, 
-                  0, 
-                  &args);
-
-    va_end(args);
-
-    return pBuffer;
-}
 
 void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct server *s, SOCKET pipe_fd)
 {

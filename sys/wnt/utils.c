@@ -18,6 +18,28 @@
 #include <string.h>
 #include "wincompat.h"
 
+LPWSTR formated_error(LPWSTR pMessage, DWORD m, ...)
+{
+    LPWSTR pBuffer = NULL;
+
+    va_list args = NULL;
+    va_start(args, pMessage);
+
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+                  FORMAT_MESSAGE_ALLOCATE_BUFFER,
+                  pMessage, 
+                  m,
+                  0,
+                  (LPSTR)&pBuffer, 
+                  0, 
+                  &args);
+
+    va_end(args);
+
+    return pBuffer;
+}
+
+
 char *strndup(const char *s, size_t n)
 {
   size_t len = strnlen(s, n);

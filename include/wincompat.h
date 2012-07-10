@@ -18,6 +18,9 @@
 #define WINCOMPAT_H_
 # if defined Windows
 
+# define WIN32_LEAN_AND_MEAN
+# include <Windows.h>
+
 # define __func__ __FUNCTION__
 # define alloca _alloca
 # define snprintf _snprintf
@@ -28,6 +31,8 @@
 
 long long strtonum(const char *, long long, long long, const char **);
 char * strndup(const char *, size_t);
+
+LPWSTR formated_error(LPWSTR pMessage, DWORD m, ...);
 
 # endif
 #endif
