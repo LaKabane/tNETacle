@@ -67,3 +67,8 @@ void Network::connected()
   _isConnected = true;
   _controller.connected();
 }
+
+bool Network::isConnected() const
+{
+  return _isConnected;
+}

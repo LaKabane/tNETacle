@@ -17,6 +17,7 @@ public:
   void setConnection(const QString &, const quint16); // we want to set BOTH!
   void resetConnection(const QString &, const quint16);
   void shutdown();
+  bool		isConnected() const;
 
 public slots:
   void error(QAbstractSocket::SocketError);
