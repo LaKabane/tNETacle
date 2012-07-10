@@ -10,14 +10,14 @@ class Controller;
 
 class ModelContact : public IModel
 {
-  typedef void (ModelContact::*fun)(const QString&, const QString&);
+  typedef void (ModelContact::*fun)(const QVector<QString>&);
   typedef QMap<QString, fun> mapfun;
  public:
   ModelContact(Controller &, IClientGUI*);
-  void          addContact(const QString&, const QString&);
+  void          addContact(const QVector<QString>&);
   const QString getKey(const QString &);
-  void          delContact(const QString &);
-  void          editContact(const QString&, const QString&, const QString&);
+  void          delContact(const QVector<QString>&);
+  void          editContact(const QVector<QString>&);
   virtual       ~ModelContact(){};
   virtual void  feedData(const QString &,const QVariant&);
   virtual const QString &getObjectName() const;

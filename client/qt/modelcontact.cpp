@@ -28,9 +28,14 @@ void  ModelContact::feedData(const QString& command, const QVariant& data)
 	{
 	  QMap<QString, QVariant> person = (*it_p).toMap();
 	  QString key = "";
+	  QVector<QString> v;
+	  v.append(it_p.key());
 	  if (person.contains("Key") == true)
-	    key = person["Key"].toString();
-	  (this->*_commands[command])(it_p.key(), key);
+	    v.append(person["Key"].toString());
+	  if (person.contains("Old") == true)
+	    v.append(person["Old"].toString());
+	  
+	  (this->*_commands[command])(v);
 	}
     }
   else
@@ -47,8 +52,10 @@ const QMap<QString, QVariant>* ModelContact::getData() const
   return &_contacts;
 }
 
-void ModelContact::addContact(const QString &name, const QString &key)
+void ModelContact::addContact(const QVector<QString>& param)
 {
+  const QString &name = param[0];
+  const QString &key = param[1];
   if (!name.length())
     throw new Exception("Error: No name");
   if (_contacts.contains(name))
@@ -65,14 +72,24 @@ const QString ModelContact::getKey(const QString &name)
   return _contacts[name].toString();
 }
 
-void ModelContact::delContact(const QString &name)
+void ModelContact::delContact(const QVector<QString>& param)
 {
+  const QString &name = param[0];
   if (_contacts.remove(name) != 1)
     throw new Exception("Error: Name does not exist");
 }
 
-void  ModelContact::editContact(const QString &old, const QString &name, const QString &key)
+void  ModelContact::editContact(const QVector<QString>& param)
 {
-  this->delContact(old);
-  this->addContact(name, key);
+  const QString& old = param[0];
+  const QString& name = param[1];
+  const QString& key = param[2];
+
+  QVector<QString>v;
+  v.append(old);
+  this->delContact(v);
+  v.remove(0);
+  v.append(name);
+  v.append(key);
+  this->addContact(v);
 }

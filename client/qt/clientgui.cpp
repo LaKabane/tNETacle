@@ -245,6 +245,7 @@ void ClientGUI::connected()
 
 void ClientGUI::disconnected()
 {
+  qDebug() << "disconnected";
   actionConnect->setVisible(true);
   _isConnected = false;
 }

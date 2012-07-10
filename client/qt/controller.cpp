@@ -34,7 +34,14 @@ void Controller::feedData(const QVariant& data)
   for (; it != it_end; ++it)
     {
       QString commande = it.key();
-      _models[_correspondence[commande]]->feedData(commande, it.value());
+      try {
+	_models[_correspondence[commande]]->feedData(commande, it.value());
+      }
+      catch (Exception *e)
+	{
+	  this->_view->printError(e->getMessage());
+	  delete e;
+	}
     }
 }
 void Controller::appendLog(const QString &s)
@@ -73,7 +80,9 @@ void Controller::deleteContact()
 {
   try
     {
-      dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(_view->getSelected());
+      QVector<QString> v;
+      v.append(_view->getSelected());
+      dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
       this->_view->deleteSelected();
     }
   catch (Exception *e)
@@ -103,8 +112,10 @@ bool Controller::addContact()
     this->deleteContact();
   try
     {
-      dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(name, pubkey);
-      //this->_view->addContact(name);
+      QVector<QString> v;
+      v.append(name);
+      v.append(pubkey);
+      dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(v);
     }
  catch (Exception *e)
    {
