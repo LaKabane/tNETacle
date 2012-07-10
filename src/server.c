@@ -13,29 +13,35 @@
  * PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#include <sys/types.h>
-#if defined Unix
-# include <sys/socket.h>
-#endif
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+
+#include <sys/types.h>
+
+#if defined Unix
+# include <unistd.h>
+# include <sys/socket.h>
+# include <netinet/in.h>
+#endif
 
 #if defined Windows
 # include <WS2tcpip.h>
 # include <io.h>
 #endif
 
-#if defined Unix
-# include <unistd.h>
-# include <netinet/in.h>
-#endif
-
 #include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
+#include <event2/bufferevent_ssl.h>
+
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
+
+#include "networking.h"
 
 #include "tnetacle.h"
 #include "options.h"
@@ -59,15 +65,15 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     struct server *s = (struct server *)ctx;
     ssize_t n;
     struct evbuffer *buf = NULL;
-	struct mc *it = NULL;
-	struct mc *ite = NULL;
+    struct mc *it = NULL;
+    struct mc *ite = NULL;
     unsigned short size;
-	intptr_t device_fd;
+    intptr_t device_fd;
 
 #if defined Windows
-	device_fd = s->devide_fd;
+    device_fd = s->devide_fd;
 #else
-	device_fd = event_get_fd(s->device);
+    device_fd = event_get_fd(s->device);
 #endif
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
@@ -94,9 +100,9 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
         {
             int err;
 
-			if (it->bev == bev)
-				continue;
-			err = bufferevent_write(it->bev, evbuffer_pullup(buf, sizeof(size) + size), sizeof(size) + size);
+            if (it->bev == bev)
+                continue;
+            err = bufferevent_write(it->bev, evbuffer_pullup(buf, sizeof(size) + size), sizeof(size) + size);
             if (err == -1)
             {
                 log_notice("error while crafting the buffer to send to %p", it);
@@ -106,7 +112,7 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
                       size, size, it);
         }
         evbuffer_drain(buf, sizeof(size));
-		n = write(device_fd, evbuffer_pullup(buf, size), size);
+        n = write(device_fd, evbuffer_pullup(buf, size), size);
         evbuffer_drain(buf, size);
     }
 }
@@ -130,23 +136,37 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         struct mc tmp;
 
         tmp.bev = bev;
-        log_debug("moving the state from pending to connected");
         mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
         if (mc != v_mc_end(&s->pending_peers))
         {
+            log_notice("standard connexion established.");
             memcpy(&tmp, mc, sizeof(tmp));
             v_mc_erase(&s->pending_peers, mc);
             v_mc_push(&s->peers, &tmp);
-            log_debug("state moved");
         }
     }
     if (events & BEV_EVENT_ERROR)
     {
         struct mc *mc;
         struct mc tmp;
+        int everr;
+        int sslerr;
 
         tmp.bev = bev;
-        log_notice("the socket closed with error closing the meta-connexion");
+        everr = EVUTIL_SOCKET_ERROR();
+
+        if (everr != 0)
+        {
+            log_notice("closing the socket with error closing the meta-connexion: (%d) %s",
+                       everr, evutil_socket_error_to_string(everr));
+        }
+        while ((sslerr = bufferevent_get_openssl_error(bev)) != 0)
+        {
+            log_notice("SSL error code (%d): %s in %s %s",
+                       sslerr, ERR_reason_error_string(sslerr),
+                       ERR_lib_error_string(sslerr),
+                       ERR_func_error_string(sslerr));
+        }
         mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
         if (mc != v_mc_end(&s->pending_peers))
         {
@@ -173,24 +193,22 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
 {
     struct server *s = (struct server *)ctx;
     struct event_base *base = evconnlistener_get_base(evl);
-    struct bufferevent *bev = bufferevent_socket_new(base, fd,
-                                                     BEV_OPT_CLOSE_ON_FREE);
-    log_debug("new connection");
-    if (bev != NULL)
-    {
-        struct mc mctx;
+    int errcode;
+    struct mc mc;
 
-        /*
-         * Set a callback to bev using 
-         * bufferevent_setcb.
-         */
-        mc_init(&mctx, sock, (socklen_t)len, bev);
-        bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
-        v_mc_push(&s->peers, &mctx);
+    memset(&mc, 0, sizeof mc);
+    mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
+    errcode = mc_init(&mc, base, fd, sock, (socklen_t)len, s->server_ctx);
+    if (errcode != -1)
+    {
+        bufferevent_setcb(mc.bev, server_mc_read_cb, NULL,
+                          server_mc_event_cb, s);
+        log_debug("add the ssl client to the list");
+        v_mc_push(&s->peers, &mc);
     }
     else
     {
-        log_debug("failed to allocate bufferevent");
+        log_notice("Failed to init a meta connexion");
     }
 }
 
@@ -206,8 +224,8 @@ broadcast_to_peers(struct server *s)
 {
     struct frame *fit = v_frame_begin(&s->frames_to_send);
     struct frame *fite = v_frame_end(&s->frames_to_send);
-	struct mc *it = NULL;
-	struct mc *ite = NULL;
+    struct mc *it = NULL;
+    struct mc *ite = NULL;
 
     for (;fit != fite; fit = v_frame_next(fit))
     {
@@ -244,8 +262,8 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
     struct server *s = (struct server *)ctx;
 
 #if defined Windows
-	device_fd =	s->devide_fd;
-	if (events & EV_TIMEOUT)
+    device_fd =	s->devide_fd;
+    if (events & EV_TIMEOUT)
 #else
     if (events & EV_READ)
 #endif
@@ -262,7 +280,7 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
             _n++;
         }
 #if defined Windows
-		if (n == 0 || GetLastError() == ERROR_IO_PENDING)
+        if (n == 0 || GetLastError() == ERROR_IO_PENDING)
 #else
         if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
 #endif
@@ -279,7 +297,9 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
 void
 server_set_device(struct server *s, int fd)
 {
-    struct event_base *evbase = evconnlistener_get_base(s->srv);
+    struct evconnlistener **it = NULL;
+    struct evconnlistener **ite = NULL;
+    struct event_base *evbase = s->evbase;
 	struct event *ev = event_new(evbase, -1, EV_PERSIST, server_device_cb, s);
     int err;
 
@@ -295,7 +315,12 @@ server_set_device(struct server *s, int fd)
     s->device = ev;
     event_add(s->device, &s->tv);
     log_notice("event handler for the device sucessfully configured");
-    evconnlistener_enable(s->srv);
+    it = v_evl_begin(&s->srv_list);
+    ite = v_evl_end(&s->srv_list);
+    for (; it != ite; it = v_evl_next(it))
+    {
+        evconnlistener_enable(*it);
+    }
     log_notice("listener started");
 }
 #else
@@ -303,7 +328,9 @@ server_set_device(struct server *s, int fd)
 void
 server_set_device(struct server *s, int fd)
 {
-    struct event_base *evbase = evconnlistener_get_base(s->srv);
+    struct evconnlistener **it = NULL;
+    struct evconnlistener **ite = NULL;
+    struct event_base *evbase = s->evbase;
     struct event *ev = event_new(evbase, fd, EV_READ | EV_PERSIST,
                                  server_device_cb, s);
     int err;
@@ -320,21 +347,55 @@ server_set_device(struct server *s, int fd)
     s->device = ev;
     event_add(s->device, NULL);
     log_notice("event handler for the device sucessfully configured");
-    evconnlistener_enable(s->srv);
+
+    it = v_evl_begin(&s->srv_list);
+    ite = v_evl_end(&s->srv_list);
+    for (; it != ite; it = v_evl_next(it))
+    {
+        evconnlistener_enable(*it);
+    }
     log_notice("listener started");
 }
 #endif
 
+SSL_CTX *
+evssl_init(void)
+{
+    SSL_CTX  *server_ctx;
+
+    /* Initialize the OpenSSL library */
+    SSL_load_error_strings();
+    SSL_library_init();
+    /* We MUST have entropy, or else there's no point to crypto. */
+    if (!RAND_poll())
+        return NULL;
+
+    server_ctx = SSL_CTX_new(SSLv23_method());
+
+    /* Load the certificate file. This is not needed now */
+    /*if (! SSL_CTX_use_certificate_chain_file(server_ctx, "cert") ||*/
+    if (serv_opts.key_path != NULL &&
+        !SSL_CTX_use_PrivateKey_file(server_ctx, serv_opts.key_path, SSL_FILETYPE_PEM))
+    {
+        log_notice("Couldn't read 'pkey' or 'cert' file.  To generate a key");
+        log_notice("and self-signed certificate, run:");
+        log_notice("  openssl genrsa -out pkey 2048");
+        log_notice("  openssl req -new -key pkey -out cert.req");
+        log_notice("  openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert");
+        return NULL;
+    }
+    return server_ctx;
+}
+
 int
 server_init(struct server *s, struct event_base *evbase)
 {
-    struct evconnlistener *evl;
-    struct bufferevent *bev;
-    struct mc mctx;
-    struct sockaddr *listens;
-    struct sockaddr *peers;
+    struct cfg_sockaddress *it_listen = NULL;
+    struct cfg_sockaddress *ite_listen = NULL;
+    struct cfg_sockaddress *it_peer = NULL;
+    struct cfg_sockaddress *ite_peer = NULL;
     int err;
-    size_t i;
+    size_t i = 0;
 
 #if defined Windows
 	gl_overlap.hEvent = CreateEvent(NULL, /*Auto reset*/FALSE,
@@ -342,50 +403,59 @@ server_init(struct server *s, struct event_base *evbase)
 										  TEXT("Device event"));
 #endif
 
-    peers = v_sockaddr_begin(&serv_opts.peer_addrs);
+    it_listen = v_sockaddr_begin(&serv_opts.listen_addrs);
+    ite_listen = v_sockaddr_end(&serv_opts.listen_addrs);
+    it_peer = v_sockaddr_begin(&serv_opts.peer_addrs);
+    ite_peer = v_sockaddr_end(&serv_opts.peer_addrs);
 
     v_mc_init(&s->peers);
     v_mc_init(&s->pending_peers);
     v_frame_init(&s->frames_to_send);
-
-    /*evbase = evconnlistener_get_base(s->srv);*/
+    v_evl_init(&s->srv_list);
+    s->evbase = evbase;
 
     /* Listen on all ListenAddress */
-    for (listens = v_sockaddr_begin(&serv_opts.listen_addrs);
-         listens != NULL && listens != v_sockaddr_end(&serv_opts.listen_addrs);
-         listens = v_sockaddr_next(listens)) {
+    for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
+    {
+        struct evconnlistener *evl = NULL;
+
         evl = evconnlistener_new_bind(evbase, listen_callback,
           s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
-          listens, sizeof(*listens));
+          (struct sockaddr *)&it_listen->sockaddr, it_listen->len);
         if (evl == NULL) {
             log_debug("fail at ListenAddress #%i", i);
-            return -1;
+             continue;
         }
+        evconnlistener_set_error_cb(evl, accept_error_cb);
+        evconnlistener_disable(evl);
+        v_evl_push(&s->srv_list, evl);
     }
-    evconnlistener_set_error_cb(evl, accept_error_cb);
-    evconnlistener_disable(evl);
-    s->srv = evl;
 
     /* If we don't have any PeerAddress it's finished */
     if (serv_opts.peer_addrs.size == 0)
         return 0;
 
-    for (;peers != NULL && peers != v_sockaddr_end(&serv_opts.peer_addrs);
-         peers = v_sockaddr_next(peers)) {
-        bev = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
-        if (bev == NULL) {
+    for (;it_peer != ite_peer; it_peer = v_sockaddr_next(it_peer))
+    {
+        struct mc mc;
+
+        memset(&mc, 0, sizeof mc);
+        mc.ssl_flags = BUFFEREVENT_SSL_CONNECTING;
+        err = mc_init(&mc, evbase, -1, (struct sockaddr *)&it_peer->sockaddr,
+                      it_peer->len, s->server_ctx);
+        if (err == -1) {
             log_warn("unable to allocate a socket for connecting to the peer");
-	    break;
+            break;
         }
-        err = bufferevent_socket_connect(bev, peers, sizeof(*peers));
+        bufferevent_setcb(mc.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
+        err = bufferevent_socket_connect(mc.bev,
+                                         (struct sockaddr *)&it_peer->sockaddr,
+                                         it_peer->len);
         if (err == -1) {
             log_warn("unable to connect to the peer");
-	    break;
+            break;
         }
-        mc_init(&mctx, peers, sizeof(*peers), bev);
+        v_mc_push(&s->pending_peers, &mc);
     }
-
-    bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
-    v_mc_push(&s->pending_peers, &mctx);
     return 0;
 }

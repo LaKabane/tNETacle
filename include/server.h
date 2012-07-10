@@ -17,17 +17,28 @@
 #ifndef SERVER_KW2DIKER
 #define SERVER_KW2DIKER
 
+#include <openssl/ssl.h> /* Can not forward declare SSL* types*/
 #include "mc.h"
 
 struct evconnlistener;
 struct sockaddr;
 struct event_base;
 
+#if defined Windows
+
+# define write(A, B, C) windows_fix_write(A, B, C)
+# define read(A, B, C) windows_fix_read(A, B, C)
+# define ssize_t SSIZE_T
+
+extern OVERLAPPED gl_overlap;
+ssize_t windows_fix_write(intptr_t fd, void *buf, size_t len);
+ssize_t windows_fix_read(intptr_t fd, void *buf, size_t len);
+
+#endif
+
 #define VECTOR_TYPE struct mc
 #define VECTOR_PREFIX mc
 #include "vector.h"
-#undef VECTOR_PREFIX
-#undef VECTOR_TYPE
 
 struct frame {
   unsigned short size;
@@ -37,11 +48,14 @@ struct frame {
 #define VECTOR_TYPE struct frame
 #define VECTOR_PREFIX frame
 #include "vector.h"
-#undef VECTOR_PREFIX
-#undef VECTOR_TYPE
+
+#define VECTOR_TYPE struct evconnlistener*
+#define VECTOR_PREFIX evl
+#define VECTOR_TYPE_SCALAR
+#include "vector.h"
 
 struct server {
-  struct evconnlistener *srv;
+  struct vector_evl srv_list; /*list of the listenners*/
   struct event *udp_endpoint;
   struct event *device;
 #if defined Windows
@@ -51,8 +65,11 @@ struct server {
   struct vector_mc peers; /* The actual list of peers */
   struct vector_mc pending_peers; /* Pending in connection peers*/
   struct vector_frame frames_to_send;
+  SSL_CTX *server_ctx;
+  struct event_base *evbase;
 };
 
+SSL_CTX *evssl_init(void);
 int server_init(struct server *, struct event_base *);
 void server_set_device(struct server *, int fd);
 
