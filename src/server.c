@@ -349,7 +349,7 @@ server_set_device(struct server *s, int fd)
 }
 #endif
 
-static SSL_CTX *
+SSL_CTX *
 evssl_init(void)
 {
     SSL_CTX  *server_ctx;
@@ -367,7 +367,7 @@ evssl_init(void)
     /*if (! SSL_CTX_use_certificate_chain_file(server_ctx, "cert") ||*/
     if (serv_opts.key_path != NULL &&
         !SSL_CTX_use_PrivateKey_file(server_ctx, serv_opts.key_path, SSL_FILETYPE_PEM)) {
-        puts("Couldn't read 'pkey' or 'cert' file.  To generate a key\n"
+        log_notice("Couldn't read 'pkey' or 'cert' file.  To generate a key\n"
            "and self-signed certificate, run:\n"
            "  openssl genrsa -out pkey 2048\n"
            "  openssl req -new -key pkey -out cert.req\n"
@@ -404,12 +404,10 @@ server_init(struct server *s, struct event_base *evbase)
     v_evl_init(&s->srv_list);
     s->evbase = evbase;
 
-    if (serv_opts.encryption)
-        s->server_ctx = evssl_init();
-    else
-        s->server_ctx = NULL;
-
-    /*evbase = evconnlistener_get_base(s->srv);*/
+    /* if (serv_opts.encryption) */
+    /*     s->server_ctx = evssl_init(); */
+    /* else */
+    /*     s->server_ctx = NULL; */
 
     /* Listen on all ListenAddress */
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)

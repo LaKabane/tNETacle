@@ -93,32 +93,32 @@ tnt_priv_drop(struct passwd *pw) {
 
     /* All this part is a preparation to the privileges dropping */
     if (stat(pw->pw_dir, &ss) == -1)
-	log_err(1, "%s", pw->pw_dir);
+        log_err(1, "%s", pw->pw_dir);
     if (ss.st_uid != 0) 
-	log_errx(1, "_tnetacle's home has unsafe owner");
+        log_errx(1, "_tnetacle's home has unsafe owner");
     if ((ss.st_mode & (S_IWGRP | S_IWOTH)) != 0)
-	log_errx(1, "_tnetacle's home has unsafe permissions");
-    /*if (chroot(pw->pw_dir) == -1)
-	log_err(1, "%s", pw->pw_dir);
+        log_errx(1, "_tnetacle's home has unsafe permissions");
+    if (chroot(pw->pw_dir) == -1)
+        log_err(1, "%s", pw->pw_dir);
     if (chdir("/") == -1)
-	log_err(1, "%s", pw->pw_dir);*/
+        log_err(1, "%s", pw->pw_dir);
     /*
      * TODO:
      * if debug is not set dup stdin, stdout and stderr to /dev/null
      */
     if (setgroups(1, &pw->pw_gid) == -1)
-	log_err(1, "can't drop privileges (setgroups)");
+        log_err(1, "can't drop privileges (setgroups)");
 #ifdef HAVE_SETRESXID
     if (setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) == -1)
-	log_err(1, "can't drop privileges (setresgid)");
+        log_err(1, "can't drop privileges (setresgid)");
     if (setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid) == -1)
-	log_err(1, "can't drop privileges (setresuid)");
+        log_err(1, "can't drop privileges (setresuid)");
 #else
     /* Fallback to setuid, but it might not work */
     if (setgid(pw->pw_gid) == -1)
-	log_err(1, "can't drop privileges (setgid)");
+        log_err(1, "can't drop privileges (setgid)");
     if (setuid(pw->pw_uid) == -1)
-	log_err(1, "can't drop privileges (setuid)");
+        log_err(1, "can't drop privileges (setuid)");
 #endif
 }
 
@@ -169,6 +169,11 @@ tnt_fork(int imsg_fds[2]) {
 	log_errx(1, "unknown user " TNETACLE_USER);
 	return TNT_NOUSER;
     }
+
+    if (serv_opts.encryption)
+        server.server_ctx = evssl_init();
+    else
+        server.server_ctx = NULL;
 
     tnt_priv_drop(pw);
 
@@ -269,4 +274,3 @@ tnt_dispatch_imsg(struct imsg_data *data) {
     }
     return 0;
 }
-
