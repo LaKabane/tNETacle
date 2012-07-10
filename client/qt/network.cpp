@@ -11,7 +11,7 @@ Network::Network(Controller &controller)
   QObject::connect(&_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
   QObject::connect(&_socket, SIGNAL(readyRead()), this, SLOT(read()));
   QObject::connect(&_socket, SIGNAL(connected()), this, SLOT(connected()));
-  QObject::connect(&_socket, SIGNAL(connected()), this, SLOT(disconnected()));
+  QObject::connect(&_socket, SIGNAL(disconnected()), this, SLOT(disconnected()));
 }
 
 
