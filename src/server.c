@@ -24,6 +24,7 @@
 # include <WS2tcpip.h>
 # include <io.h>
 # define ssize_t SSIZE_T
+# define snprintf _snprintf
 #endif
 
 #if defined Unix
@@ -84,7 +85,6 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     struct mc *it = NULL;
     struct mc *ite = NULL;
     unsigned short size;
-    intptr_t device_fd;
 
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
@@ -242,20 +242,20 @@ peer_name(struct mc *mc, char *name, int len)
 
     if (sock->sa_family == AF_INET)
     {
-        struct sockaddr_in *sin = (struct sockaddr_sin *)sock;
+        struct sockaddr_in *sin = (struct sockaddr_in *)sock;
         char tmp[64];
 
         evutil_inet_ntop(AF_INET, &sin->sin_addr, tmp, sizeof tmp);
-        _snprintf(name, len, "%s:%d", tmp, ntohs(sin->sin_port));
+        snprintf(name, len, "%s:%d", tmp, ntohs(sin->sin_port));
         return name;
     }
     else
     {
-        struct sockaddr_in6 *sin6 = (struct sockaddr_sin6 *)sock;
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sock;
         char tmp[128];
 
         evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, tmp, sizeof tmp);
-        _snprintf(name, len, "%s:%d", tmp, ntohs(sin6->sin6_port));
+        snprintf(name, len, "%s:%d", tmp, ntohs(sin6->sin6_port));
         return name;
     }
 }
@@ -319,6 +319,34 @@ server_set_device(struct server *s, int fd)
 }
 #else
 
+static void
+server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
+{
+    struct server *s = (struct server *)ctx;
+
+    if (events & EV_READ)
+    {
+        int _n = 0;
+        ssize_t n;
+        struct frame tmp;
+
+        while ((n = read(device_fd, &tmp.frame, sizeof(tmp.frame))) > 0)
+        {
+            tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
+            v_frame_push(&s->frames_to_send, &tmp);
+            //log_debug("Read a new frame of %d bytes.", n);
+            _n++;
+        }
+        if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
+        {
+            //log_debug("Read %d frames in this pass.", _n);
+            broadcast_to_peers(s);
+        }
+        else if (n == -1)
+            log_warn("read on the device failed:");
+    }
+}
+
 void
 server_set_device(struct server *s, int fd)
 {
@@ -349,34 +377,6 @@ server_set_device(struct server *s, int fd)
         evconnlistener_enable(*it);
     }
     log_notice("listener started");
-}
-
-static void
-server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
-{
-    struct server *s = (struct server *)ctx;
-
-    if (events & EV_READ)
-    {
-        int _n = 0;
-        ssize_t n;
-        struct frame tmp;
-
-        while ((n = read(device_fd, &tmp.frame, sizeof(tmp.frame))) > 0)
-        {
-            tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
-            v_frame_push(&s->frames_to_send, &tmp);
-            //log_debug("Read a new frame of %d bytes.", n);
-            _n++;
-        }
-        if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
-        {
-            //log_debug("Read %d frames in this pass.", _n);
-            broadcast_to_peers(s);
-        }
-        else if (n == -1)
-            log_warn("read on the device failed:");
-    }
 }
 
 #endif
