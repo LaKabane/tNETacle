@@ -224,7 +224,7 @@ void ClientGUI::restart()
   QMessageBox msgBox;
   msgBox.setIcon(QMessageBox::Warning);
   msgBox.setText("Restart!");
-  msgBox.setInformativeText("Do you want to restart the connection with the node?");
+  msgBox.setInformativeText("Do you want to restart the core connection?");
   msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
   msgBox.setDefaultButton(QMessageBox::Ok);
   int ret = msgBox.exec();
@@ -245,7 +245,6 @@ void ClientGUI::connected()
 
 void ClientGUI::disconnected()
 {
-  qDebug() << "disconnected";
   actionConnect->setVisible(true);
   _isConnected = false;
 }
