@@ -5,10 +5,13 @@
 Network::Network(Controller &controller)
   : _socket(),
     _controller(controller),
-    _parser()
+    _parser(),
+    _isConnected(false)
 {
   QObject::connect(&_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
   QObject::connect(&_socket, SIGNAL(readyRead()), this, SLOT(read()));
+  QObject::connect(&_socket, SIGNAL(connected()), this, SLOT(connected()));
+  QObject::connect(&_socket, SIGNAL(connected()), this, SLOT(disconnected()));
 }
 
 
@@ -51,4 +54,16 @@ void Network::error(QAbstractSocket::SocketError)
 void Network::shutdown()
 {
   _socket.close();
+}
+
+void Network::disconnected()
+{
+  _isConnected = false;
+  _controller.disconnected();
+}
+
+void Network::connected()
+{
+  _isConnected = true;
+  _controller.connected();
 }

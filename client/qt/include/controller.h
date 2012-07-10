@@ -30,6 +30,9 @@ public:
   void			shutdown();
   void			restart();
 
+  void			connected();
+  void			disconnected();
+
 public slots:
   bool			addContact();
   void			deleteContact();

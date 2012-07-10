@@ -44,13 +44,16 @@ public:
 
   void			printError(const QString &);
 
+  void			connected();
+  void			disconnected();
+
 private:
   AddContactGui*	_addContact;
   RootNodeGui*		_rootNode;
   ConfigGui*		_config;
   Controller		_controller;
   QTimer		_timer;
-
+  bool			_isConnected;
 signals:
 
 public slots:
@@ -67,6 +70,7 @@ public slots:
 
     void		shutdown();
     void		restart();
+    void		start();
 
     void		deleteConfig();
 };

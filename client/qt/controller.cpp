@@ -272,3 +272,13 @@ QString	Controller::openPubKey()
 
   return key;
 }
+
+void Controller::connected()
+{
+  this->_view->connected();
+}
+
+void Controller::disconnected()
+{
+  this->_view->disconnected();
+}

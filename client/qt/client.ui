@@ -554,6 +554,8 @@ p, li { white-space: pre-wrap; }
     <bool>false</bool>
    </attribute>
    <addaction name="actionChangeRoot"/>
+   <addaction name="actionConnect"/>
+   <addaction name="separator"/>
    <addaction name="actionRestart"/>
    <addaction name="actionShutdown"/>
    <addaction name="separator"/>
@@ -729,6 +731,21 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="toolTip">
     <string>Open window for the configuration</string>
+   </property>
+  </action>
+  <action name="actionConnect">
+   <property name="icon">
+    <iconset resource="../share/img/client.qrc">
+     <normaloff>:/tools/connect.png</normaloff>:/tools/connect.png</iconset>
+   </property>
+   <property name="text">
+    <string>Connect</string>
+   </property>
+   <property name="toolTip">
+    <string>Connect to the core</string>
+   </property>
+   <property name="visible">
+    <bool>false</bool>
    </property>
   </action>
  </widget>

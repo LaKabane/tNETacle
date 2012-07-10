@@ -12,7 +12,8 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
     _rootNode(0),
     _config(0),
     _controller(this),
-    _timer()
+    _timer(),
+    _isConnected(false)
 {
    setupUi(this);
    QObject::connect(actionAddContact, SIGNAL(activated()), this, SLOT(createAddContact()));
@@ -35,6 +36,10 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    error->hide();
    log->hide();
    QObject::connect(&_timer, SIGNAL(timeout()), error, SLOT(hide()));
+
+   QObject::connect(actionConnect, SIGNAL(activated()), this, SLOT(start()));
+
+   actionConnect->setVisible(true);
 }
 
 ClientGUI::~ClientGUI() {
@@ -225,4 +230,21 @@ void ClientGUI::restart()
   int ret = msgBox.exec();
   if (ret == QMessageBox::Ok)
     _controller.restart();
+}
+
+void ClientGUI::start()
+{
+  _controller.restart();
+}
+
+void ClientGUI::connected()
+{
+  actionConnect->setVisible(false);
+  _isConnected = true;
+}
+
+void ClientGUI::disconnected()
+{
+  actionConnect->setVisible(true);
+  _isConnected = false;
 }

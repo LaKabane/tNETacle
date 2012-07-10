@@ -23,11 +23,14 @@ public slots:
 
 private slots:
   void read();
+  void connected();
+  void disconnected();
 
 private:
   QTcpSocket    _socket;
   Controller&   _controller;
   QJson::Parser _parser;
+  bool		_isConnected;
 };
 
 #endif /* !NETWORK_H_ */
