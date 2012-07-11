@@ -51,6 +51,7 @@ public slots:
 private:
   bool			checkIPv4(QString&) const;
   bool			checkIPv6(QString&) const;
+  bool			checkHostNameFormat(QString& str) const;
 
   IClientGUI*		_view;
   bool			editing;

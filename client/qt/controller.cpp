@@ -263,12 +263,20 @@ bool    Controller::checkIP(QString& str) const
     return true;
   if (checkIPv6(str))
     return true;
+  if (checkHostNameFormat(str))
+    return true;
   return false;
 }
 
 bool    Controller::checkName(QString& str) const
 {
   QRegExp rx("^[a-zA-Z0-9_]+$");
+  return str.contains(rx);
+}
+
+bool    Controller::checkHostNameFormat(QString& str) const
+{
+  QRegExp rx("^[a-zA-Z][a-zA-Z\\-\\.0-9]*[a-zA-Z]$");
   return str.contains(rx);
 }
 
