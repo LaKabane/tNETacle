@@ -575,6 +575,8 @@ p, li { white-space: pre-wrap; }
      <string>File</string>
     </property>
     <addaction name="actionCore"/>
+    <addaction name="actionConnect2"/>
+    <addaction name="separator"/>
     <addaction name="actionConfiguration"/>
     <addaction name="actionExit"/>
    </widget>
@@ -714,8 +716,12 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
   <action name="actionConfiguration">
+   <property name="icon">
+    <iconset resource="../share/img/client.qrc">
+     <normaloff>:/tools/config.png</normaloff>:/tools/config.png</iconset>
+   </property>
    <property name="text">
-    <string>Configuration</string>
+    <string>Settings</string>
    </property>
   </action>
   <action name="actionConfig">
@@ -743,6 +749,15 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="visible">
     <bool>false</bool>
+   </property>
+  </action>
+  <action name="actionConnect2">
+   <property name="icon">
+    <iconset resource="../share/img/client.qrc">
+     <normaloff>:/tools/connect.png</normaloff>:/tools/connect.png</iconset>
+   </property>
+   <property name="text">
+    <string>Connect</string>
    </property>
   </action>
  </widget>

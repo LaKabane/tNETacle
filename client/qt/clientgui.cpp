@@ -38,6 +38,7 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    QObject::connect(&_timer, SIGNAL(timeout()), error, SLOT(hide()));
 
    QObject::connect(actionConnect, SIGNAL(activated()), this, SLOT(start()));
+   QObject::connect(actionConnect2, SIGNAL(activated()), this, SLOT(start()));
 
    actionConnect->setVisible(true);
 }
@@ -226,9 +227,7 @@ void ClientGUI::showLogWidget() {
 
 void ClientGUI::shutdown()
 {
-  QMessageBox msgBox;
-  msgBox.setIcon(QMessageBox::Warning);
-  msgBox.setText("Shutdown!");
+  QMessageBox msgBox(QMessageBox::Warning, "Shutdown", "Shutdown!");
   msgBox.setInformativeText("Do you want to shutdown?");
   msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
   msgBox.setDefaultButton(QMessageBox::Ok);
@@ -239,9 +238,7 @@ void ClientGUI::shutdown()
 
 void ClientGUI::restart()
 {
-  QMessageBox msgBox;
-  msgBox.setIcon(QMessageBox::Warning);
-  msgBox.setText("Restart!");
+  QMessageBox msgBox(QMessageBox::Warning, "Restart", "Restart!");
   msgBox.setInformativeText("Do you want to restart the core connection?");
   msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
   msgBox.setDefaultButton(QMessageBox::Ok);
