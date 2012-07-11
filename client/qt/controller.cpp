@@ -296,7 +296,7 @@ void Controller::disconnected()
   this->_view->disconnected();
 }
 
-void Controller::writeTosocket(const QString& buff)
+void Controller::writeToSocket(const QString& buff)
 {
   _network.write(buff);
 }
