@@ -11,13 +11,14 @@ SOURCES += \
     clientgui.cpp \
     configgui.cpp \
     imodel.cpp \
-    controller.cpp\
+    controller.cpp \
     addcontactgui.cpp \
-    rootnodegui.cpp\
-    modelcontact.cpp\
-    modelconfig.cpp\
-    modelrootnode.cpp\
-    modellog.cpp\
+    rootnodegui.cpp \
+    modelcontact.cpp \
+    modelconfig.cpp \
+    modelrootnode.cpp \
+    modellog.cpp \
+    protocol.cpp \
     network.cpp
 
 FORMS += \
@@ -44,6 +45,7 @@ HEADERS += \
     include/contactsList.h \
     include/contact.h \
     include/config.h \
+    include/protocol.h \
     include/addcontactgui.h \
     include/configgui.h \
     include/rootnodegui.h \
