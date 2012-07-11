@@ -32,6 +32,7 @@ public:
 
   void			connected();
   void			disconnected();
+  void			writeTosocket(const QString& buff);
 
 public slots:
   bool			addContact();

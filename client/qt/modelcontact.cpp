@@ -54,6 +54,8 @@ const QMap<QString, QVariant>* ModelContact::getData() const
 
 void ModelContact::addContact(const QVector<QString>& param)
 {
+  if (param.size() < 2)
+    throw new Exception("Error: missing parameters to add contact");
   const QString &name = param[0];
   const QString &key = param[1];
   if (!name.length())
@@ -74,6 +76,8 @@ const QString ModelContact::getKey(const QString &name)
 
 void ModelContact::delContact(const QVector<QString>& param)
 {
+  if (param.size() < 1)
+    throw new Exception("Error: missing parameter to del contact");
   const QString &name = param[0];
   if (_contacts.remove(name) != 1)
     throw new Exception("Error: Name does not exist");
@@ -81,6 +85,8 @@ void ModelContact::delContact(const QVector<QString>& param)
 
 void  ModelContact::editContact(const QVector<QString>& param)
 {
+  if (param.size() < 3)
+    throw new Exception("Error: missing parameters to edit contact");
   const QString& old = param[0];
   const QString& name = param[1];
   const QString& key = param[2];

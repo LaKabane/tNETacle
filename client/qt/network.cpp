@@ -17,13 +17,17 @@ Network::Network(Controller &controller)
 
 void Network::read()
 {
-  bool ok;
+  if (_isConnected == false)
+    return ;
+
   QBuffer device;
   device.open(QIODevice::ReadWrite);
   QByteArray data = _socket.peek(_socket.size());
   device.write(data);
   device.close();
    //QVariant var = _parser.parse(&_socket, &ok);
+
+  bool ok;
   QVariant var = _parser.parse(&device, &ok);
   if (!ok)
     {
@@ -33,6 +37,11 @@ void Network::read()
     }
   _socket.read(data.size());
   _controller.feedData(var);
+}
+
+void Network::write(const QString& buff)
+{
+  _socket.write(buff.toAscii().data(), buff.size());
 }
 
 void Network::setConnection(const QString& ip, const quint16 port) // we want to set BOTH!

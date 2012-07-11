@@ -116,6 +116,7 @@ bool Controller::addContact()
       v.append(name);
       v.append(pubkey);
       dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(v);
+      writeToSocket(name);
     }
  catch (Exception *e)
    {
@@ -293,4 +294,9 @@ void Controller::connected()
 void Controller::disconnected()
 {
   this->_view->disconnected();
+}
+
+void Controller::writeTosocket(const QString& buff)
+{
+  _network.write(buff);
 }
