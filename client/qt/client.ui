@@ -13,9 +13,6 @@
   <property name="windowTitle">
    <string>tNETacle client</string>
   </property>
-  <property name="toolTip">
-   <string>tNETacle client</string>
-  </property>
   <property name="whatsThis">
    <string>Client
 </string>
