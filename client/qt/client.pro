@@ -1,7 +1,9 @@
 QT += network
 
 
-LIBS +=  -lqjson
+#LIBS +=  -lqjson0
+LIBS += C:/Users/tribou_f/Documents/json/qjson-build-desktop-Qt_4_8_1_for_Desktop_-_MinGW__Qt_SDK__Debug/lib/qjson0.dll
+INCLUDEPATH += C:/Users/tribou_f/Documents/json/qjson/include/
 
 SOURCES += \
     main.cpp \

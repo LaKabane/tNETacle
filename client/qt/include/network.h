@@ -3,7 +3,11 @@
 
 #include <QString>
 #include <QTcpSocket>
+#ifdef WIN32
+#include <qjson/parser>
+#else
 #include <qjson/parser.h>
+#endif
 
 class Controller;
 
