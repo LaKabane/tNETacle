@@ -35,6 +35,12 @@ public:
 	void printError(const QString&) {};
 	void appendLog(const QString &) {};
 
+	virtual void createConfigGui() {}
+	virtual void connected() {}
+	virtual void disconnected() {}
+	virtual void configGuiDeleted() {}
+	virtual void deleteConfig() {}
+
 public slots:
 	void	createAddContact() {}
 	void	deleteAddContact() {}
