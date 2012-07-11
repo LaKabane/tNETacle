@@ -41,7 +41,11 @@ void Network::read()
 
 void Network::write(const QString& buff)
 {
+  if (_isConnected == false)
+    return ;
   _socket.write(buff.toAscii().data(), buff.size());
+  _socket.flush();
+  _socket.waitForBytesWritten(buff.size());
 }
 
 void Network::setConnection(const QString& ip, const quint16 port) // we want to set BOTH!

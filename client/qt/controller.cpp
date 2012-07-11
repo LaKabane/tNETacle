@@ -2,7 +2,7 @@
 #include <QRegExp>
 #include "iclientgui.h"
 #include "controller.h"
-#include "contact.h"
+#include "protocol.h"
 #include "exception.h"
 #include "imodel.h"
 
@@ -24,6 +24,7 @@ Controller::Controller(IClientGUI*  gui) :
   _models[_modelConfig->getObjectName()] = _modelConfig;
 
   _correspondence["AddContact"] = "Contact";
+  _correspondence["DeleteContact"] = "Contact";
 }
 
 void Controller::feedData(const QVariant& data)
@@ -35,6 +36,8 @@ void Controller::feedData(const QVariant& data)
     {
       QString commande = it.key();
       try {
+	if (_correspondence.contains(commande) == false)
+	  throw new Exception("Error: Received an invalid command");
 	_models[_correspondence[commande]]->feedData(commande, it.value());
       }
       catch (Exception *e)
@@ -83,7 +86,7 @@ void Controller::deleteContact()
       QVector<QString> v;
       v.append(_view->getSelected());
       dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
-      this->_view->deleteSelected();
+      this->writeToSocket(Protocol::delet(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
     }
   catch (Exception *e)
     {
@@ -116,7 +119,7 @@ bool Controller::addContact()
       v.append(name);
       v.append(pubkey);
       dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(v);
-      writeToSocket(name);
+      this->writeToSocket(Protocol::add(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
     }
  catch (Exception *e)
    {

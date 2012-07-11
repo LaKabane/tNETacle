@@ -11,6 +11,7 @@ ModelContact::ModelContact(Controller& controller, IClientGUI* gui):
   _view(gui)
 {
   _commands["AddContact"] = &ModelContact::addContact;
+  _commands["DeleteContact"] = &ModelContact::delContact;
 }
 
 void  ModelContact::print()
@@ -24,22 +25,24 @@ void  ModelContact::feedData(const QString& command, const QVariant& data)
       QMap<QString, QVariant> people = data.toMap();
       QMap<QString, QVariant>::const_iterator it_p(people.begin());
       const QMap<QString, QVariant>::const_iterator ite_p(people.end());
+
       for (; it_p != ite_p; ++it_p)
 	{
 	  QMap<QString, QVariant> person = (*it_p).toMap();
 	  QString key = "";
 	  QVector<QString> v;
 	  v.append(it_p.key());
+	  if (person.contains("Name") == true)
+	    v[0] = person["Name"].toString();
 	  if (person.contains("Key") == true)
 	    v.append(person["Key"].toString());
 	  if (person.contains("Old") == true)
 	    v.append(person["Old"].toString());
-	  
 	  (this->*_commands[command])(v);
 	}
     }
   else
-    qDebug() << command << "does not exist";
+    throw new Exception("Error: command does not exist!");
 }
 
 const QString& ModelContact::getObjectName() const
@@ -64,7 +67,6 @@ void ModelContact::addContact(const QVector<QString>& param)
     throw new Exception("Error: Name already exist");
   _contacts[name] = key;
   _view->addContact(name);
-  //qDebug() << this->toJson();
 }
 
 const QString ModelContact::getKey(const QString &name)
@@ -77,10 +79,11 @@ const QString ModelContact::getKey(const QString &name)
 void ModelContact::delContact(const QVector<QString>& param)
 {
   if (param.size() < 1)
-    throw new Exception("Error: missing parameter to del contact");
-  const QString &name = param[0];
+    throw new Exception("Error: missing parameter to delete a contact");
+  const QString& name = param[0];
   if (_contacts.remove(name) != 1)
     throw new Exception("Error: Name does not exist");
+  this->_view->deleteNamed(name);
 }
 
 void  ModelContact::editContact(const QVector<QString>& param)
