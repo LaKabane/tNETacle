@@ -24,6 +24,7 @@ find_package(ZLIB REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
 find_package(OpenSSL REQUIRED)
+find_package(GUPnP COMPONENTS core igd)
 
 if(WIN32)
 	find_package(Event COMPONENTS core REQUIRED)
@@ -47,6 +48,10 @@ else()
     endif()
 endif()
 
+if (GUPnP_FOUND)
+        add_definitions(-DUSE_GUPNP)
+endif()
+
 # Global include directories
 # ------------------
 include_directories(${CMAKE_HOME_DIRECTORY}/include)
@@ -62,6 +67,10 @@ else()
 	endif()
 endif()
 
+if (GUPnP_FOUND)
+        include_directories(${GUPnP_INCLUDE_DIRS})
+endif()
+
 # Portable source files
 # ------------------
 set(SOURCES_LIST
@@ -71,7 +80,10 @@ set(SOURCES_LIST
   #src/pipeline.c
   src/mc.c
   src/hexdump.c
-  src/server.c)
+  src/server.c
+  src/upnp-compat.c
+  src/upnp-async.c
+  src/upnp-thread.c)
 
 # OS families specific things
 # ---------------------------
@@ -211,6 +223,10 @@ if (TUNTAP_FOUND)
   target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
 elseif(TAPCFG_FOUND)
   target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
+endif()
+
+if (GUPnP_FOUND)
+    target_link_libraries(tNETacle ${GUPnP_LIBRARIES})
 endif()
 
 # Linux linked libraries

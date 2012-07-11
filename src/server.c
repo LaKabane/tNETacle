@@ -451,7 +451,10 @@ server_init(struct server *s, struct event_base *evbase)
 
     /* If we don't have any PeerAddress it's finished */
     if (serv_opts.peer_addrs.size == 0)
+    {
+        log_warn("no peer in PeerAddress list");
         return 0;
+    }
 
     for (;it_peer != ite_peer; it_peer = v_sockaddr_next(it_peer))
     {
@@ -475,5 +478,11 @@ server_init(struct server *s, struct event_base *evbase)
         }
         v_mc_push(&s->pending_peers, &mc);
     }
+
+    bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
+    v_mc_push(&s->pending_peers, &mctx);
+
+    tnt_upnp_init(&s->upnp, evbase);
+    tnt_upnp_add_port(&s->upnp);
     return 0;
 }

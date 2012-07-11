@@ -19,6 +19,7 @@
 
 #include <openssl/ssl.h> /* Can not forward declare SSL* types*/
 #include "mc.h"
+#include "upnp.h"
 
 struct evconnlistener;
 struct sockaddr;
@@ -59,6 +60,7 @@ struct server {
 #if defined Windows
   struct bufferevent *pipe_endpoint;
 #endif
+  struct upnp upnp;
 };
 
 SSL_CTX *evssl_init(void);
