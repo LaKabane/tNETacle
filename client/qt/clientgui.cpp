@@ -67,9 +67,27 @@ void    ClientGUI::deleteSelected()
   this->ContactsList->setCurrentRow(pos - 1);
 }
 
+void    ClientGUI::deleteNamed(const QString& name)
+{
+  int pos = -1;
+
+  for (unsigned int i = 0; i < this->ContactsList->count(); ++i)
+    {
+      if (this->ContactsList->item(i)->text() == name)
+	{
+	  pos = i;
+	  break;
+	}
+    }
+
+  if (pos != -1)
+    delete this->ContactsList->item(pos);
+  this->ContactsList->setCurrentRow(pos - 1);
+}
+
 QString ClientGUI::getSelected() const
 {
-  if (!this->ContactsList->currentItem())
+  if (this->ContactsList->currentItem() == false)
     return "";
   return this->ContactsList->currentItem()->text();
 }
@@ -83,7 +101,7 @@ const QString ClientGUI::getInitialContactName() const
 
 QString ClientGUI::getNewContactName() const
 {
-  if (!this->_addContact)
+  if (this->_addContact == false)
     return *new QString("");// TODO throw a fatal exception
   return this->_addContact->getNewContactName();
 }

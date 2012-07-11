@@ -27,6 +27,7 @@ public:
   void			addContact(const QString &);
   QString		getSelected() const;
   void			deleteSelected();
+  void			deleteNamed(const QString&);
   const QString		getInitialContactName() const;
   QString		getNewContactName() const;
   QString		getNewContactKey() const;

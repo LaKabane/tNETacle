@@ -12,6 +12,7 @@ public :
   virtual void		addContact(const QString &) = 0;
   virtual QString	getSelected() const = 0;
   virtual void		deleteSelected() = 0;
+  virtual void		deleteNamed(const QString&) = 0;
   virtual const QString getInitialContactName() const = 0;
   virtual QString	getNewContactName() const = 0;
   virtual QString	getNewContactKey() const = 0;
