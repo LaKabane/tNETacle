@@ -261,5 +261,6 @@ void ClientGUI::connected()
 void ClientGUI::disconnected()
 {
   actionConnect->setVisible(true);
+  this->ContactsList->clear();
   _isConnected = false;
 }

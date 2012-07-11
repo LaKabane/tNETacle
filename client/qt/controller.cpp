@@ -305,6 +305,7 @@ void Controller::connected()
 void Controller::disconnected()
 {
   this->_view->disconnected();
+  dynamic_cast<ModelContact*>(this->_modelContacts)->clear();
 }
 
 void Controller::writeToSocket(const QString& buff)

@@ -22,6 +22,7 @@ class ModelContact : public IModel
   virtual void  feedData(const QString &,const QVariant&);
   virtual const QString &getObjectName() const;
   void	print();
+  void	clear();
 
 private:
   QMap<QString, QVariant> _contacts;

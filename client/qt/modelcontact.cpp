@@ -102,3 +102,8 @@ void  ModelContact::editContact(const QVector<QString>& param)
   v.append(key);
   this->addContact(v);
 }
+
+void ModelContact::clear()
+{
+  _contacts.clear();
+}
