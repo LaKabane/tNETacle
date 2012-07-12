@@ -3,7 +3,7 @@
 
 #include <QString>
 #include <QWidget>
-#include "clientgui.h"
+#include "iclientgui.h"
 #include "ui_config.h"
 #include "controller.h"
 
@@ -11,20 +11,20 @@ namespace Ui {
     class Config;
 }
 
-class ClientGUI;
+class IClientGUI;
 
 class ConfigGui : public QWidget, public Ui::Config
 {
   Q_OBJECT
   public:
-  ConfigGui(Controller&, ClientGUI&);
+  ConfigGui(Controller&, IClientGUI*);
   ~ConfigGui();
 
   const QMap<QString, QVariant>* getChanges() const;
 
   private:
   Controller&	_controller;
-  ClientGUI&	_view;
+  IClientGUI*	_view;
   QMap<QString, QVariant>	_changes;
 };
 

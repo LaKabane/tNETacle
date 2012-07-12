@@ -204,7 +204,7 @@ void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const
 void ClientGUI::createConfigGui() {
   if (_config)
     return ;
-  _config = new ConfigGui(this->_controller, *this);
+  _config = new ConfigGui(this->_controller, this);
 
     QObject::connect(_config, SIGNAL(destroyed()), this, SLOT(configGuiDeleted()));
   _config->show();
