@@ -39,6 +39,15 @@ sub create_listener {
 	    sleep 1;
 	    my $send = "{\"DeleteContact\": { \"Racoon\" : {\"Name\": \"Racoon\"}}}";
 	    send_request($new_sock, $send);
+	    sleep 1;
+	    my $send = "{\"AddLog\": { \"Log\" : \"first log of the death\"}}";
+	    send_request($new_sock, $send);
+	    sleep 1;
+	    my $send = "{\"AddLog\": { \"Log\" : \"second log of the death\"}}";
+	    send_request($new_sock, $send);
+	    sleep 1;
+	    my $send = "{\"AddLog\": { \"Log\" : \"third log of the death\"}}";
+	    send_request($new_sock, $send);
             chomp($request = <$new_sock>);
  
             while ( not( $request =~ /quit/i ) ) {
