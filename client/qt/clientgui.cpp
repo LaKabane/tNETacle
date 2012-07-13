@@ -255,6 +255,10 @@ void ClientGUI::start()
 void ClientGUI::connected()
 {
   actionConnect->setVisible(false);
+  QIcon ico;
+  ico.addFile(QString::fromUtf8(":/tools/root_connected.png"), QSize(), QIcon::Normal, QIcon::Off);
+  actionChangeRoot->setIcon(ico);
+  actionCore->setIcon(ico);
   _isConnected = true;
 }
 
@@ -262,5 +266,9 @@ void ClientGUI::disconnected()
 {
   actionConnect->setVisible(true);
   this->ContactsList->clear();
+  QIcon ico;
+  ico.addFile(QString::fromUtf8(":/tools/root_notconnected.png"), QSize(), QIcon::Normal, QIcon::Off);
+  actionChangeRoot->setIcon(ico);
+  actionCore->setIcon(ico);
   _isConnected = false;
 }
