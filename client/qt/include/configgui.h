@@ -18,7 +18,7 @@ class ConfigGui : public QWidget, public Ui::Config
   Q_OBJECT
   public:
   ConfigGui(Controller&, IClientGUI*);
-  ~ConfigGui();
+  virtual ~ConfigGui();
 
   const QMap<QString, QVariant>* getChanges() const;
 

@@ -86,7 +86,10 @@ void TestController::testAddContact()
   delete stubClient;
 }
 
-QTEST_MAIN(TestController)
 
 #include "moc_controller.cpp"
 #include "moc_network.cpp"
+#include "moc_clientgui.cpp"
+#include "moc_configgui.cpp"
+#include "moc_addcontactgui.cpp"
+#include "moc_rootnodegui.cpp"
