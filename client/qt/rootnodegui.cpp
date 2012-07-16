@@ -1,7 +1,6 @@
 #include <QDebug>
 #include "rootnodegui.h"
 #include <QWidget>
-#include "contact.h"
 #include "clientgui.h"
 
 RootNodeGui::RootNodeGui(Controller &controller, ClientGUI &win)
