@@ -12,6 +12,7 @@ ModelContact::ModelContact(Controller& controller, IClientGUI* gui):
 {
   _commands["AddContact"] = &ModelContact::addContact;
   _commands["DeleteContact"] = &ModelContact::delContact;
+  _commands["EditContact"] = &ModelContact::editContact;
 }
 
 void  ModelContact::print()
@@ -82,7 +83,7 @@ void ModelContact::delContact(const QVector<QString>& param)
     throw new Exception("Error: missing parameter to delete a contact");
   const QString& name = param[0];
   if (_contacts.remove(name) != 1)
-    throw new Exception("Error: Name does not exist");
+    throw new Exception("Error: Name (" + name + ") does not exist");
   this->_view->deleteNamed(name);
 }
 
@@ -90,9 +91,9 @@ void  ModelContact::editContact(const QVector<QString>& param)
 {
   if (param.size() < 3)
     throw new Exception("Error: missing parameters to edit contact");
-  const QString& old = param[0];
-  const QString& name = param[1];
-  const QString& key = param[2];
+  const QString& name = param[0];
+  const QString& key = param[1];
+  const QString& old = param[2];
 
   QVector<QString>v;
   v.append(old);

@@ -5,7 +5,6 @@
 #include <QWidget>
 #include "clientgui.h"
 #include "ui_addcontact.h"
-#include "contact.h"
 #include "controller.h"
 
 namespace Ui {

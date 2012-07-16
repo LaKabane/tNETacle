@@ -41,6 +41,11 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    QObject::connect(actionConnect2, SIGNAL(activated()), this, SLOT(start()));
 
    actionConnect->setVisible(true);
+   actionConnect2->setVisible(true);
+   actionAddContact->setVisible(false);
+   actionDeleteContact->setVisible(false);
+   actionAddAContact->setVisible(false);
+   actionDeleteAContact->setVisible(false);
 }
 
 ClientGUI::~ClientGUI() {
@@ -204,7 +209,7 @@ void ClientGUI::createRootNodeGui(const QString& name, const QString &key, const
 void ClientGUI::createConfigGui() {
   if (_config)
     return ;
-  _config = new ConfigGui(this->_controller, *this);
+  _config = new ConfigGui(this->_controller, this);
 
     QObject::connect(_config, SIGNAL(destroyed()), this, SLOT(configGuiDeleted()));
   _config->show();
@@ -255,12 +260,30 @@ void ClientGUI::start()
 void ClientGUI::connected()
 {
   actionConnect->setVisible(false);
+  actionConnect2->setVisible(false);
+  QIcon ico;
+  ico.addFile(QString::fromUtf8(":/tools/root_connected.png"), QSize(), QIcon::Normal, QIcon::Off);
+  actionChangeRoot->setIcon(ico);
+  actionCore->setIcon(ico);
   _isConnected = true;
+  actionAddContact->setVisible(true);
+  actionDeleteContact->setVisible(true);
+  actionAddAContact->setVisible(true);
+  actionDeleteAContact->setVisible(true);
 }
 
 void ClientGUI::disconnected()
 {
   actionConnect->setVisible(true);
+  actionConnect2->setVisible(true);
   this->ContactsList->clear();
+  QIcon ico;
+  ico.addFile(QString::fromUtf8(":/tools/root_notconnected.png"), QSize(), QIcon::Normal, QIcon::Off);
+  actionChangeRoot->setIcon(ico);
+  actionCore->setIcon(ico);
   _isConnected = false;
+  actionAddContact->setVisible(false);
+  actionDeleteContact->setVisible(false);
+  actionAddAContact->setVisible(false);
+  actionDeleteAContact->setVisible(false);
 }

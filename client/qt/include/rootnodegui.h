@@ -5,7 +5,6 @@
 #include <QWidget>
 #include "clientgui.h"
 #include "ui_rootnode.h"
-#include "contact.h"
 #include "controller.h"
 
 class ClientGUI;

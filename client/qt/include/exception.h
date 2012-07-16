@@ -7,7 +7,7 @@
 class Exception
 {
 public:
-  Exception(const char *c) :
+  Exception(QString c) :
     _message(c) { };
   const QString &getMessage() const
   { return _message;}

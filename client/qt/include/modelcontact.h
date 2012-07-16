@@ -12,17 +12,20 @@ class ModelContact : public IModel
 {
   typedef void (ModelContact::*fun)(const QVector<QString>&);
   typedef QMap<QString, fun> mapfun;
- public:
+
+public:
   ModelContact(Controller &, IClientGUI*);
+  virtual       ~ModelContact(){}
+
   void          addContact(const QVector<QString>&);
   const QString getKey(const QString &);
   void          delContact(const QVector<QString>&);
   void          editContact(const QVector<QString>&);
-  virtual       ~ModelContact(){};
-  virtual void  feedData(const QString &,const QVariant&);
-  virtual const QString &getObjectName() const;
   void	print();
   void	clear();
+
+  virtual void  feedData(const QString &,const QVariant&);
+  virtual const QString &getObjectName() const;
 
 private:
   QMap<QString, QVariant> _contacts;

@@ -24,8 +24,10 @@ sub create_listener {
  
         if ( ( $child = fork() ) == 0 ) {
  
-
-	    my $send = "{
+	    my $send;
+	    my $send = "{\"AddLog\": { \"Log\" : \"Add peers Racoon and Bob\"}}";
+	    send_request($new_sock, $send);
+	    $send = "{
     \"AddContact\": {
 	\"Racoon\": {
 	    \"Key\": \"Public Key 4\"
@@ -36,8 +38,13 @@ sub create_listener {
     }
 }";
 	    send_request($new_sock, $send);
-	    sleep 1;
-	    my $send = "{\"DeleteContact\": { \"Racoon\" : {\"Name\": \"Racoon\"}}}";
+	    my $send = "{\"AddLog\": { \"Log\" : \"Delete the peer Bob\"}}";
+	    send_request($new_sock, $send);
+	    my $send = "{\"DeleteContact\": { \"Bob\" : {\"Name\": \"Bob\"}}}";
+	    send_request($new_sock, $send);
+	    my $send = "{\"AddLog\": { \"Log\" : \"Edit Racoon to become Fox with key Fire\"}}";
+	    send_request($new_sock, $send);
+	    my $send = "{\"EditContact\": { \"Racoon\" : {\"Name\": \"Fox\", \"Old\": \"Racoon\", \"Key\": \"Fire\"}}}";
 	    send_request($new_sock, $send);
             chomp($request = <$new_sock>);
  
@@ -66,6 +73,7 @@ sub send_request {
     $sock = $_[0];
     $res = $_[1];
     print $sock $res;
+    sleep 1;
 }
  
  

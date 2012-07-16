@@ -5,7 +5,6 @@
 #include <QTimer>
 #include "ui_client.h"
 #include "controller.h"
-#include "contact.h"
 #include "iclientgui.h"
 
 namespace Ui {

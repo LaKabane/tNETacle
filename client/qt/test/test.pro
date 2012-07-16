@@ -16,15 +16,27 @@ LIBS +=  -lqjson
 HEADERS += \
 stubclientgui.h \
 testcontroller.h \
+testcontact.h \
+testprotocol.h \
+testnetwork.h \
 testconfig.h
 
 SOURCES += \
 testcontroller.cpp \
 testconfig.cpp \
+testcontact.cpp \
+testprotocol.cpp \
+testnetwork.cpp \
+main.cpp \
 ../controller.cpp \
-../modelcontact.cpp \
 ../imodel.cpp \
 ../network.cpp \
+../protocol.cpp \
 ../modellog.cpp \
 ../modelrootnode.cpp \
-../modelconfig.cpp
+../modelcontact.cpp \
+../modelconfig.cpp \
+../addcontactgui.cpp \
+../configgui.cpp \
+../rootnodegui.cpp \
+../clientgui.cpp

@@ -15,6 +15,7 @@
     <file>restart.jpg</file>
     <file>shutdown.jpg</file>
     <file>deletecontact.png</file>
-    <file>root.png</file>
+    <file>root_connected.png</file>
+    <file>root_notconnected.png</file>
   </qresource>
 </RCC>

@@ -40,7 +40,7 @@ public:
 	virtual void disconnected() {}
 	virtual void configGuiDeleted() {}
 	virtual void deleteConfig() {}
-
+	void		deleteNamed(const QString&) {}
 public slots:
 	void	createAddContact() {}
 	void	deleteAddContact() {}

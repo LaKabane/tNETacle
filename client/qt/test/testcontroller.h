@@ -5,6 +5,7 @@ class TestController : public QObject
 {
   Q_OBJECT
   private slots:
+
   void testRootNode_data();
   void testRootNode();
 

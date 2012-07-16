@@ -25,6 +25,9 @@ Controller::Controller(IClientGUI*  gui) :
 
   _correspondence["AddContact"] = "Contact";
   _correspondence["DeleteContact"] = "Contact";
+  _correspondence["EditContact"] = "Contact";
+
+  _correspondence["AddLog"] = "Log";
 }
 
 void Controller::feedData(const QVariant& data)
@@ -47,12 +50,12 @@ void Controller::feedData(const QVariant& data)
 	}
     }
 }
-void Controller::appendLog(const QString &s)
+void Controller::appendLog(const QString& s)
 {
   this->_view->appendLog(s);
 }
 
-void Controller::editContact(QListWidgetItem *item)
+void Controller::editContact(QListWidgetItem* item)
 {
   try {
     this->_view->createAddContact(item->text(), dynamic_cast<ModelContact*>(_modelContacts)->getKey(item->text()));
