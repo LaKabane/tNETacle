@@ -18,6 +18,7 @@ stubclientgui.h \
 testcontroller.h \
 testcontact.h \
 testprotocol.h \
+testnetwork.h \
 testconfig.h
 
 SOURCES += \
@@ -25,6 +26,7 @@ testcontroller.cpp \
 testconfig.cpp \
 testcontact.cpp \
 testprotocol.cpp \
+testnetwork.cpp \
 main.cpp \
 ../controller.cpp \
 ../imodel.cpp \

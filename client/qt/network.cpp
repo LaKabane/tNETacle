@@ -2,7 +2,7 @@
 #include "controller.h"
 #include <QBuffer>
 
-Network::Network(Controller &controller)
+Network::Network(Controller& controller)
   : _socket(),
     _controller(controller),
     _parser(),
