@@ -5,7 +5,6 @@
 #include <QTimer>
 #include "ui_client.h"
 #include "controller.h"
-#include "contact.h"
 #include "iclientgui.h"
 
 namespace Ui {
@@ -43,11 +42,9 @@ public:
   void			createConfigGui();
   const QMap<QString, QVariant>* getChangesInConfig() const;
 
-  void			printError(const QString &);
-
+  void			printError(const QString &, const int time = 5);
   void			connected();
   void			disconnected();
-
 private:
   AddContactGui*	_addContact;
   RootNodeGui*		_rootNode;

@@ -11,8 +11,6 @@ INCLUDEPATH += ../../json/qjson/include/
 
 SOURCES += \
     main.cpp \
-    contactsList.cpp \
-    contact.cpp \
     config.cpp \
     clientgui.cpp \
     configgui.cpp \
@@ -48,8 +46,6 @@ HEADERS += \
     include/modellog.h    \
     include/controller.h\
     include/clientgui.h \
-    include/contactsList.h \
-    include/contact.h \
     include/config.h \
     include/protocol.h \
     include/addcontactgui.h \

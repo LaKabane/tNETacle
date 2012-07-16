@@ -25,6 +25,7 @@ Controller::Controller(IClientGUI*  gui) :
 
   _correspondence["AddContact"] = "Contact";
   _correspondence["DeleteContact"] = "Contact";
+  _correspondence["EditContact"] = "Contact";
 
   _correspondence["AddLog"] = "Log";
 }

@@ -5,6 +5,9 @@ QString	Protocol::add(const QString& object, const QVector<QString>& v)
 {
   QString	json("");
 
+  if (v.size() < 2 || object == "")
+    return json;
+
   json = "{";
   json += "\"Add";
   json += object;
@@ -28,6 +31,9 @@ QString	Protocol::add(const QString& object, const QVector<QString>& v)
 QString	Protocol::delet(const QString& object, const QVector<QString>& v)
 {
   QString	json("");
+
+  if (v.size() < 1 || object == "")
+    return json;
 
   json = "{";
   json += "\"Delete";

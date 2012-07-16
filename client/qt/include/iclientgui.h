@@ -24,7 +24,7 @@ public :
 
   virtual void		createAddContact(const QString &, const QString &) = 0;
   virtual void		createRootNodeGui(const QString &, const QString &, const QString &, quint16) = 0;
-  virtual void		printError(const QString &) = 0;
+  virtual void		printError(const QString &, const int = 5) = 0;
   virtual void		createConfigGui() = 0;
   virtual void		connected() = 0;
   virtual void		disconnected() = 0;

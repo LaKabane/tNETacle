@@ -42,6 +42,10 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
 
    actionConnect->setVisible(true);
    actionConnect2->setVisible(true);
+   actionAddContact->setVisible(false);
+   actionDeleteContact->setVisible(false);
+   actionAddAContact->setVisible(false);
+   actionDeleteAContact->setVisible(false);
 }
 
 ClientGUI::~ClientGUI() {
@@ -54,11 +58,11 @@ void ClientGUI::appendLog(const QString &str)
 }
 
 
-void ClientGUI::printError(const QString &error)
+void ClientGUI::printError(const QString &error, const int time)
 {
   this->error->show();
   this->errorText->setText(error);
-  this->_timer.start(3000);
+  this->_timer.start(time * 1000);
   qDebug() << error;
 }
 
@@ -262,6 +266,10 @@ void ClientGUI::connected()
   actionChangeRoot->setIcon(ico);
   actionCore->setIcon(ico);
   _isConnected = true;
+  actionAddContact->setVisible(true);
+  actionDeleteContact->setVisible(true);
+  actionAddAContact->setVisible(true);
+  actionDeleteAContact->setVisible(true);
 }
 
 void ClientGUI::disconnected()
@@ -274,4 +282,8 @@ void ClientGUI::disconnected()
   actionChangeRoot->setIcon(ico);
   actionCore->setIcon(ico);
   _isConnected = false;
+  actionAddContact->setVisible(false);
+  actionDeleteContact->setVisible(false);
+  actionAddAContact->setVisible(false);
+  actionDeleteAContact->setVisible(false);
 }

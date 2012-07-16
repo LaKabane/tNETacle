@@ -1,7 +1,6 @@
 #include <QDebug>
 #include "addcontactgui.h"
 #include <QWidget>
-#include "contact.h"
 #include "clientgui.h"
 
 AddContactGui::AddContactGui(Controller &controller, ClientGUI &win)
