@@ -25,4 +25,6 @@ testconfig.cpp \
 ../modelcontact.cpp \
 ../imodel.cpp \
 ../network.cpp \
-../modellog.cpp
+../modellog.cpp \
+../modelrootnode.cpp \
+../modelconfig.cpp

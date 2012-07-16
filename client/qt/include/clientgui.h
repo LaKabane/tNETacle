@@ -27,6 +27,7 @@ public:
   void			addContact(const QString &);
   QString		getSelected() const;
   void			deleteSelected();
+  void			deleteNamed(const QString&);
   const QString		getInitialContactName() const;
   QString		getNewContactName() const;
   QString		getNewContactKey() const;
@@ -43,13 +44,15 @@ public:
   const QMap<QString, QVariant>* getChangesInConfig() const;
 
   void			printError(const QString &, const int time = 5);
+  void			connected();
+  void			disconnected();
 private:
   AddContactGui*	_addContact;
   RootNodeGui*		_rootNode;
   ConfigGui*		_config;
   Controller		_controller;
   QTimer		_timer;
-
+  bool			_isConnected;
 signals:
 
 public slots:
@@ -66,6 +69,7 @@ public slots:
 
     void		shutdown();
     void		restart();
+    void		start();
 
     void		deleteConfig();
 };

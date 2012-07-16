@@ -7,6 +7,7 @@
 #include <QListWidgetItem>
 #include <QFileDialog>
 #include "modelcontact.h"
+#include "modelconfig.h"
 #include "modellog.h"
 #include "modelrootnode.h"
 #include "network.h"
@@ -29,6 +30,10 @@ public:
   void			shutdown();
   void			restart();
 
+  void			connected();
+  void			disconnected();
+  void			writeToSocket(const QString& buff);
+
 public slots:
   bool			addContact();
   void			deleteContact();
@@ -46,6 +51,7 @@ public slots:
 private:
   bool			checkIPv4(QString&) const;
   bool			checkIPv6(QString&) const;
+  bool			checkHostNameFormat(QString& str) const;
 
   IClientGUI*		_view;
   bool			editing;
@@ -58,7 +64,10 @@ private:
   // REMOVED: in _network.
   Network		_network;
 
-  QVector<IModel*>	_models;
+  QMap<QString, IModel*>	_models;
+
+
+  static QMap<QString, QString> _correspondence;
 };
 
 

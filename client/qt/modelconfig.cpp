@@ -2,7 +2,7 @@
 #include "modelconfig.h"
 #include "controller.h"
 
-const QString Modelconfig::_name = "Configuration";
+const QString ModelConfig::_name = "Configuration";
 
 ModelConfig::ModelConfig(Controller &c)
   :_controller(c)
@@ -21,7 +21,7 @@ const QMap<QString, QVariant>* ModelConfig::getData() const
   return _config;
 }
 
-void  ModelConfig::feedData(const QString &commande, const QMap<QString, QVariant>&)
+void  ModelConfig::feedData(const QString &commande, const QVariant&)
 {
   qDebug() << commande;
 }

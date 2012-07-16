@@ -2,47 +2,49 @@
 #include <QRegExp>
 #include "iclientgui.h"
 #include "controller.h"
-#include "contact.h"
+#include "protocol.h"
 #include "exception.h"
 #include "imodel.h"
+
+QMap<QString, QString> Controller::_correspondence = QMap<QString, QString>();
 
 Controller::Controller(IClientGUI*  gui) :
   _view(gui),
   _network(*this),
   _models()
 {
-  _modelContacts = new ModelContact(*this);
+  _modelContacts = new ModelContact(*this, gui);
   _modelNode = new ModelRootNode(*this);
   _modelLog = new ModelLog(*this);
-  //_modelConfig = new ModelConfig(*this);
+  _modelConfig = new ModelConfig(*this);
 
-  _models.append(_modelContacts);
-  _models.append(_modelNode);
-  _models.append(_modelLog);
-  //  _models.append(_modelConfig);
+  _models[_modelContacts->getObjectName()] = _modelContacts;
+  _models[_modelNode->getObjectName()] = _modelNode;
+  _models[_modelLog->getObjectName()] = _modelLog;
+  _models[_modelConfig->getObjectName()] = _modelConfig;
+
+  _correspondence["AddContact"] = "Contact";
+  _correspondence["DeleteContact"] = "Contact";
 }
 
-void Controller::feedData(const QVariant &data)
+void Controller::feedData(const QVariant& data)
 {
-  qDebug() << _models.size();
   QMap<QString, QVariant> map = data.toMap();
   QMap<QString, QVariant>::const_iterator it(map.begin());
-  for (const QMap<QString, QVariant>::const_iterator it_end = map.end(); it != it_end; ++it)
+  const QMap<QString, QVariant>::const_iterator it_end = map.end();
+  for (; it != it_end; ++it)
     {
-      QString commande = it.key().left(3);
-      QString object = it.key().right(it.key().length() - 3);
-      QMap<QString, QVariant > data = it.value().toMap();
-      int end = _models.size();
-      qDebug() << end;
-      for (int i = 0; i < end ; ++i)
-        {
-          qDebug() << _models[i]->getObjectName();
-        if (_models[i]->getObjectName() == object)
-          {
-            _models[i]->feedData(commande, data);
-            break;
-          }
-        }
+      QString commande = it.key();
+      try {
+	if (_correspondence.contains(commande) == false)
+	  throw new Exception("Error: Received an invalid command");
+	_models[_correspondence[commande]]->feedData(commande, it.value());
+      }
+      catch (Exception *e)
+	{
+	  this->_view->printError(e->getMessage());
+	  delete e;
+	}
     }
 }
 void Controller::appendLog(const QString &s)
@@ -81,8 +83,10 @@ void Controller::deleteContact()
 {
   try
     {
-      dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(_view->getSelected());
-      this->_view->deleteSelected();
+      QVector<QString> v;
+      v.append(_view->getSelected());
+      dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
+      this->writeToSocket(Protocol::delet(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
     }
   catch (Exception *e)
     {
@@ -111,8 +115,11 @@ bool Controller::addContact()
     this->deleteContact();
   try
     {
-      dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(name, pubkey);
-      this->_view->addContact(name);
+      QVector<QString> v;
+      v.append(name);
+      v.append(pubkey);
+      dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(v);
+      this->writeToSocket(Protocol::add(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
     }
  catch (Exception *e)
    {
@@ -137,7 +144,7 @@ void Controller::editRootNode()
 
 void Controller::editConfig()
 {
-  //ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
+  ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
   this->_view->createConfigGui();
 }
 
@@ -173,7 +180,8 @@ bool	Controller::changeRootNode()
   try
     {
 	dynamic_cast<ModelRootNode*>(this->_modelNode)->changeRootNode(name, pubkey, ip, _view->getRootPort());
-        this->_network.setConnection(ip, port);
+	if (this->_network.isConnected() == false)
+	  this->_network.setConnection(ip, port);
     }
   catch (Exception* e)
     {
@@ -255,12 +263,20 @@ bool    Controller::checkIP(QString& str) const
     return true;
   if (checkIPv6(str))
     return true;
+  if (checkHostNameFormat(str))
+    return true;
   return false;
 }
 
 bool    Controller::checkName(QString& str) const
 {
   QRegExp rx("^[a-zA-Z0-9_]+$");
+  return str.contains(rx);
+}
+
+bool    Controller::checkHostNameFormat(QString& str) const
+{
+  QRegExp rx("^[a-zA-Z][a-zA-Z\\-\\.0-9]*[a-zA-Z]$");
   return str.contains(rx);
 }
 
@@ -279,4 +295,20 @@ QString	Controller::openPubKey()
   }
 
   return key;
+}
+
+void Controller::connected()
+{
+  this->_view->connected();
+}
+
+void Controller::disconnected()
+{
+  this->_view->disconnected();
+  dynamic_cast<ModelContact*>(this->_modelContacts)->clear();
+}
+
+void Controller::writeToSocket(const QString& buff)
+{
+  _network.write(buff);
 }

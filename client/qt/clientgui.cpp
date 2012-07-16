@@ -12,7 +12,8 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
     _rootNode(0),
     _config(0),
     _controller(this),
-    _timer()
+    _timer(),
+    _isConnected(false)
 {
    setupUi(this);
    QObject::connect(actionAddContact, SIGNAL(activated()), this, SLOT(createAddContact()));
@@ -35,6 +36,11 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    error->hide();
    log->hide();
    QObject::connect(&_timer, SIGNAL(timeout()), error, SLOT(hide()));
+
+   QObject::connect(actionConnect, SIGNAL(activated()), this, SLOT(start()));
+   QObject::connect(actionConnect2, SIGNAL(activated()), this, SLOT(start()));
+
+   actionConnect->setVisible(true);
 }
 
 ClientGUI::~ClientGUI() {
@@ -62,9 +68,27 @@ void    ClientGUI::deleteSelected()
   this->ContactsList->setCurrentRow(pos - 1);
 }
 
+void    ClientGUI::deleteNamed(const QString& name)
+{
+  int pos = -1;
+
+  for (unsigned int i = 0; i < this->ContactsList->count(); ++i)
+    {
+      if (this->ContactsList->item(i)->text() == name)
+	{
+	  pos = i;
+	  break;
+	}
+    }
+
+  if (pos != -1)
+    delete this->ContactsList->item(pos);
+  this->ContactsList->setCurrentRow(pos - 1);
+}
+
 QString ClientGUI::getSelected() const
 {
-  if (!this->ContactsList->currentItem())
+  if (this->ContactsList->currentItem() == false)
     return "";
   return this->ContactsList->currentItem()->text();
 }
@@ -78,7 +102,7 @@ const QString ClientGUI::getInitialContactName() const
 
 QString ClientGUI::getNewContactName() const
 {
-  if (!this->_addContact)
+  if (this->_addContact == false)
     return *new QString("");// TODO throw a fatal exception
   return this->_addContact->getNewContactName();
 }
@@ -203,9 +227,7 @@ void ClientGUI::showLogWidget() {
 
 void ClientGUI::shutdown()
 {
-  QMessageBox msgBox;
-  msgBox.setIcon(QMessageBox::Warning);
-  msgBox.setText("Shutdown!");
+  QMessageBox msgBox(QMessageBox::Warning, "Shutdown", "Shutdown!");
   msgBox.setInformativeText("Do you want to shutdown?");
   msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
   msgBox.setDefaultButton(QMessageBox::Ok);
@@ -216,13 +238,29 @@ void ClientGUI::shutdown()
 
 void ClientGUI::restart()
 {
-  QMessageBox msgBox;
-  msgBox.setIcon(QMessageBox::Warning);
-  msgBox.setText("Restart!");
-  msgBox.setInformativeText("Do you want to restart the connection with the node?");
+  QMessageBox msgBox(QMessageBox::Warning, "Restart", "Restart!");
+  msgBox.setInformativeText("Do you want to restart the core connection?");
   msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
   msgBox.setDefaultButton(QMessageBox::Ok);
   int ret = msgBox.exec();
   if (ret == QMessageBox::Ok)
     _controller.restart();
+}
+
+void ClientGUI::start()
+{
+  _controller.restart();
+}
+
+void ClientGUI::connected()
+{
+  actionConnect->setVisible(false);
+  _isConnected = true;
+}
+
+void ClientGUI::disconnected()
+{
+  actionConnect->setVisible(true);
+  this->ContactsList->clear();
+  _isConnected = false;
 }

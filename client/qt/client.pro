@@ -1,7 +1,13 @@
 QT += network
 
 
+unix {
 LIBS +=  -lqjson
+}
+win32 {
+LIBS += ../lib/qjson0.dll
+}
+INCLUDEPATH += C:/Users/tribou_f/Documents/json/qjson/include/
 
 SOURCES += \
     main.cpp \
@@ -11,12 +17,14 @@ SOURCES += \
     clientgui.cpp \
     configgui.cpp \
     imodel.cpp \
-    controller.cpp\
+    controller.cpp \
     addcontactgui.cpp \
-    rootnodegui.cpp\
-    modelcontact.cpp\
-    modelrootnode.cpp\
-    modellog.cpp\
+    rootnodegui.cpp \
+    modelcontact.cpp \
+    modelconfig.cpp \
+    modelrootnode.cpp \
+    modellog.cpp \
+    protocol.cpp \
     network.cpp
 
 FORMS += \
@@ -35,6 +43,7 @@ HEADERS += \
     include/imodel.h    \
 #    include/Registry.h    \
     include/modelcontact.h    \
+    include/modelconfig.h    \
     include/modelrootnode.h    \
     include/modellog.h    \
     include/controller.h\
@@ -42,6 +51,7 @@ HEADERS += \
     include/contactsList.h \
     include/contact.h \
     include/config.h \
+    include/protocol.h \
     include/addcontactgui.h \
     include/configgui.h \
     include/rootnodegui.h \
