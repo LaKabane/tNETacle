@@ -17,12 +17,14 @@ HEADERS += \
 stubclientgui.h \
 testcontroller.h \
 testcontact.h \
+testprotocol.h \
 testconfig.h
 
 SOURCES += \
 testcontroller.cpp \
 testconfig.cpp \
 testcontact.cpp \
+testprotocol.cpp \
 main.cpp \
 ../controller.cpp \
 ../imodel.cpp \
