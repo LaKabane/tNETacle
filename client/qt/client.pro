@@ -5,9 +5,9 @@ unix {
 LIBS +=  -lqjson
 }
 win32 {
-LIBS += ../lib/qjson0.dll
+LIBS += ../../json/lib/qjson0.dll
 }
-INCLUDEPATH += C:/Users/tribou_f/Documents/json/qjson/include/
+INCLUDEPATH += ../../json/qjson/include/
 
 SOURCES += \
     main.cpp \
