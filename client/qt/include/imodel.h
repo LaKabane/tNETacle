@@ -17,7 +17,6 @@ public:
   const QByteArray toJson() const;//For debug only
   virtual const QString &getObjectName() const  = 0;
   virtual void  feedData(const QString &, const QVariant&) = 0;
-protected:
   virtual const QMap<QString, QVariant>* getData() const = 0;
 private:
   //  static const QMap<QString, QVariant> mapToVar(const QMap<QString, QString> &);

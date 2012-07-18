@@ -34,6 +34,8 @@ public:
   void			disconnected();
   void			writeToSocket(const QString& buff);
 
+  const QMap<QString, QVariant>* getConfigMenu() const;
+
 public slots:
   bool			addContact();
   void			deleteContact();
