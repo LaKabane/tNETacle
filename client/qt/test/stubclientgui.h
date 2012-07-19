@@ -33,6 +33,7 @@ public:
 	QString	_contactName;
 	QString	_contactPubkey;
 	void printError(const QString&) {};
+	void printError(const QString&, int) {};
 	void appendLog(const QString &) {};
 
 	virtual void createConfigGui() {}
