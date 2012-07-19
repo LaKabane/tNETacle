@@ -71,11 +71,8 @@ static void
 send_buffer_to_device_thread(struct evbuffer *buf, size_t size, struct server *s)
 {
     struct evbuffer *output = bufferevent_get_output(s->pipe_endpoint);
-    void *data;
 
-    data = evbuffer_pullup(buf, size);
-    if (data != NULL)
-        evbuffer_add(output, data, size);
+    evbuffer_add(output, evbuffer_pullup(buf, size), size);
 }
 #endif
 
@@ -98,8 +95,6 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
          */
         union chartoshort u;
         u.cptr = evbuffer_pullup(buf, sizeof(size));
-        if (u.cptr == NULL)
-            break;
         size = ntohs(*u.sptr);
         if (size > evbuffer_get_length(buf))
         {

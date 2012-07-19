@@ -131,8 +131,6 @@ void pipe_read(struct evbuffer *evb, LPOVERLAPPED_ENTRY Ol, HANDLE device_fd)
         memset(overlapped, 0, sizeof(*overlapped));
 
         sptr = (unsigned short *)evbuffer_pullup(evb, sizeof(*sptr));
-        if (sptr == NULL)
-            break;
         frame_size = ntohs(*sptr);
         evbuffer_drain(evb, sizeof(*sptr));
         if (frame_size > evbuffer_get_length(evb))
@@ -142,18 +140,15 @@ void pipe_read(struct evbuffer *evb, LPOVERLAPPED_ENTRY Ol, HANDLE device_fd)
             break;
         }
         frame_ptr = evbuffer_pullup(evb, frame_size);
-        if (frame_ptr != NULL)
+        errcode = WriteFile(device_fd, frame_ptr, frame_size, NULL, overlapped);
+        if (errcode != 0)
         {
-            errcode = WriteFile(device_fd, frame_ptr, frame_size, NULL, overlapped);
-            if (errcode != 0)
-            {
-                log_debug("Write %d on the device", frame_size);
-            }
-            else if ((errcode = GetLastError()) != ERROR_IO_PENDING)
-            {
-                log_debug("Error device(%p) write: (%d) %s", device_fd,
-                    errcode, formated_error(L"%1%0", errcode));
-            }
+            log_debug("Write %d on the device", frame_size);
+        }
+        else if ((errcode = GetLastError()) != ERROR_IO_PENDING)
+        {
+            log_debug("Error device(%p) write: (%d) %s", device_fd,
+                errcode, formated_error(L"%1%0", errcode));
         }
         evbuffer_drain(evb, frame_size);
     }
@@ -285,18 +280,15 @@ pipe_read_cb(struct bufferevent *bev, void *data)
         short frame_size = *size_ptr;
         unsigned char *frame_ptr;
 
-        if (size_ptr == NULL || (frame_size > evbuffer_get_length(input)))
+        if (frame_size > evbuffer_get_length(input))
             break ;
         
         evbuffer_drain(input, sizeof(short));
         frame_ptr = evbuffer_pullup(input, frame_size);
-        if (frame_ptr != NULL)
-        {
-            memcpy(tmp.frame, frame_ptr, frame_size);
-            tmp.size = frame_size;
+        memcpy(tmp.frame, frame_ptr, frame_size);
+        tmp.size = frame_size;
 
-            v_frame_push(&s->frames_to_send, &tmp);
-        }
+        v_frame_push(&s->frames_to_send, &tmp);
         evbuffer_drain(input, frame_size);
     }
     broadcast_to_peers(s);
