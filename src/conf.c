@@ -70,6 +70,9 @@ init_options(struct options *opt) {
 
     opt->key_path= NULL;
 
+    opt->upnp = 0;
+    opt->timeout = 0;
+
     opt->last_map_key = NULL;
     opt->last_map_key_len = 0;
 }
@@ -111,6 +114,8 @@ int yajl_boolean(void *ctx, int val) {
         serv_opts.encryption = val;
     } else if (strncmp("Debug", map, map_len) == 0) {
         serv_opts.debug = val;
+    } else if (strncmp("UPnP", map, map_len) == 0) {
+        serv_opts.upnp = val;
     } else {
         char *s;
 
@@ -169,6 +174,8 @@ int yajl_number(void *ctx, const char *num, size_t len) {
         for (i = 0; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i)
             ;
         serv_opts.ports[i] = ret;
+    } else if (strncmp("Timeout", map, map_len) == 0) {
+        serv_opts.timeout = ret;
     } else {
        char *s;
 

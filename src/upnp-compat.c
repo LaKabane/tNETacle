@@ -39,16 +39,17 @@ tnt_upnp_init(struct upnp *upnp, struct event_base *evbase)
 int
 tnt_upnp_add_port(struct upnp *upnp)
 {
-  int i;
-  struct sockaddr *listens;
+  struct cfg_sockaddress *it_listen = NULL;
+  struct cfg_sockaddress *ite_listen = NULL;
 
-  for (listens = v_sockaddr_begin(&serv_opts.listen_addrs);
-       listens != NULL && listens != v_sockaddr_end(&serv_opts.listen_addrs);
-       listens = v_sockaddr_next(listens)) {
-    short port = ntohs(((struct sockaddr_in *)listens)->sin_port);
+  it_listen = v_sockaddr_begin(&serv_opts.listen_addrs);
+  ite_listen = v_sockaddr_end(&serv_opts.listen_addrs);
+  for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen))
+  {
+    short port = ntohs(((struct sockaddr_in *)&it_listen->sockaddr)->sin_port);
 #if defined USE_GUPNP
     tnt_upnp_thread_add_port(upnp, "TCP", port, 
-        inet_ntoa(((struct sockaddr_in *)listens)->sin_addr), port);
+        inet_ntoa(((struct sockaddr_in *)&it_listen->sockaddr)->sin_addr), port);
 #endif
   }
 }

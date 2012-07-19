@@ -472,6 +472,14 @@ server_init(struct server *s, struct event_base *evbase)
         err = bufferevent_socket_connect(mc.bev,
                                          (struct sockaddr *)&it_peer->sockaddr,
                                          it_peer->len);
+        if (serv_opts.timeout > 0)
+        {
+            struct timeval timeout;
+
+            timeout.tv_sec = serv_opts.timeout;
+            timeout.tv_usec = 0;
+            bufferevent_set_timeouts(mc.bev, &timeout, &timeout);
+        }
         if (err == -1) {
             log_warn("unable to connect to the peer:");
             break;
@@ -479,10 +487,10 @@ server_init(struct server *s, struct event_base *evbase)
         v_mc_push(&s->pending_peers, &mc);
     }
 
-    bufferevent_setcb(bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
-    v_mc_push(&s->pending_peers, &mctx);
-
-    tnt_upnp_init(&s->upnp, evbase);
-    tnt_upnp_add_port(&s->upnp);
+    if (serv_opts.upnp == 1)
+    {
+        tnt_upnp_init(&s->upnp, evbase);
+        tnt_upnp_add_port(&s->upnp);
+    }
     return 0;
 }

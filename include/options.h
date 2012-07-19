@@ -57,9 +57,13 @@ struct options {
     const char *key_path;
     const char *cert_path;
 
+    int upnp;                      /* If true UPnP is enabled */
+    int timeout;                   /* If more than 0 set the socket timeout */
+
     /* Parsing stuff */
     const unsigned char *last_map_key;
     int   last_map_key_len;
+
 };
 
 enum {
