@@ -71,6 +71,9 @@ public slots:
     void		start();
 
     void		deleteConfig();
+
+    void		about();
+      void		aboutQt();
 };
 
 #endif // CLIENTGUI_H
