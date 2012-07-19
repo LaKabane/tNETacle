@@ -22,10 +22,13 @@ class ConfigGui : public QWidget, public Ui::Config
 
   const QMap<QString, QVariant>* getChanges() const;
 
-  private:
-  Controller&	_controller;
-  IClientGUI*	_view;
+private:
+  Controller&			_controller;
+  IClientGUI*			_view;
   QMap<QString, QVariant>	_changes;
+
+  void				displayConfigMenu();
+  QWidget*			createMenu(const QMap<QString, QVariant>&);
 };
 
 #endif // CONFIGGUI_H

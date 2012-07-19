@@ -147,7 +147,7 @@ void Controller::editRootNode()
 
 void Controller::editConfig()
 {
-  ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
+  //ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
   this->_view->createConfigGui();
 }
 
@@ -215,6 +215,11 @@ void		Controller::restart()
 	this->_view->printError(e->getMessage());
 	delete e;
     }
+}
+
+const QMap<QString, QVariant>* Controller::getConfigMenu() const
+{
+  return _modelConfig->getData();
 }
 
 void Controller::changeConfig()
