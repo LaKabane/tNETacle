@@ -1,5 +1,7 @@
+/*	$OpenBSD: strndup.c,v 1.1 2010/05/18 22:24:55 tedu Exp $	*/
+
 /*
- * Copyright (c) 2012 Tristan Le Guern <leguern AT medu DOT se>
+ * Copyright (c) 2010 Todd C. Miller <Todd.Miller@courtesan.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,24 +16,24 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef TNETACLE_TUN_H_
-#define TNETACLE_TUN_H_
+#include <sys/types.h>
 
-# if defined USE_LIBTUNTAP
-#  include <tuntap.h>
-# elif defined USE_TAPCFG
-#  include <tapcfg.h>
-#  define device tapcfg_s
-# else
-#  error "You must define USE_LIBTUNTAP or USE_TAPCFG"
-# endif
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
-struct device	*tnt_ttc_open(int);
-void		 tnt_ttc_close(struct device *);
-int		 tnt_ttc_set_ip(struct device *, const char *);
-int		 tnt_ttc_up(struct device *);
-int		 tnt_ttc_down(struct device *);
-intptr_t		 tnt_ttc_get_fd(struct device *);
+char *
+strndup(const char *str, size_t maxlen)
+{
+	char *copy;
+	size_t len;
 
-#endif
+	len = strnlen(str, maxlen);
+	copy = malloc(len + 1);
+	if (copy != NULL) {
+		(void)memcpy(copy, str, len);
+		copy[len] = '\0';
+	}
 
+	return copy;
+}

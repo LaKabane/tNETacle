@@ -13,33 +13,41 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#ifndef MC_ENDPOINT_JU2N66SJ
-#define MC_ENDPOINT_JU2N66SJ
 
-#include <openssl/ssl.h> /*Can not forward declare SSL types..*/
+#include <stdlib.h>
+#include <string.h>
+#include "wincompat.h"
 
-struct bufferevent;
-struct sockaddr;
-struct event_base;
-
-#if defined Windows
-#define socklen_t int
-#endif
-
-struct mc
+LPWSTR formated_error(LPWSTR pMessage, DWORD m, ...)
 {
-  struct peer {
-    struct sockaddr *address;
-    socklen_t len;
-  } p;
-  struct bufferevent *bev;
-  int ssl_flags;
-};
+    LPWSTR pBuffer = NULL;
 
-int mc_init(struct mc *, struct event_base *, int fd, struct sockaddr *,
-             socklen_t len, SSL_CTX *server_ctx);
-void mc_close(struct mc *);
-int mc_ssl_connect(struct mc *, struct event_base *);
-int mc_ssl_accept(struct mc *, struct event_base *);
+    va_list args = NULL;
+    va_start(args, pMessage);
 
-#endif /* end of include guard: MC_ENDPOINT_JU2N66SJ */
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+                  FORMAT_MESSAGE_ALLOCATE_BUFFER,
+                  pMessage, 
+                  m,
+                  0,
+                  (LPSTR)&pBuffer, 
+                  0, 
+                  &args);
+
+    va_end(args);
+
+    return pBuffer;
+}
+
+
+char *strndup(const char *s, size_t n)
+{
+  size_t len = strnlen(s, n);
+  char *tmp = (char *)malloc(len + 1);
+
+  if (tmp == NULL)
+    return NULL;
+
+  tmp[len] = '\0';
+  return (char *)memcpy(tmp, s, len);
+}

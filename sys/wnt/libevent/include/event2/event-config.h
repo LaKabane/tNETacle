@@ -25,6 +25,8 @@
 /* #define _EVENT_DNS_USE_GETTIMEOFDAY_FOR_ID 1 */
 #define _EVENT_DNS_USE_FTIME_FOR_ID 1
 
+#define _EVENT_HAVE_OPENSSL
+
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 /* #undef _EVENT_HAVE_ARPA_INET_H */
 
@@ -277,7 +279,7 @@
 /* #undef _EVENT_HAVE_WORKING_KQUEUE */
 
 /* Numeric representation of the version */
-#define _EVENT_NUMERIC_VERSION 0x02001100
+#define _EVENT_NUMERIC_VERSION 0x02001300
 
 /* Name of package */
 #define _EVENT_PACKAGE "libevent"
@@ -334,7 +336,7 @@
 #define _EVENT_TIME_WITH_SYS_TIME 1
 
 /* Version number of package */
-#define _EVENT_VERSION "2.0.17-stable"
+#define _EVENT_VERSION "2.0.19-stable"
 
 /* Define to appropriate substitue if compiler doesnt have __func__ */
 #define _EVENT___func__ __FUNCTION__

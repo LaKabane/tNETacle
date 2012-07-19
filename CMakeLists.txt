@@ -12,9 +12,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set(${CMAKE_SYSTEM_NAME} True)
 
-if(EXISTS ${CMAKE_SOURCE_DIR}/CMakeLists.txt.local)
-        include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local)
-endif()
+include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local OPTIONAL)
 
 # CMake global options
 # ------------------
@@ -23,9 +21,15 @@ endif()
 # Global Packages search
 # ------------------
 find_package(ZLIB REQUIRED)
-find_package(Event COMPONENTS core openssl REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
+find_package(OpenSSL REQUIRED)
+
+if(WIN32)
+	find_package(Event COMPONENTS core REQUIRED)
+else()
+	find_package(Event COMPONENTS core openssl REQUIRED)
+endif()
 
 if (NOT TUNTAP_FOUND)
     find_package(Tapcfg REQUIRED)
@@ -49,6 +53,7 @@ include_directories(${CMAKE_HOME_DIRECTORY}/include)
 include_directories(${EVENT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
+include_directories(${OPENSSL_INCLUDE_DIR})
 if (TUNTAP_FOUND)
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
@@ -92,16 +97,32 @@ if (Windows)
 	# CMake windows Configuration
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-  	add_definitions(-DWnt)
+  	add_definitions(-DWindows)
 
 	# Windows source files
 	# ------------------
-	set(SOURCES_LIST ${SOURCES_LIST}
+	set(HEADERS_LIST 
+	    include/compress.h
+		include/hexdump.h
+		include/log.h
+		include/mc.h
+		include/options.h
+		include/pathnames.h
+		include/server.h
+		include/tnetacle.h
+		include/tntexits.h
+		include/tntsocket.h
+		include/tun.h
+		include/vector.h
+		include/imsg.h
+		include/wincompat.h)
+	set(SOURCES_LIST ${SOURCES_LIST} ${HEADERS_LIST}
 		sys/wnt/conf.c
 		sys/wnt/log.c
 		sys/wnt/tntsocket.c
 		sys/wnt/winstrtonum.c
 		sys/wnt/main.c
+		sys/wnt/utils.c
 	)
 endif()
 
@@ -183,6 +204,7 @@ target_link_libraries(tNETacle
         ${EVENT_LIBRARIES}
         ${ZLIB_LIBRARY}
         ${YAJL_LIBRARIES}
+        ${OPENSSL_LIBRARIES}
 )
 
 if (TUNTAP_FOUND)
@@ -204,4 +226,4 @@ if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
 
-include(CMakeLists.txt.local OPTIONAL)
+include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.link.local OPTIONAL)

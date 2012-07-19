@@ -16,21 +16,19 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#if defined Unix
-# include <sys/socket.h>
-# include <sys/mman.h>
-#else
-# define WIN32_LEAN_AND_MEAN
-# include <Windows.h>
-#endif
 
 #if defined Unix
 # include <netdb.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
+# include <sys/socket.h>
+# include <sys/mman.h>
 #else
-# include <winsock2.h>
+# define WIN32_LEAN_AND_MEAN
+# include <Windows.h>
+# include <Winsock2.h>
 # include <Ws2tcpip.h>
+# include "wincompat.h"
 #endif
 
 #include <fcntl.h>
@@ -40,29 +38,6 @@
 
 #include <event2/util.h>
 #include <yajl/yajl_parse.h>
-
-#ifdef WIN32
-# include "winstrtonum.h"
-# define __func__ __FUNCTION__
-# define alloca _alloca
-# define snprintf _snprintf
-char *
-strndup(const char *s, size_t n)
-{
-  char *result;
-  size_t len = strlen (s);
-
-  if (n < len)
-    len = n;
-
-  result = (char *) malloc (len + 1);
-  if (!result)
-    return 0;
-
-  result[len] = '\0';
-  return (char *) memcpy (result, s, len);
-}
-#endif
 
 #include "tnetacle.h"
 #include "options.h"
@@ -101,18 +76,18 @@ init_options(struct options *opt) {
 
 static int
 add_addr_text(struct vector_sockaddr *vsp, char *bufaddr) {
-    int socklen;
-    struct sockaddr out;
+    struct cfg_sockaddress out;
 
-    (void)memset(&out, '\0', sizeof out);
-   
-    socklen = sizeof(struct sockaddr);
+    (void)memset(&out, 0, sizeof out);
+
+    /* Take the size from the sockaddr_storage*/
+    out.len = sizeof(out.sockaddr);
     /* TODO: Sanity check with socklen */
-    if (evutil_parse_sockaddr_port(bufaddr, &out, &socklen) == -1) {
+    if (evutil_parse_sockaddr_port(bufaddr, &out.sockaddr, &out.len) == -1) {
         (void)fprintf(stderr, "%s: not a valid IP address\n", bufaddr);
         return -1;
     }
-
+    /* We now have a good sockaddr_storage, with the right length*/
     v_sockaddr_push(vsp, &out);
     return 0;
 }
@@ -145,8 +120,6 @@ int yajl_boolean(void *ctx, int val) {
         fprintf(stderr, "%s: unknown boolean\n", s);
         return -1;
     }
-    serv_opts.last_map_key = NULL;
-    serv_opts.last_map_key_len = 0;
     return 1;
 }
 
@@ -207,8 +180,6 @@ int yajl_number(void *ctx, const char *num, size_t len) {
         return -1;
     }
     (void)ctx;
-    serv_opts.last_map_key = NULL;
-    serv_opts.last_map_key_len = 0;
     return 1;
 }
 
@@ -263,8 +234,15 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
         }
     } else if (strncmp("PrivateKey", map, map_len) == 0) {
         /* XXX: Should we check for the existence of the key now ? */
-        serv_opts.key_path = strndup(map, map_len);
+        serv_opts.key_path = strndup(str, len);
         if (serv_opts.key_path == NULL) {
+            perror(__func__);
+            return -1;
+        }
+    } else if (strncmp("CertFile", map, map_len) == 0) {
+        /* XXX: Should we check for the existence of the key now ? */
+        serv_opts.cert_path = strndup(str, len);
+        if (serv_opts.cert_path == NULL) {
             perror(__func__);
             return -1;
         }
@@ -282,35 +260,35 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
         if (strncmp("any", str, len) == 0) {
             unsigned int i = 0;
             int family = serv_opts.addr_family;
-            struct sockaddr_in sin;
-            struct sockaddr_in6 sin6;
+            struct cfg_sockaddress tmp_store;
+            struct sockaddr_in *sin = &tmp_store.sockaddr;
+            struct sockaddr_in6 *sin6 = &tmp_store.sockaddr;
 
             /* Feed local addresses */
             for (; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i) {
-                (void)memset(&sin, 0, sizeof sin);
-                (void)memset(&sin6, 0, sizeof sin6);
+                (void)memset(&tmp_store, 0, sizeof tmp_store);
 
                 if (family == AF_INET || family == AF_UNSPEC) {
-                    sin.sin_family = AF_INET;
-                    sin.sin_port = htons(serv_opts.ports[i]);
+                    sin->sin_family = AF_INET;
+                    sin->sin_port = htons(serv_opts.ports[i]);
                     if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
-                      &sin.sin_addr.s_addr) == -1)
+                      &sin->sin_addr.s_addr) == -1)
                         return -1;
-		    v_sockaddr_push(&serv_opts.listen_addrs,
-		      (struct sockaddr *)&sin);
-		    if (debug == 1)
+                    tmp_store.len = sizeof *sin;
+                    v_sockaddr_push(&serv_opts.listen_addrs, &tmp_store);
+                    if (debug == 1)
                         fprintf(stderr, "ListenAddr: Added %s:%i\n",
                           TNETACLE_DEFAULT_LISTEN_IPV4, serv_opts.ports[i]);
                 }
                 if (family == AF_INET6 || family == AF_UNSPEC) {
-                    sin6.sin6_family = AF_INET6;
-                    sin6.sin6_port = htons(serv_opts.ports[i]);
+                    sin6->sin6_family = AF_INET6;
+                    sin6->sin6_port = htons(serv_opts.ports[i]);
                     if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
-                      &sin6.sin6_addr.s6_addr) == -1)
+                      &sin6->sin6_addr.s6_addr) == -1)
                         return -1;
-		    v_sockaddr_push(&serv_opts.listen_addrs,
-		      (struct sockaddr *)&sin6);
-		    if (debug == 1)
+                    tmp_store.len = sizeof *sin6;
+                    v_sockaddr_push(&serv_opts.listen_addrs, &tmp_store);
+                    if (debug == 1)
                         fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
                           TNETACLE_DEFAULT_LISTEN_IPV6, serv_opts.ports[i]);
                 }
@@ -326,8 +304,6 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
         fprintf(stderr, "%s: unknown variable\n", s);
         return -1;
     }
-    serv_opts.last_map_key = NULL;
-    serv_opts.last_map_key_len = 0;
     return 1;
 }
 
@@ -345,6 +321,8 @@ int yajl_map_key(void *ctx, const unsigned char *key, size_t len) {
 
 int yajl_end_map(void *ctx) {
     (void)ctx;
+    serv_opts.last_map_key = NULL;
+    serv_opts.last_map_key_len = 0;
     return -1;
 }
 
@@ -355,6 +333,8 @@ int yajl_start_array(void *ctx) {
 
 int yajl_end_array(void *ctx) {
     (void)ctx;
+    serv_opts.last_map_key = NULL;
+    serv_opts.last_map_key_len = 0;
     return -1;
 }
 
@@ -377,13 +357,13 @@ tnt_parse_buf(char *p, size_t size) {
 	yajl_handle parse;
 	yajl_status status;
 
-    /* Overwrite previous configuration in case of SIGHUP */
-    init_options(&serv_opts);
+        /* Overwrite previous configuration in case of SIGHUP */
+        init_options(&serv_opts);
 
 	parse = yajl_alloc(&callbacks, NULL, NULL);
 	yajl_config(parse, yajl_allow_comments, 1);
 
-    /* yajl might be feeded a bit at a time, but it also works this way */
+        /* yajl might be feeded a bit at a time, but it also works this way */
 	status = yajl_parse(parse, p, size);
 	if (status != yajl_status_ok) {
 		char *err;

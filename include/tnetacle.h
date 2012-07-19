@@ -37,6 +37,13 @@ struct passwd;
 #define TNETACLE_DEFAULT_LISTEN_IPV6 "::"
 
 /*
+ * Few definitions for windows
+ */
+#if defined Windows
+# define __func__ __FUNCTIONW__
+#endif
+
+/*
  * Definition of types for our imsg.
  */
 enum imsg_type {

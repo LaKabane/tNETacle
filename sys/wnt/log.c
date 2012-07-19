@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include "log.h"
+#include "wincompat.h"
 
 void
 log_init(void) {
@@ -19,7 +20,7 @@ log_err(int eval, const char *str, ...) {
 
 void
 log_errx(int eval, const char *str) {
-	vprintf("%s\n", str);
+	printf("%s\n", str);
 }
 
 void
@@ -28,7 +29,7 @@ log_warn(const char *str, ...) {
 
 	va_start(ap, str);
 	vprintf(str, ap);
-	puts("");
+    puts((char *)formated_error(L"%1%0", GetLastError()));
 	va_end(ap);
 }
 

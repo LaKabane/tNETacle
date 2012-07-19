@@ -24,13 +24,16 @@
 
 #include <stdlib.h>
 #include <string.h>
-#if !defined WIN32
-#include <unistd.h>
+#if defined Unix
+# include <unistd.h>
 #endif
+
+#include <event2/util.h>
 
 #include "tnetacle.h"
 #include "options.h"
 #include "tun.h"
+#include "log.h"
 
 /* Will search the first available tap device with both libraries */
 struct device *
@@ -80,8 +83,10 @@ tnt_ttc_close(struct device *dev) {
 int
 tnt_ttc_set_ip(struct device *dev, const char *addr) {
 	char *ip, *mask;
-	short netbits;
+	int netbits;
+	int ret;
 
+	ret = 0;
 	ip = strdup(addr);
 	if (ip == NULL)
 		return -1;
@@ -89,21 +94,17 @@ tnt_ttc_set_ip(struct device *dev, const char *addr) {
 	mask = strchr(ip, '/');
 	if (mask == NULL)
 		return -1;
-
-#if defined USE_LIBTUNTAP
 	*mask= '\0';
 	++mask;
-	tuntap_set_ip(dev, ip, mask);
-	(void)netbits;
+
+	netbits = (short)evutil_strtoll(mask, NULL, 10);
+#if defined USE_LIBTUNTAP
+	ret = tuntap_set_ip(dev, ip, netbits);
 #elif defined USE_TAPCFG
-	netbits = (short)evutil_strtoll(mask + 1, NULL, 10);
-	if (netbits >= 1 && netbits <= 32) {
-		*mask= '\0';
-		tapcfg_iface_set_ipv4(dev, ip, netbits);
-	}
+	ret = tapcfg_iface_set_ipv4(dev, ip, netbits);
 #endif
 	free(ip);
-	return 0;
+	return ret;
 }
 
 int
@@ -124,7 +125,7 @@ tnt_ttc_down(struct device *dev) {
 #endif
 }
 
-int
+intptr_t
 tnt_ttc_get_fd(struct device *dev) {
 #if defined USE_LIBTUNTAP
 	return TUNTAP_GET_FD(dev);

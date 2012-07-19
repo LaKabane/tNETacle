@@ -15,16 +15,24 @@
  */
 
 #include <sys/types.h>
-#include <sys/socket.h>
+#if !defined Windows
+# include <sys/socket.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif /* Windows */
 
 #ifndef TNT_OPTIONS_H_ 
 #define TNT_OPTIONS_H_ 
 
-#define VECTOR_TYPE struct sockaddr
+struct cfg_sockaddress {
+    int len;
+    struct sockaddr_storage sockaddr;
+};
+
+#define VECTOR_TYPE struct cfg_sockaddress
 #define VECTOR_PREFIX sockaddr
+#define DEFAULT_ALLOC_SIZE 2
 #include "vector.h"
 #undef VECTOR_TYPE
 #undef VECTOR_PREFIX
@@ -47,6 +55,7 @@ struct options {
     char *addr;                    /* Address on the VPN */
 
     const char *key_path;
+    const char *cert_path;
 
     /* Parsing stuff */
     const unsigned char *last_map_key;

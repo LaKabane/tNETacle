@@ -13,33 +13,18 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#ifndef MC_ENDPOINT_JU2N66SJ
-#define MC_ENDPOINT_JU2N66SJ
+#ifndef NETWORKING_LLW6GBE3
+#define NETWORKING_LLW6GBE3
 
-#include <openssl/ssl.h> /*Can not forward declare SSL types..*/
-
-struct bufferevent;
-struct sockaddr;
-struct event_base;
-
-#if defined Windows
-#define socklen_t int
+#if defined Unix
+# include <sys/types.h>
+# include <sys/socket.h>
+# include <netinet/in.h>
+#elif defined Windows
+# include <io.h>
+# include <WinSock2.h>
+# include <WS2tcpip.h>
 #endif
 
-struct mc
-{
-  struct peer {
-    struct sockaddr *address;
-    socklen_t len;
-  } p;
-  struct bufferevent *bev;
-  int ssl_flags;
-};
 
-int mc_init(struct mc *, struct event_base *, int fd, struct sockaddr *,
-             socklen_t len, SSL_CTX *server_ctx);
-void mc_close(struct mc *);
-int mc_ssl_connect(struct mc *, struct event_base *);
-int mc_ssl_accept(struct mc *, struct event_base *);
-
-#endif /* end of include guard: MC_ENDPOINT_JU2N66SJ */
+#endif /* end of include guard: NETWORKING_LLW6GBE3 */
