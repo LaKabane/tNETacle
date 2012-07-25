@@ -65,10 +65,9 @@ static void
 send_buffer_to_device_thread(struct server *s, struct frame *frame)
 {
     struct evbuffer *output = bufferevent_get_output(s->pipe_endpoint);
-    unsigned short network_size;
 
-    network_size = htons(frame->size);
-    evbuffer_add(output, &network_size, sizeof network_size);
+    /*No need to networkize the size, we are in local !*/
+    evbuffer_add(output, &frame->size, sizeof frame->size);
     evbuffer_add(output, frame->frame, frame->size);
 }
 #endif
@@ -140,15 +139,14 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
 #if defined Windows
         /*
          * Send to current frame to the windows thread handling the tun/tap
-         * devices and clean the evbuffe
+         * devices and clean the evbuffer
          */
         send_buffer_to_device_thread(s, &current_frame);
-        evbuffer_drain(buf, size);
 #else
         /* Write the current frame on the device and clean the evbuffer*/
         n = write(event_get_fd(s->device), current_frame.frame, current_frame.size);
-        evbuffer_drain(buf, size);
 #endif
+        evbuffer_drain(buf, size);
     }
 }
 
