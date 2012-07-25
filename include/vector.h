@@ -84,14 +84,18 @@ specifier type *vector_(frontref)(struct vector_name *v);
 specifier type *vector_(backref)(struct vector_name *v);
 specifier type *vector_(find_if)(struct vector_name *v, type *val,
                                       int (*)(type const *, type const *));
+specifier void vector_(clean)(struct vector_name *v);
 #ifdef VECTOR_TYPE_SCALAR
+
 specifier type *vector_(find)(struct vector_name *v, type *val);
-specifier void vector_(foreach)(struct vector_name *v,
-                                      void (*)(type));
+specifier void vector_(foreach)(struct vector_name *v, void (*)(type));
+specifier void vector_(foreach_ctx)(struct vector_name *v, void (*)(type, void *), void *ctx);
 specifier void vector_(push)(struct vector_name *v, type val);
+
 #else
-specifier void vector_(foreach)(struct vector_name *v,
-                                      void (*)(type const *));
+
+specifier void vector_(foreach)(struct vector_name *v, void (*)(type const *));
+specifier void vector_(foreach_ctx)(struct vector_name *v, void (*)(type const *, void *), void *ctx);
 specifier void vector_(push)(struct vector_name *v, type *val);
 #endif
 
@@ -314,6 +318,11 @@ specifier type *vector_(find_if)(struct vector_name *v, type *ptr,
   return ite;
 }
 
+specifier void vector_(clean)(struct vector_name *v)
+{
+    v->size = 0;
+}
+
 #ifdef VECTOR_TYPE_SCALAR
 
 specifier type * vector_(find)(struct vector_name *v, type *ptr)
@@ -347,10 +356,22 @@ specifier void vector_(foreach)(struct vector_name *v,
   }
 }
 
+specifier void vector_(foreach_ctx)(struct vector_name *v,
+                                void (*each)(type, void *ctx),
+                                void *ctx)
+{
+    type *it = vector_(begin)(v);
+    type *ite = vector_(end)(v);
+
+  for (; it != ite; it = vector_(next)(it))
+  {
+      each(*it, ctx);
+  }
+}
+
 #else
 
-specifier void vector_(foreach)(struct vector_name *v,
-                                      void (*each)(type const *))
+specifier void vector_(foreach)(struct vector_name *v, void (*each)(type const *))
 {
     type *it = NULL;
     type *ite = NULL;
@@ -361,6 +382,19 @@ specifier void vector_(foreach)(struct vector_name *v,
        it = vector_(next)(it))
   {
       each((type const *)it);
+  }
+}
+
+specifier void vector_(foreach_ctx)(struct vector_name *v,
+                                    void (*each)(type const *, void *ctx),
+                                    void *ctx)
+{
+    type *it = vector_(begin)(v);
+    type *ite = vector_(end)(v);
+
+  for (; it != ite; it = vector_(next)(it))
+  {
+      each((type const *)it, ctx);
   }
 }
 #endif
