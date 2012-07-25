@@ -31,7 +31,7 @@ void Network::read()
   QVariant var = _parser.parse(&device, &ok);
   if (!ok)
     {
-      qDebug() << "error parsing";
+      qDebug() << device.data();
       _controller.error(_parser.errorString());
       return ;
     }
