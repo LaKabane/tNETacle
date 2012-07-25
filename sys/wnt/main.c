@@ -117,7 +117,8 @@ void pipe_read(struct evbuffer *evb, LPOVERLAPPED_ENTRY Ol, HANDLE device_fd)
 {
     unsigned short *sptr;
     void *frame_ptr;
-    size_t frame_size;
+    short frame_size;
+    size_t buffer_size;
     LPOVERLAPPED overlapped = NULL;
 
     log_debug("evbuffer_get_length(evb) = %d", evbuffer_get_length(evb));
@@ -131,14 +132,18 @@ void pipe_read(struct evbuffer *evb, LPOVERLAPPED_ENTRY Ol, HANDLE device_fd)
         memset(overlapped, 0, sizeof(*overlapped));
 
         sptr = (unsigned short *)evbuffer_pullup(evb, sizeof(*sptr));
-        frame_size = ntohs(*sptr);
-        evbuffer_drain(evb, sizeof(*sptr));
-        if (frame_size > evbuffer_get_length(evb))
+        if (sptr == NULL) /* WTF ? */
+            break;
+        frame_size = *sptr;
+        buffer_size = evbuffer_get_length(evb);
+        /* We are going to drain just after, so we need to count 2 bytes less*/
+        if (frame_size > evbuffer_get_length(evb) - sizeof *sptr)
         {
             log_debug("Have a frame of size %d, but don't have enought data (%d)", frame_size,
                 evbuffer_get_length(evb));
             break;
         }
+        evbuffer_drain(evb, sizeof(*sptr));
         frame_ptr = evbuffer_pullup(evb, frame_size);
         errcode = WriteFile(device_fd, frame_ptr, frame_size, NULL, overlapped);
         if (errcode != 0)
@@ -176,7 +181,7 @@ DWORD IOCPFunc(void *lpParam)
     LPOVERLAPPED deviceOl;
     LPOVERLAPPED pipeOl;
     char device_buf[2048];
-    char pipe_buf[8192]; /*Don't change this value ! It's just magic */
+    char pipe_buf[2048];
     struct evbuffer *evb_pipe;
     OVERLAPPED_ENTRY entries[10];
     BOOL iocp_status;
