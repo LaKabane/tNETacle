@@ -160,7 +160,16 @@ void pipe_read(struct evbuffer *evb, LPOVERLAPPED_ENTRY Ol, HANDLE device_fd)
  * So, to you, adventurous reader, take care, you're entering the dragon cave..
  */
 
-DWORD WINAPI IOCPFunc(void *lpParam)
+/*
+ * Don't juge me please.
+ */
+
+/*
+ * In the other hand, if someone know how to do it right, please contact me at
+ * pichot.fabien AT gmail.com !
+ */
+
+DWORD IOCPFunc(void *lpParam)
 {
     IODATA data = *(PIODATA)(lpParam);
     HANDLE hPort;
@@ -178,16 +187,26 @@ DWORD WINAPI IOCPFunc(void *lpParam)
     int errcode;
 
     evb_pipe = evbuffer_new();
+    /*
+     * We create two new completion port, the first call create it and the
+     * second one just add the HANDLE to the CP.
+     * The magic numbers here are used to identify the HANDLE later
+     */
     hPort = CreateIoCompletionPort(data.fd, NULL, 0xDEADDEAD, 0);
     if (hPort == NULL)
         log_notice("Error: %s", formated_error(L"%1", GetLastError()));
     hPort = CreateIoCompletionPort((HANDLE)data.pipe_fd, hPort, 0xDEADBEAF, 0);
     if (hPort == NULL)
         printf("Error: %s", formated_error(L"%1", GetLastError()));
+    /*Forever*/
     for (;;)
     {
+        memset(entries, 0, sizeof(entries));
+
+        /* If the previous overlapped operation endend*/
         if (need_new_dev_overlapped == 1)
         {
+            /* We alloc a new overlapped struct, because we need one per call*/
             deviceOl = (LPOVERLAPPED)malloc(sizeof(OVERLAPPED));
             if (deviceOl == NULL)
             {
@@ -195,9 +214,19 @@ DWORD WINAPI IOCPFunc(void *lpParam)
                 return 0;
             }
             memset(deviceOl, 0, sizeof(*deviceOl));
+
+            /* We do the ReadFile, with the previously allocated Overlapped.*/
+            io_status = ReadFile(data.fd, device_buf, sizeof(device_buf), NULL, deviceOl);
+            if (io_status == 0 && (errcode = GetLastError()) != ERROR_IO_PENDING)
+            {
+                log_notice("ReadFile on device Error: %s", formated_error(L"%1", errcode));
+            }
+            /* And we set this one to 0, until this overlapped operation is finished*/
+            need_new_dev_overlapped = 0;
         }
         if (need_new_pipe_overlapped == 1)
         {
+            /* We alloc a new overlapped struct, because we need one per call*/
             pipeOl = (LPOVERLAPPED)malloc(sizeof(OVERLAPPED));
             if (pipeOl == NULL)
             {
@@ -205,28 +234,19 @@ DWORD WINAPI IOCPFunc(void *lpParam)
                 return 0;
             }
             memset(pipeOl, 0, sizeof(*pipeOl));
-        }
 
-        memset(entries, 0, sizeof(entries));
-
-        if (need_new_dev_overlapped == 1)
-        {
-            io_status = ReadFile(data.fd, device_buf, sizeof(device_buf), NULL, deviceOl);
-            if (io_status == 0 && (errcode = GetLastError()) != ERROR_IO_PENDING)
-            {
-                log_notice("ReadFile on device Error: %s", formated_error(L"%1", errcode));
-            }
-            need_new_dev_overlapped = 0;
-        }
-        if (need_new_pipe_overlapped == 1)
-        {
+            /* We do the ReadFile, with the previously allocated Overlapped.*/
             io_status = ReadFile((HANDLE)data.pipe_fd, pipe_buf, sizeof(pipe_buf), NULL, pipeOl);
             if (io_status == 0 && (errcode = GetLastError()) != ERROR_IO_PENDING)
             {
                 log_notice("ReadFile on pipe Error: %s", formated_error(L"%1", errcode));
             }
+            /* And we set this one to 0, until this overlapped operation is finished*/
             need_new_pipe_overlapped = 0;
         }
+
+        /* This call will blocked until an overlapped operation finish.*/
+        /* The result will be put in the 'entries' array, and 'n' contain the number of entry*/
         iocp_status = GetQueuedCompletionStatusEx(hPort, entries, sizeof(entries) / sizeof(*entries), &n, INFINITE, FALSE);
         if (iocp_status == 0)
         {
@@ -234,9 +254,11 @@ DWORD WINAPI IOCPFunc(void *lpParam)
         }
         else
         {
-            for (; n > 0; n--)
+            int i = 0;
+            /* For all received entries*/
+            for (; i < n; i++)
             {
-                OVERLAPPED_ENTRY *current = &entries[n - 1];
+                OVERLAPPED_ENTRY *current = &entries[i];
                 int key = current->lpCompletionKey;
 
                 /*Event on the device*/
@@ -268,6 +290,12 @@ DWORD WINAPI IOCPFunc(void *lpParam)
 }
 
 static void
+free_frame(struct frame const *f)
+{
+    free(f->frame);
+}
+
+static void
 pipe_read_cb(struct bufferevent *bev, void *data)
 {
     struct server *s = (struct server *)data;
@@ -285,6 +313,7 @@ pipe_read_cb(struct bufferevent *bev, void *data)
         
         evbuffer_drain(input, sizeof(short));
         frame_ptr = evbuffer_pullup(input, frame_size);
+        tmp.frame = (char *)malloc(frame_size);
         memcpy(tmp.frame, frame_ptr, frame_size);
         tmp.size = frame_size;
 
@@ -292,6 +321,8 @@ pipe_read_cb(struct bufferevent *bev, void *data)
         evbuffer_drain(input, frame_size);
     }
     broadcast_to_peers(s);
+    v_frame_foreach(&s->frames_to_send, free_frame);
+    v_frame_clean(&s->frames_to_send);
 }
 
 int
