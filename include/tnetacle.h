@@ -15,8 +15,9 @@
  */
 
 #include <sys/types.h>
-#if !defined WIN32
-#include <pwd.h>
+
+#if defined Unix
+# include <pwd.h>
 #endif
 
 struct passwd;
@@ -32,6 +33,15 @@ struct passwd;
 
 #define TNETACLE_DEFAULT_PORT	4242
 #define TNETACLE_MAX_PORTS	256
+#define TNETACLE_DEFAULT_LISTEN_IPV4 "0.0.0.0"
+#define TNETACLE_DEFAULT_LISTEN_IPV6 "::"
+
+/*
+ * Few definitions for windows
+ */
+#if defined Windows
+# define __func__ __FUNCTIONW__
+#endif
 
 /*
  * Definition of types for our imsg.

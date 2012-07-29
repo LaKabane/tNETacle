@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef WIN32
+#ifdef Windows
 # define ZLIB_WINAPI
 #endif
 #include <zlib.h>

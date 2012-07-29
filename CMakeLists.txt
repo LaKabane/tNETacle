@@ -12,6 +12,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 set(${CMAKE_SYSTEM_NAME} True)
 
+include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local OPTIONAL)
+
 # CMake global options
 # ------------------
 # None at the moment
@@ -19,9 +21,15 @@ set(${CMAKE_SYSTEM_NAME} True)
 # Global Packages search
 # ------------------
 find_package(ZLIB REQUIRED)
-find_package(Event COMPONENTS core openssl REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
+find_package(OpenSSL REQUIRED)
+
+if(WIN32)
+	find_package(Event COMPONENTS core REQUIRED)
+else()
+	find_package(Event COMPONENTS core openssl REQUIRED)
+endif()
 
 if (NOT TUNTAP_FOUND)
     find_package(Tapcfg REQUIRED)
@@ -45,6 +53,7 @@ include_directories(${CMAKE_HOME_DIRECTORY}/include)
 include_directories(${EVENT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
+include_directories(${OPENSSL_INCLUDE_DIR})
 if (TUNTAP_FOUND)
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
@@ -74,8 +83,6 @@ if(UNIX)
 
 	# Unix specific definitions
 	# ------------------
-        set(CMAKE_C_FLAGS "-W -Wall"
-                CACHE string "Flag used by the compiler during all build type")
   	add_definitions(-DUnix)
 
 	# Unix specific source files
@@ -92,16 +99,32 @@ if (Windows)
 	# CMake windows Configuration
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
-  	add_definitions(-DWnt)
+  	add_definitions(-DWindows)
 
 	# Windows source files
 	# ------------------
-	set(SOURCES_LIST ${SOURCES_LIST}
+	set(HEADERS_LIST 
+	    include/compress.h
+		include/hexdump.h
+		include/log.h
+		include/mc.h
+		include/options.h
+		include/pathnames.h
+		include/server.h
+		include/tnetacle.h
+		include/tntexits.h
+		include/tntsocket.h
+		include/tun.h
+		include/vector.h
+		include/imsg.h
+		include/wincompat.h)
+	set(SOURCES_LIST ${SOURCES_LIST} ${HEADERS_LIST}
 		sys/wnt/conf.c
 		sys/wnt/log.c
 		sys/wnt/tntsocket.c
 		sys/wnt/winstrtonum.c
 		sys/wnt/main.c
+		sys/wnt/utils.c
 	)
 endif()
 
@@ -110,11 +133,10 @@ endif()
 if(Linux)
         set(CMAKE_SYSTEM_INCLUDE_PATH
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
-	include_directories(/usr/local/include)
 
 	# Linux specific Options
 	# ------------------
-	option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" ON)
+        option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" OFF)
 
 	# Linux specific package search
 	# ------------------
@@ -125,13 +147,16 @@ if(Linux)
 	# Linux specific definitions
 	# ------------------
 	add_definitions(-D_GNU_SOURCE)
-	add_definitions(-DHAVE_SETPROCTITLE)
 	add_definitions(-DHAVE_SETRESXID)
-	if (BSD_FOUND)
+        if (ENABLE_BSDCOMPAT AND BSD_FOUND)
 		add_definitions(-DHAVE_BSD_COMPAT)
-		include_directories(${BSD_INCLUDE_DIRS})
-	else()
-		remove_definitions(-DHAVE_SETPROCTITLE)
+	endif()
+
+        # Linux specifig include directories
+	# ----------------------------------
+	include_directories(/usr/local/include)
+        if (ENABLE_BSDCOMPAT AND BSD_FOUND)
+                include_directories(${BSD_INCLUDE_DIRS})
 	endif()
 endif()
 
@@ -182,6 +207,7 @@ target_link_libraries(tNETacle
         ${EVENT_LIBRARIES}
         ${ZLIB_LIBRARY}
         ${YAJL_LIBRARIES}
+        ${OPENSSL_LIBRARIES}
 )
 
 if (TUNTAP_FOUND)
@@ -202,3 +228,5 @@ endif()
 if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
+
+include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.link.local OPTIONAL)
