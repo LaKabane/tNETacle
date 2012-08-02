@@ -24,7 +24,6 @@
 # include <WS2tcpip.h>
 # include <io.h>
 # define ssize_t SSIZE_T
-# define snprintf _snprintf
 #endif
 
 #if defined Unix
@@ -61,20 +60,44 @@
 
 extern struct options serv_opts;
 
-union chartoshort {
-    unsigned char *cptr;
-    unsigned short *sptr;
-}; /* The goal of this union is to properly convert uchar* to ushort* */
-
 #if defined Windows
 static void
-send_buffer_to_device_thread(struct evbuffer *buf, size_t size, struct server *s)
+send_buffer_to_device_thread(struct server *s, struct frame *frame)
 {
     struct evbuffer *output = bufferevent_get_output(s->pipe_endpoint);
 
-    evbuffer_add(output, evbuffer_pullup(buf, size), size);
+    /*No need to networkize the size, we are in local !*/
+    evbuffer_add(output, &frame->size, sizeof frame->size);
+    evbuffer_add(output, frame->frame, frame->size);
 }
 #endif
+
+static void
+forward_frame_to_other_peers(struct server *s, struct frame *current_frame, struct bufferevent *current_bev)
+{
+    struct mc *it = NULL;
+    struct mc *ite = NULL;
+    char name[128];
+
+    for (it = v_mc_begin(&s->peers), ite = v_mc_end(&s->peers);
+        it != ite;
+        it = v_mc_next(it))
+    {
+        int err;
+
+        /* If its not the peer we received the data from. */
+        if (it->bev == current_bev)
+            continue;
+        err = mc_add_frame(it, current_frame);
+        if (err == -1)
+        {
+            log_notice("error while crafting the buffer to send to %p", it);
+            break;
+        }
+        log_debug("adding %d bytes to %s's output buffer",
+            current_frame->size, mc_presentation(it, name, sizeof name));
+    }
+}
 
 static void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
@@ -82,54 +105,48 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     struct server *s = (struct server *)ctx;
     ssize_t n;
     struct evbuffer *buf = NULL;
-    struct mc *it = NULL;
-    struct mc *ite = NULL;
+    struct frame current_frame;
     unsigned short size;
+    unsigned short *networked_size_ptr;
 
+    memset(&current_frame, 0, sizeof current_frame);
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
     {
         /*
-         * Using chartoshort union to explicitly convert form uchar* to ushort*
-         * without warings.
+         * Read and convert the first bytes of the buffer from network byte
+         * order to host byte order.
          */
-        union chartoshort u;
-        u.cptr = evbuffer_pullup(buf, sizeof(size));
-        size = ntohs(*u.sptr);
+        networked_size_ptr = (unsigned short *)evbuffer_pullup(buf, sizeof(size));
+        size = ntohs(*networked_size_ptr);
+
         if (size > evbuffer_get_length(buf))
         {
-            log_debug("receive an incomplete frame of %d(%-#2x) bytes but "
-                      "only %d bytes are available", size, *(u.sptr),
+            log_notice("receive an incomplete frame of %d(%-#2x) bytes but "
+                "only %d bytes are available", size, *networked_size_ptr,
                       evbuffer_get_length(buf));
             break;
         }
-        log_debug("receive a frame of %d(%-#2x) bytes", size, *(u.sptr));
-        for (it = v_mc_begin(&s->peers),
-             ite = v_mc_end(&s->peers);
-             it != ite;
-             it = v_mc_next(it))
-        {
-            int err;
-
-            if (it->bev == bev)
-                continue;
-            err = bufferevent_write(it->bev, evbuffer_pullup(buf, sizeof(size) + size), sizeof(size) + size);
-            if (err == -1)
-            {
-                log_notice("error while crafting the buffer to send to %p", it);
-                break;
-            }
-            log_debug("adding %d(%-#2x) bytes to %p's output buffer",
-                      size, size, it);
-        }
-#if defined Windows
-        send_buffer_to_device_thread(buf, sizeof(size) + size, s);
-        evbuffer_drain(buf, sizeof(size) + size);
-#else
+        log_notice("receive a frame of %d(%-#2x) bytes", size, *networked_size_ptr);
         evbuffer_drain(buf, sizeof(size));
-		n = write(event_get_fd(s->device), evbuffer_pullup(buf, size), size);
-        evbuffer_drain(buf, size);
+
+        /* We fill the current_frame with the size in host byte order, and the frame's data*/
+        current_frame.size = size;
+        current_frame.frame = evbuffer_pullup(buf, size); 
+        /* And forward it to anyone else but except current peer*/
+        forward_frame_to_other_peers(s, &current_frame, bev);
+
+#if defined Windows
+        /*
+         * Send to current frame to the windows thread handling the tun/tap
+         * devices and clean the evbuffer
+         */
+        send_buffer_to_device_thread(s, &current_frame);
+#else
+        /* Write the current frame on the device and clean the evbuffer*/
+        n = write(event_get_fd(s->device), current_frame.frame, current_frame.size);
 #endif
+        evbuffer_drain(buf, size);
     }
 }
 
@@ -151,11 +168,17 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         struct mc *mc;
         struct mc tmp;
 
+        /*
+         * If we received the notification that the connection is established,
+         * then we move the corresponding struct mc from s->pending_peers to
+         * s->peers.
+         */
+
         tmp.bev = bev;
         mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
         if (mc != v_mc_end(&s->pending_peers))
         {
-            log_notice("standard connexion established.");
+            log_notice("connexion established.");
             memcpy(&tmp, mc, sizeof(tmp));
             v_mc_erase(&s->pending_peers, mc);
             v_mc_push(&s->peers, &tmp);
@@ -183,6 +206,10 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
                        ERR_lib_error_string(sslerr),
                        ERR_func_error_string(sslerr));
         }
+        /*
+         * Find if the exception come from a pending peer or a
+         * peer and close it.
+         */
         mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
         if (mc != v_mc_end(&s->pending_peers))
         {
@@ -213,6 +240,8 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
     struct mc mc;
 
     memset(&mc, 0, sizeof mc);
+    /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
+    /* Even if we are not in a SSL context, mc_init know what to do anyway*/
     mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
     errcode = mc_init(&mc, base, fd, sock, (socklen_t)len, s->server_ctx);
     if (errcode != -1)
@@ -235,33 +264,12 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
     (void)ctx;
 }
 
-static char *
-peer_name(struct mc *mc, char *name, int len)
-{
-    struct sockaddr *sock = mc->p.address;
 
-    if (sock->sa_family == AF_INET)
-    {
-        struct sockaddr_in *sin = (struct sockaddr_in *)sock;
-        char tmp[64];
-
-        evutil_inet_ntop(AF_INET, &sin->sin_addr, tmp, sizeof tmp);
-        snprintf(name, len, "%s:%d", tmp, ntohs(sin->sin_port));
-        return name;
-    }
-    else
-    {
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sock;
-        char tmp[128];
-
-        evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, tmp, sizeof tmp);
-        snprintf(name, len, "%s:%d", tmp, ntohs(sin6->sin6_port));
-        return name;
-    }
-}
-
+/*
+ * On Windows, we use this function outside server.c for readability purpose.
+ */
 #if defined Windows
-/*static */void
+/*static*/ void
 #else
 static void
 #endif
@@ -271,35 +279,24 @@ broadcast_to_peers(struct server *s)
     struct frame *fite = v_frame_end(&s->frames_to_send);
     char name[512];
 
+    /* For all the frames*/
     for (;fit != fite; fit = v_frame_next(fit))
     {
-        unsigned short size_networked = htons(fit->size);
         struct mc *it = NULL;
         struct mc *ite = NULL;
 
         it = v_mc_begin(&s->peers);
         ite = v_mc_end(&s->peers);
+        /* For all the peers*/
         for (;it != ite; it = v_mc_next(it))
         {
             int err;
 
-            err = bufferevent_write(it->bev, &size_networked, sizeof(size_networked));
-            if (err == -1)
-            {
-                log_notice("error while crafting the buffer to send to %s", peer_name(it, name, sizeof name));
-                break;
-            }
-            err = bufferevent_write(it->bev, fit->frame, fit->size);
-            if (err == -1)
-            {
-                log_notice("error while crafting the buffer to send to %s", peer_name(it, name, sizeof name));
-                break;
-            }
+            err = mc_add_frame(it, fit);
             log_debug("adding %d(%-#2x) bytes to %s's output buffer",
-                      fit->size, fit->size, peer_name(it, name, sizeof name));
+                fit->size, fit->size, mc_presentation(it, name, sizeof name));
         }
     }
-    v_frame_erase_range(&s->frames_to_send, v_frame_begin(&s->frames_to_send), fite);
 }
 
 #if defined Windows
@@ -311,13 +308,20 @@ server_set_device(struct server *s, int fd)
 
     it = v_evl_begin(&s->srv_list);
     ite = v_evl_end(&s->srv_list);
+    /* Enable all the listeners */
     for (; it != ite; it = v_evl_next(it))
     {
         evconnlistener_enable(*it);
     }
-    log_notice("listener started");
+    log_notice("listeners started");
 }
 #else
+
+static void
+free_frame(struct frame const *f)
+{
+    free(f->frame);
+}
 
 static void
 server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
@@ -330,17 +334,24 @@ server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
         ssize_t n;
         struct frame tmp;
 
-        while ((n = read(device_fd, &tmp.frame, sizeof(tmp.frame))) > 0)
+        /* I know it sucks. I'm waiting for libtuntap to handle*/
+        /* a FIONREAD-like api.*/
+#define FRAME_DYN_SIZE 1600
+        tmp.frame = (char *)malloc(FRAME_DYN_SIZE); /*XXX*/
+        while ((n = read(device_fd, tmp.frame, FRAME_DYN_SIZE)) > 0)
         {
             tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
             v_frame_push(&s->frames_to_send, &tmp);
             //log_debug("Read a new frame of %d bytes.", n);
+            tmp.frame = (char *)malloc(FRAME_DYN_SIZE); /*XXX*/
             _n++;
         }
         if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
         {
             //log_debug("Read %d frames in this pass.", _n);
             broadcast_to_peers(s);
+            v_frame_foreach(&s->frames_to_send, free_frame);
+            v_frame_clean(&s->frames_to_send);
         }
         else if (n == -1)
             log_warn("read on the device failed:");
@@ -372,6 +383,7 @@ server_set_device(struct server *s, int fd)
 
     it = v_evl_begin(&s->srv_list);
     ite = v_evl_end(&s->srv_list);
+    /* Enable all the listeners */
     for (; it != ite; it = v_evl_next(it))
     {
         evconnlistener_enable(*it);
@@ -421,10 +433,6 @@ server_init(struct server *s, struct event_base *evbase)
     int err;
     size_t i = 0;
 
-    it_listen = v_sockaddr_begin(&serv_opts.listen_addrs);
-    ite_listen = v_sockaddr_end(&serv_opts.listen_addrs);
-    it_peer = v_sockaddr_begin(&serv_opts.peer_addrs);
-    ite_peer = v_sockaddr_end(&serv_opts.peer_addrs);
 
     v_mc_init(&s->peers);
     v_mc_init(&s->pending_peers);
@@ -432,16 +440,21 @@ server_init(struct server *s, struct event_base *evbase)
     v_evl_init(&s->srv_list);
     s->evbase = evbase;
 
+    it_listen = v_sockaddr_begin(&serv_opts.listen_addrs);
+    ite_listen = v_sockaddr_end(&serv_opts.listen_addrs);
     /* Listen on all ListenAddress */
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
     {
         struct evconnlistener *evl = NULL;
+        char listenname[128];
 
         evl = evconnlistener_new_bind(evbase, listen_callback,
-          s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
-          (struct sockaddr *)&it_listen->sockaddr, it_listen->len);
+            s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
+            (struct sockaddr *)&it_listen->sockaddr, it_listen->len);
         if (evl == NULL) {
-            log_debug("fail at ListenAddress #%i", i);
+            log_debug("Failed to allocate the listener to listen to %s",
+                address_presentation((struct sockaddr *)&it_listen->sockaddr,
+                it_listen->len, listenname, sizeof listenname));
              continue;
         }
         evconnlistener_set_error_cb(evl, accept_error_cb);
@@ -453,25 +466,31 @@ server_init(struct server *s, struct event_base *evbase)
     if (serv_opts.peer_addrs.size == 0)
         return 0;
 
+    it_peer = v_sockaddr_begin(&serv_opts.peer_addrs);
+    ite_peer = v_sockaddr_end(&serv_opts.peer_addrs);
     for (;it_peer != ite_peer; it_peer = v_sockaddr_next(it_peer))
     {
         struct mc mc;
+        char peername[128];
 
         memset(&mc, 0, sizeof mc);
+        address_presentation((struct sockaddr *)&it_peer->sockaddr,
+            it_peer->len, peername, sizeof peername);
+        /* Notifiy the mc_init that we are in an SSL_CONNECTING state*/
+        /* Even if we are not in a SSL context, mc_init know what to do anyway*/
         mc.ssl_flags = BUFFEREVENT_SSL_CONNECTING;
         err = mc_init(&mc, evbase, -1, (struct sockaddr *)&it_peer->sockaddr,
                       it_peer->len, s->server_ctx);
         if (err == -1) {
-            log_warn("unable to allocate a socket for connecting to the peer");
-            break;
+            log_warn("unable to allocate a socket for connecting to %s", peername);
+            continue;
         }
         bufferevent_setcb(mc.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
         err = bufferevent_socket_connect(mc.bev,
-                                         (struct sockaddr *)&it_peer->sockaddr,
-                                         it_peer->len);
+            (struct sockaddr *)&it_peer->sockaddr, it_peer->len);
         if (err == -1) {
-            log_warn("unable to connect to the peer:");
-            break;
+            log_warn("unable to connect to %s", peername);
+            continue;
         }
         v_mc_push(&s->pending_peers, &mc);
     }
