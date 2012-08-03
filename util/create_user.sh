@@ -17,6 +17,7 @@ if [ "`uname`" = "Darwin" ]; then
 	dscl . -create /Users/$name RealName $real_name
 	dscl . -create /Users/$name PrimaryGroupID 0
 	dscl . -create /Users/$name NFSHomeDirectory $home
+        dscl . -create /Users/$name UniqueID 421
 else
 	useradd -s $shell -d $home -c $real_name $name
 fi
