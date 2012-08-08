@@ -181,10 +181,25 @@ main(int argc, char *argv[]) {
     signal(SIGCHLD, _sighdlr);
     chld_pid = tnt_fork(imsg_fds);
 
+#ifdef Darwin
+    struct event_config *evconf = event_config_new();
+    if (evconf == NULL)
+        log_err(1, "libevent");
+    if (event_config_avoid_method(evconf, "poll") == -1 ||
+      event_config_avoid_method(evconf, "epoll") == -1 ||
+      event_config_avoid_method(evconf, "devpoll") == -1 ||
+      event_config_avoid_method(evconf, "evport") == -1 ||
+      event_config_avoid_method(evconf, "win32") == -1 ||
+      event_config_avoid_method(evconf, "kqueue") == -1)
+        log_err(1, "libevent config");
+   if ((evbase = event_base_new_with_config(evconf)) == NULL)
+        log_err(1, "libevent");
+    event_config_free(evconf);
+#else
     if ((evbase = event_base_new()) == NULL) {
-	log_err(1, "libevent");
+        log_err(1, "libevent");
     }
-
+#endif /* Darwin */
     sigint = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
     sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sighdlr, evbase);
@@ -288,7 +303,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    (void)memset(buf, '\0', sizeof buf);
 	    (void)memcpy(buf, imsg.data, datalen);
 	    buf[datalen] = '\0';
-	    
+
 	    log_info("receive IMSG_SET_IP: %s", buf);
 	    tnt_ttc_set_ip(dev, buf);
             tnt_ttc_up(dev);
@@ -300,4 +315,3 @@ dispatch_imsg(struct imsgbuf *ibuf) {
     }
     return 0;
 }
-

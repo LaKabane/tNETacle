@@ -94,7 +94,7 @@ tnt_priv_drop(struct passwd *pw) {
     /* All this part is a preparation to the privileges dropping */
     if (stat(pw->pw_dir, &ss) == -1)
         log_err(1, "%s", pw->pw_dir);
-    if (ss.st_uid != 0) 
+    if (ss.st_uid != 0)
         log_errx(1, "_tnetacle's home has unsafe owner");
     if ((ss.st_mode & (S_IWGRP | S_IWOTH)) != 0)
         log_errx(1, "_tnetacle's home has unsafe permissions");
@@ -166,7 +166,7 @@ tnt_fork(int imsg_fds[2]) {
     }
 
     if ((pw = getpwnam(TNETACLE_USER)) == NULL) {
-	log_errx(1, "unknown user " TNETACLE_USER);
+    	log_errx(1, "unknown user " TNETACLE_USER);
 	return TNT_NOUSER;
     }
 
@@ -176,11 +176,25 @@ tnt_fork(int imsg_fds[2]) {
         server.server_ctx = NULL;
 
     tnt_priv_drop(pw);
-
+#ifdef Darwin
+    struct event_config *evconf = event_config_new();
+    if (evconf == NULL)
+        log_err(1, "libevent");
+    if (event_config_avoid_method(evconf, "poll") == -1 ||
+    /*   event_config_avoid_method(evconf, "epoll") == -1 || */
+    /*   event_config_avoid_method(evconf, "devpoll") == -1 || */
+    /*   event_config_avoid_method(evconf, "evport") == -1 || */
+    /*   event_config_avoid_method(evconf, "win32") == -1 || */
+      event_config_avoid_method(evconf, "kqueue") == -1)
+        log_err(1, "libevent config");
+   if ((evbase = event_base_new_with_config(evconf)) == NULL)
+        log_err(1, "libevent");
+    /* event_config_free(evconf); */
+#else
     if ((evbase = event_base_new()) == NULL) {
-	log_err(1, "libevent");
+        log_err(1, "libevent");
     }
-
+#endif /* Darwin */
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);
 
