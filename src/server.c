@@ -120,7 +120,8 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
         networked_size_ptr = (unsigned short *)evbuffer_pullup(buf, sizeof(size));
         size = ntohs(*networked_size_ptr);
 
-        if (size > evbuffer_get_length(buf))
+        /* We are going to drain 2 bytes just after, so we'd better count them.*/
+        if (size > evbuffer_get_length(buf) - sizeof(size))
         {
             log_notice("receive an incomplete frame of %d(%-#2x) bytes but "
                 "only %d bytes are available", size, *networked_size_ptr,

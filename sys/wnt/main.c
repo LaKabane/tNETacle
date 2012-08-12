@@ -178,7 +178,7 @@ void pipe_read(struct evbuffer *evb, LPOVERLAPPED_ENTRY Ol, HANDLE device_fd)
 /*
  * Well, this function might be the most horrible chunk of code I've ever wrote.
  * I know nothing about ICOP and WinAPI to begin with, sorry :(.
- * So, to you, adventurous reader, take care, you're entering the dragon cave..
+ * So, to you, adventurous reader, take care, you're entering the dragon's cave..
  */
 
 /*
@@ -214,7 +214,7 @@ DWORD IOCPFunc(void *lpParam)
         log_notice("Error: %s", formated_error(L"%1", GetLastError()));
     hPort = CreateIoCompletionPort((HANDLE)data.pipe_fd, hPort, 0xDEADBEAF, 0);
     if (hPort == NULL)
-        printf("Error: %s", formated_error(L"%1", GetLastError()));
+        log_notice("Error: %s", formated_error(L"%1", GetLastError()));
     /*Forever*/
     for (;;)
     {

@@ -34,7 +34,7 @@
 extern struct options serv_opts;
 
 /*
- * Returns a human readable presentation of the mc endpoint.
+ * Returns a human readable presentation of a sockaddr
  * Fills the char *name parameter, and return its address.
  */
 
@@ -42,6 +42,7 @@ char *
 address_presentation(struct sockaddr *sock, int socklen,
                      char *name, int namelen)
 {
+    (void)socklen;
     if (sock->sa_family == AF_INET)
     {
         struct sockaddr_in *sin = (struct sockaddr_in *)sock;
@@ -62,6 +63,10 @@ address_presentation(struct sockaddr *sock, int socklen,
     }
 }
 
+/*
+ * Returns a human readable presentation of the mc endpoint.
+ * Fills the char *name parameter, and return its address.
+ */
 char *
 mc_presentation(struct mc *self, char *name, int len)
 {
