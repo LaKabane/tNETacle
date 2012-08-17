@@ -21,10 +21,7 @@
 struct bufferevent;
 struct sockaddr;
 struct event_base;
-
-#if defined Windows
-#define socklen_t int
-#endif
+struct frame;
 
 struct mc
 {
@@ -39,7 +36,9 @@ struct mc
 int mc_init(struct mc *, struct event_base *, int fd, struct sockaddr *,
              socklen_t len, SSL_CTX *server_ctx);
 void mc_close(struct mc *);
-int mc_ssl_connect(struct mc *, struct event_base *);
-int mc_ssl_accept(struct mc *, struct event_base *);
+int mc_add_frame(struct mc *, struct frame *);
+int mc_add_raw_data(struct mc *, void *, size_t);
+char *mc_presentation(struct mc*, char *name, int size);
+char *address_presentation(struct sockaddr *, int socklen, char *, int);
 
 #endif /* end of include guard: MC_ENDPOINT_JU2N66SJ */

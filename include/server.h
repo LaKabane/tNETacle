@@ -35,7 +35,7 @@ struct event_base;
 
 struct frame {
   unsigned short size;
-  char frame[1542]; /*Max size of a frame with a 1500 MTU (payload + header size)*/
+  void *frame;
 };
 
 #define VECTOR_TYPE struct frame
