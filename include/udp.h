@@ -21,7 +21,17 @@
 #include "coro.h"
 #include "tntsched.h"
 
-#define TNETACLE_UDP_PORT 7676
+#define TNETACLE_UDP_PORT   7676
+#define UDP_MTU             1500
+
+enum udp_ssl_flags
+{
+    DTLS_ENABLE = (1 << 0),
+    DTLS_DISABLE = (1 << 1),
+    DTLS_CLIENT = (1 << 2),
+    DTLS_SERVER = (1 << 3),
+    DTLS_CONNECTED = (1 << 4),
+};
 
 struct server;
 struct frame;
@@ -36,6 +46,7 @@ struct udp_peer
     BIO                     *bio;
     BIO                     *_bio_backend;
     SSL                     *ssl;
+    enum udp_ssl_flags      ssl_flags;
 };
 
 #define VECTOR_TYPE struct udp_peer
@@ -46,21 +57,25 @@ struct udp_peer
 struct udp
 {
     int                     fd;
-    struct sockaddr_storage udp_addr;
     int                     udp_addrlen;
+    SSL_CTX                 *ctx;
     struct sched            *udp_sched;
-    struct fiber            *udp_fiber;
-    struct vector_frame     *frame_udp;
+    struct fiber            *udp_recv_fib;
+    struct fiber            *udp_brd_fib;
     struct vector_udp       *udp_peers;
+    struct sockaddr_storage udp_addr;
 };
 
-int server_init_udp(struct server *s,
+int server_udp_init(struct server *s,
                     struct sockaddr *addr,
                     int len);
 
-void udp_register_new_peer(struct udp *s,
+void server_udp_exit(struct udp *);
+
+struct udp_peer *udp_register_new_peer(struct udp *s,
                            struct sockaddr *sock,
-                           int socklen);
+                           int socklen,
+                           int ssl_flags);
 
 void forward_udp_frame_to_other_peers(struct udp *s,
                                       struct frame *current_frame,
@@ -77,6 +92,9 @@ int frame_recvfrom(void *ctx,
 
 void
 server_udp(void *ctx);
+
+void
+server_dtls(void *ctx);
 
 unsigned short
 udp_get_port(struct udp *);
