@@ -18,23 +18,12 @@
 #include <string.h>
 #include <errno.h>
 
-#include <sys/types.h>
-
 #if defined Windows
-# include <WS2tcpip.h>
-# include <io.h>
 # define ssize_t SSIZE_T
 #endif
 
 #if defined Unix
 # include <unistd.h>
-# include <sys/socket.h>
-# include <netinet/in.h>
-#endif
-
-#if defined Windows
-# include <WS2tcpip.h>
-# include <io.h>
 #endif
 
 #include <event2/event.h>
@@ -77,7 +66,7 @@ forward_frame_to_other_peers(struct server *s, struct frame *current_frame, stru
 {
     struct mc *it = NULL;
     struct mc *ite = NULL;
-    char name[128];
+    char name[INET6_ADDRSTRLEN];
 
     for (it = v_mc_begin(&s->peers), ite = v_mc_end(&s->peers);
         it != ite;
@@ -107,7 +96,7 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     struct evbuffer *buf = NULL;
     struct frame current_frame;
     unsigned short size;
-    unsigned short *networked_size_ptr;
+    unsigned short *network_size_ptr;
 
     memset(&current_frame, 0, sizeof current_frame);
     buf = bufferevent_get_input(bev);
@@ -117,21 +106,25 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
          * Read and convert the first bytes of the buffer from network byte
          * order to host byte order.
          */
-        networked_size_ptr = (unsigned short *)evbuffer_pullup(buf, sizeof(size));
-        size = ntohs(*networked_size_ptr);
+        network_size_ptr = (unsigned short *)evbuffer_pullup(buf, sizeof(size));
+        size = ntohs(*network_size_ptr);
 
         /* We are going to drain 2 bytes just after, so we'd better count them.*/
         if (size > evbuffer_get_length(buf) - sizeof(size))
         {
-            log_notice("receive an incomplete frame of %d(%-#2x) bytes but "
-                "only %d bytes are available", size, *networked_size_ptr,
+            log_debug("receive an incomplete frame of %d(%-#2x) bytes but "
+                "only %d bytes are available", size, *network_size_ptr,
                       evbuffer_get_length(buf));
             break;
         }
-        log_notice("receive a frame of %d(%-#2x) bytes", size, *networked_size_ptr);
+        log_debug("receive a frame of %d(%-#2x) bytes", size,
+                   *network_size_ptr);
         evbuffer_drain(buf, sizeof(size));
 
-        /* We fill the current_frame with the size in host byte order, and the frame's data*/
+        /* 
+         * We fill the current_frame with the size in host byte order,
+         * and the frame's data
+         */
         current_frame.size = size;
         current_frame.frame = evbuffer_pullup(buf, size); 
         /* And forward it to anyone else but except current peer*/
@@ -179,7 +172,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
         if (mc != v_mc_end(&s->pending_peers))
         {
-            log_notice("connexion established.");
+            log_info("connexion established.");
             memcpy(&tmp, mc, sizeof(tmp));
             v_mc_erase(&s->pending_peers, mc);
             v_mc_push(&s->peers, &tmp);
@@ -197,12 +190,12 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 
         if (everr != 0)
         {
-            log_notice("closing the socket with error closing the meta-connexion: (%d) %s",
+            log_warnx("Unexpected shutdown of the meta-connexion: (%d) %s",
                        everr, evutil_socket_error_to_string(everr));
         }
         while ((sslerr = bufferevent_get_openssl_error(bev)) != 0)
         {
-            log_notice("SSL error code (%d): %s in %s %s",
+            log_warnx("SSL error code (%d): %s in %s %s",
                        sslerr, ERR_reason_error_string(sslerr),
                        ERR_lib_error_string(sslerr),
                        ERR_func_error_string(sslerr));
@@ -314,7 +307,7 @@ server_set_device(struct server *s, int fd)
     {
         evconnlistener_enable(*it);
     }
-    log_notice("listeners started");
+    log_info("listeners started");
 }
 #else
 
@@ -380,7 +373,7 @@ server_set_device(struct server *s, int fd)
     }
     s->device = ev;
     event_add(s->device, NULL);
-    log_notice("event handler for the device sucessfully configured");
+    log_info("event handler for the device sucessfully configured");
 
     it = v_evl_begin(&s->srv_list);
     ite = v_evl_end(&s->srv_list);
@@ -389,7 +382,7 @@ server_set_device(struct server *s, int fd)
     {
         evconnlistener_enable(*it);
     }
-    log_notice("listener started");
+    log_info("listener started");
 }
 
 #endif
@@ -414,11 +407,11 @@ evssl_init(void)
         (!SSL_CTX_use_certificate_chain_file(server_ctx, serv_opts.cert_path) ||
         !SSL_CTX_use_PrivateKey_file(server_ctx, serv_opts.key_path, SSL_FILETYPE_PEM)))
     {
-        log_notice("Couldn't read 'pkey' or 'cert' file.  To generate a key");
-        log_notice("and self-signed certificate, run:");
-        log_notice("  openssl genrsa -out pkey 2048");
-        log_notice("  openssl req -new -key pkey -out cert.req");
-        log_notice("  openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert");
+        log_info("Couldn't read 'pkey' or 'cert' file.  To generate a key");
+        log_info("and self-signed certificate, run:");
+        log_info("  openssl genrsa -out pkey 2048");
+        log_info("  openssl req -new -key pkey -out cert.req");
+        log_info("  openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert");
         return NULL;
     }
     return server_ctx;
@@ -447,13 +440,13 @@ server_init(struct server *s, struct event_base *evbase)
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
     {
         struct evconnlistener *evl = NULL;
-        char listenname[128];
+        char listenname[INET6_ADDRSTRLEN];
 
         evl = evconnlistener_new_bind(evbase, listen_callback,
             s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
             (struct sockaddr *)&it_listen->sockaddr, it_listen->len);
         if (evl == NULL) {
-            log_debug("Failed to allocate the listener to listen to %s",
+            log_warnx("Failed to allocate the listener to listen to %s",
                 address_presentation((struct sockaddr *)&it_listen->sockaddr,
                 it_listen->len, listenname, sizeof listenname));
              continue;
@@ -472,7 +465,7 @@ server_init(struct server *s, struct event_base *evbase)
     for (;it_peer != ite_peer; it_peer = v_sockaddr_next(it_peer))
     {
         struct mc mc;
-        char peername[128];
+        char peername[INET6_ADDRSTRLEN];
 
         memset(&mc, 0, sizeof mc);
         address_presentation((struct sockaddr *)&it_peer->sockaddr,

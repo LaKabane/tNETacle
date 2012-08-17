@@ -34,8 +34,7 @@
 extern struct options serv_opts;
 
 /*
- * Returns a human readable presentation of a sockaddr
- * Fills the char *name parameter, and return its address.
+ * A simple wrapper over inet_ntop :)
  */
 
 char *
@@ -46,7 +45,7 @@ address_presentation(struct sockaddr *sock, int socklen,
     if (sock->sa_family == AF_INET)
     {
         struct sockaddr_in *sin = (struct sockaddr_in *)sock;
-        char tmp[64];
+        char tmp[INET_ADDRSTRLEN];
 
         evutil_inet_ntop(AF_INET, &sin->sin_addr, tmp, sizeof tmp);
         evutil_snprintf(name, namelen, "%s:%d", tmp, ntohs(sin->sin_port));
@@ -55,7 +54,7 @@ address_presentation(struct sockaddr *sock, int socklen,
     else
     {
         struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sock;
-        char tmp[128];
+        char tmp[INET6_ADDRSTRLEN];
 
         evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, tmp, sizeof tmp);
         evutil_snprintf(name, namelen, "%s:%d", tmp, ntohs(sin6->sin6_port));
@@ -145,13 +144,15 @@ mc_add_frame(struct mc *self, struct frame *f)
     err = evbuffer_add(output, &size_networked, sizeof(size_networked));
     if (err == -1)
     {
-        log_notice("error while crafting the buffer to send to %s", mc_presentation(self, name, sizeof name));
+        log_notice("error while crafting the buffer to send to %s",
+                   mc_presentation(self, name, sizeof name));
         return -1;
     }
     err = evbuffer_add(output, f->frame, f->size);
     if (err == -1)
     {
-        log_notice("error while crafting the buffer to send to %s", mc_presentation(self, name, sizeof name));
+        log_notice("error while crafting the buffer to send to %s",
+                   mc_presentation(self, name, sizeof name));
         return -1;
     }
     return f->size;
@@ -159,9 +160,9 @@ mc_add_frame(struct mc *self, struct frame *f)
 
 /*
  * This function will add raw data to the output buffer.
- * As you might guess, this function can not check anything about the input data,
- * so try not to use it to much.
- * The return value is -1 if the function failed, the number of bytes added otherwise
+ * As you might guess, this function can not check anything about the input
+ * data, so try not to use it to much.  The return value is -1 if the function
+ * failed, the number of bytes added otherwise
  */
 
 int
