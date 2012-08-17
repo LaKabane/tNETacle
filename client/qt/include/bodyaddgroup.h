@@ -14,30 +14,26 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef UTILS_H_
-# define UTILS_H_
+#ifndef BODYADDGROUP_H
+#define BODYADDGROUP_H
 
-#include <QVariant>
-#include "tclt_json.h"
+#include <QWidget>
+#include "controller.h"
+#include "ui_bodyaddgroup.h"
 
-class Utils
+namespace Ui {
+    class BodyAddGroup;
+}
+
+class BodyAddGroup : public QFrame, public Ui::BodyAddGroup
 {
+    Q_OBJECT
 public:
-	static QVariant* getVariant(const char *buf, size_t len);
+    explicit BodyAddGroup(QWidget *parent = 0, Controller* controller = 0);
+    ~BodyAddGroup() {}
 
-	static QVariant createVariantSimple(elements **e, bool &ok);
-	static QVariant createVariantArray(elements **e, bool &ok);
-	static QVariant createVariantMap(elements **e, bool &ok);
-	static QVariant createVariantWithKey(elements **e, bool &ok);
-	static QVariant* createVariant(elements *e);
+private:
+    Controller* _controller;
 };
 
-struct s_elementType
-{
-	enum element_type type;
-	QVariant (*fun)(elements **e, bool &ok);
-};
-
-typedef struct s_elementType eType;
-
-#endif /* !UTILS_H_ */
+#endif // BODYADDGROUP_H

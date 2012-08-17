@@ -27,6 +27,7 @@
 #include <openssl/ssl.h> /* Can not forward declare SSL* types*/
 
 #include "udp.h"
+#include "mc.h"
 
 struct evconnlistener;
 struct bufferevent;
@@ -34,25 +35,18 @@ struct event_base;
 struct vector_evl;
 struct vector_mc;
 struct sockaddr;
+struct fiber;
 struct frame;
 struct mc;
 
 #define VECTOR_TYPE struct mc
 #define VECTOR_PREFIX mc
-#define VECTOR_FORWARD
 #include "vector.h"
 
 #define VECTOR_TYPE struct evconnlistener*
 #define VECTOR_PREFIX evl
 #define VECTOR_TYPE_SCALAR
-#define VECTOR_FORWARD
 #include "vector.h"
-
-#define VECTOR_TYPE struct frame
-#define VECTOR_PREFIX frame
-#define VECTOR_FORWARD
-#include "vector.h"
-
 
 #if defined Windows
 # define ssize_t SSIZE_T
@@ -68,14 +62,16 @@ struct packet_hdr
 struct server 
 {
   struct vector_evl     *srv_list; /*list of the listenners*/
-  struct udp            udp;
-  struct event          *device;
+  struct udp            *udp;
   struct vector_mc      *peers; /* The actual list of peers */
   struct vector_mc      *pending_peers; /* Pending in connection peers*/
   struct vector_frame   *frames_to_send;
   struct event_base     *evbase;
+  struct fiber          *device_fib;
   SSL_CTX               *server_ctx;
+  struct sched          *ev_sched;
   struct mc             mc_client;
+  evutil_socket_t       tap_fd;
 #if defined Windows
   struct bufferevent    *pipe_endpoint;
 #endif
@@ -87,9 +83,6 @@ int server_init(struct server *,
                 struct event_base *);
 
 void server_delete(struct server *);
-
-void server_set_device(struct server *,
-                       int fd);
 
 #if defined Windows
 void broadcast_udp_to_peers(struct server *s);

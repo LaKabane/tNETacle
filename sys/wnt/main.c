@@ -15,6 +15,7 @@
 */
 
 #include <WS2tcpip.h>
+#include <ws2def.h>
 
 #include <event2/event.h>
 #include <event2/buffer.h>
@@ -33,6 +34,7 @@
 #include "server.h"
 #include "frame.h"
 #include "udp.h"
+#include "device.h"
 
 int debug;
 extern struct options serv_opts;
@@ -44,32 +46,7 @@ typedef struct IOData {
     char enabled;
 } IODATA, *PIODATA;
 
-IODATA IOCPData;
-
-static void
-libevent_dump(struct event_base *base)
-{
-    int i;
-    enum event_method_feature f;
-    const char **methods = event_get_supported_methods();
-
-    printf("Starting Libevent %s.  Available methods are:\n",
-        event_get_version());
-    for (i=0; methods[i] != NULL; ++i) {
-        printf("    %s\n", methods[i]);
-    }
-
-    printf("Using Libevent with backend method %s.",
-        event_base_get_method(base));
-    f = event_base_get_features(base);
-    if ((f & EV_FEATURE_ET))
-        printf("  Edge-triggered events are supported.");
-    if ((f & EV_FEATURE_O1))
-        printf("  O(1) event notification is supported.");
-    if ((f & EV_FEATURE_FDS))
-        printf("  All FD types are supported.");
-    puts("");
-}
+static IODATA IOCPData;
 
 void init_options(struct options *);
 void broadcast_to_peers(struct server *s);
@@ -77,7 +54,7 @@ void broadcast_to_peers(struct server *s);
 void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct server *s, SOCKET pipe_fd)
 {
     char *packet;
-    short frame_size = size;
+    short frame_size = (short)size;
     int errcode;
     size_t packet_size = frame_size + sizeof(frame_size);
     //LPOVERLAPPED overlapped = NULL;
@@ -88,8 +65,8 @@ void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct serve
     packet = (char *)malloc(size + sizeof(short));
     if (packet == NULL)
         return ;
-    memcpy(packet, &frame_size, sizeof(frame_size));
-    memcpy(packet + sizeof(frame_size), frame, frame_size);
+    (void)memcpy(packet, &frame_size, sizeof(frame_size));
+    (void)memcpy(packet + sizeof(frame_size), frame, frame_size);
 
     //The send is supposed to be async also, so we need a new overlapped
     //overlapped = (LPOVERLAPPED)malloc(sizeof(OVERLAPPED));
@@ -118,7 +95,7 @@ void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct serve
     //    }
     //}
 
-    errcode = send(pipe_fd, packet, packet_size, 0);
+    errcode = send(pipe_fd, packet, (int)packet_size, 0);
     if (errcode == 0 && (errcode = WSAGetLastError()) != WSA_IO_PENDING)
     {
         log_debug("Error(%d) pipe write: %s", errcode, formated_error(L"%1%0", errcode));
@@ -202,7 +179,7 @@ DWORD IOCPFunc(void *lpParam)
     BOOL io_status;
     BOOL need_new_dev_overlapped = 1;
     BOOL need_new_pipe_overlapped = 1;
-    size_t n = 0;
+    ULONG n = 0;
     int errcode;
 
     evb_pipe = evbuffer_new();
@@ -273,12 +250,13 @@ DWORD IOCPFunc(void *lpParam)
         }
         else
         {
-            int i = 0;
+            ULONG i;
+
             /* For all received entries*/
-            for (; i < n; i++)
+            for (i = 0; i < n; i++)
             {
                 OVERLAPPED_ENTRY *current = &entries[i];
-                int key = current->lpCompletionKey;
+                ULONG_PTR key = current->lpCompletionKey;
 
                 /*Event on the device*/
                 if (key == 0xDEADDEAD)
@@ -303,7 +281,6 @@ DWORD IOCPFunc(void *lpParam)
                 else if (key == 0xDEADBEAF)
                 {
                     DWORD size;
-                    int errcode;
 
                     /*
                      * Here we fetch the interesting data from the entry, and
@@ -359,111 +336,8 @@ pipe_read_cb(struct bufferevent *bev, void *data)
         evbuffer_drain(input, frame_size);
     }
     broadcast_udp_to_peers(s);
-    v_frame_foreach(s->frames_to_send, free_frame);
-    v_frame_clean(s->frames_to_send);
 }
 
-int
-tnt_socketpair(int family, int type, int protocol,
-    evutil_socket_t fd[2])
-{
-	/* This code is originally from Tor.  Used with permission. */
-
-	/* This socketpair does not work when localhost is down. So
-	 * it's really not the same thing at all. But it's close enough
-	 * for now, and really, when localhost is down sometimes, we
-	 * have other problems too.
-	 */
-#ifdef WIN32
-#define ERR(e) WSA##e
-#else
-#define ERR(e) e
-#endif
-	evutil_socket_t listener = -1;
-	evutil_socket_t connector = -1;
-	evutil_socket_t acceptor = -1;
-	struct sockaddr_in listen_addr;
-	struct sockaddr_in connect_addr;
-	ev_socklen_t size;
-	int saved_errno = -1;
-
-	if (protocol
-		|| (family != AF_INET
-#ifdef AF_UNIX
-		    && family != AF_UNIX
-#endif
-		)) {
-		EVUTIL_SET_SOCKET_ERROR(ERR(EAFNOSUPPORT));
-		return -1;
-	}
-	if (!fd) {
-		EVUTIL_SET_SOCKET_ERROR(ERR(EINVAL));
-		return -1;
-	}
-
-    listener = WSASocket(AF_INET, type, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-    if (listener == INVALID_SOCKET)
-		return -1;
-	memset(&listen_addr, 0, sizeof(listen_addr));
-	listen_addr.sin_family = AF_INET;
-	listen_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	listen_addr.sin_port = 0;	/* kernel chooses port.	 */
-	if (bind(listener, (struct sockaddr *) &listen_addr, sizeof (listen_addr))
-		== -1)
-		goto tidy_up_and_fail;
-	if (listen(listener, 1) == -1)
-		goto tidy_up_and_fail;
-
-    connector = WSASocket(AF_INET, type, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-    if (connector == INVALID_SOCKET)
-		goto tidy_up_and_fail;
-	/* We want to find out the port number to connect to.  */
-	size = sizeof(connect_addr);
-	if (getsockname(listener, (struct sockaddr *) &connect_addr, &size) == -1)
-		goto tidy_up_and_fail;
-	if (size != sizeof (connect_addr))
-		goto abort_tidy_up_and_fail;
-	if (connect(connector, (struct sockaddr *) &connect_addr,
-				sizeof(connect_addr)) == -1)
-		goto tidy_up_and_fail;
-
-	size = sizeof(listen_addr);
-    acceptor = WSAAccept(listener, (struct sockaddr *) &listen_addr, &size, NULL, NULL);
-    if (acceptor == INVALID_SOCKET)
-		goto tidy_up_and_fail;
-	if (size != sizeof(listen_addr))
-		goto abort_tidy_up_and_fail;
-	evutil_closesocket(listener);
-	/* Now check we are talking to ourself by matching port and host on the
-	   two sockets.	 */
-	if (getsockname(connector, (struct sockaddr *) &connect_addr, &size) == -1)
-		goto tidy_up_and_fail;
-	if (size != sizeof (connect_addr)
-		|| listen_addr.sin_family != connect_addr.sin_family
-		|| listen_addr.sin_addr.s_addr != connect_addr.sin_addr.s_addr
-		|| listen_addr.sin_port != connect_addr.sin_port)
-		goto abort_tidy_up_and_fail;
-	fd[0] = connector;
-	fd[1] = acceptor;
-
-	return 0;
-
- abort_tidy_up_and_fail:
-	saved_errno = ERR(ECONNABORTED);
- tidy_up_and_fail:
-	if (saved_errno < 0)
-		saved_errno = EVUTIL_SOCKET_ERROR();
-	if (listener != -1)
-		evutil_closesocket(listener);
-	if (connector != -1)
-		evutil_closesocket(connector);
-	if (acceptor != -1)
-		evutil_closesocket(acceptor);
-
-	EVUTIL_SET_SOCKET_ERROR(saved_errno);
-	return -1;
-#undef ERR
-}
 int
 main(int argc, char *argv[])
 {
@@ -492,7 +366,6 @@ main(int argc, char *argv[])
         log_err(-1, "Failed to init WSA.");
     }
 
-
     if (serv_opts.encryption)
         server.server_ctx = evssl_init();
     else
@@ -503,11 +376,12 @@ main(int argc, char *argv[])
     if ((evbase = event_base_new_with_config(cfg)) == NULL) {
         log_err(-1, "Failed to init the event library");
     } else {
-        libevent_dump(evbase);
+        tnet_libevent_dump(evbase);
     }
     if ((interfce = tnt_ttc_open(TNT_TUNMODE_ETHERNET)) == NULL) {
         log_err(-1, "Failed to open a tap interface");
     }
+    event_set_log_callback(tnet_libevent_log);
     /*
     Arty: There's definitely a workaround for those signals on windows, we'll
     see that later.
@@ -515,7 +389,7 @@ main(int argc, char *argv[])
     //sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     //sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);
 
-    errcode = evutil_socketpair(AF_INET, SOCK_STREAM, 0, &pair);
+    errcode = evutil_socketpair(AF_INET, SOCK_STREAM, 0, (intptr_t *)&pair);
     if (errcode == -1)
     {
         log_notice("Can't create the socketpair");
@@ -565,7 +439,7 @@ main(int argc, char *argv[])
     log_info("Starting event loop");
     if (event_base_dispatch(evbase) == -1) {
         errcode = WSAGetLastError();
-        fprintf(stderr, "(%d) %s\n", errcode, evutil_socket_error_to_string(errcode));
+        log_warn("(%d) %s\n", errcode, evutil_socket_error_to_string(errcode));
     }
 
     /*

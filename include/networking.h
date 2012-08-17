@@ -20,13 +20,15 @@
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
+# include <arpa/inet.h>
 # include <unistd.h>
+# define TNET_EAGAIN EAGAIN
 #elif defined Windows
-# include <io.h>
-# include <WinSock2.h>
 # include <WS2tcpip.h>
-# define EAGAIN WSAEWOULDBLOCK
-#endif
+# include <ws2def.h>
+# include <io.h>
+# define TNET_EAGAIN WSAEWOULDBLOCK
+#endif /* Unix */
 
 
 #endif /* end of include guard: NETWORKING_LLW6GBE3 */

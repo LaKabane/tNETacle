@@ -14,11 +14,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "networking.h"
 
 #ifdef Windows
 # define ZLIB_WINAPI
@@ -49,6 +50,7 @@ tnt_compress(uchar *in, const size_t in_size, size_t *out_size)
     error = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
     if (error != Z_OK)
     {
+        free(out);
         log_warnx("zlib: error on deflateInit (%d)\n", error);
         return (NULL);
     }
@@ -161,6 +163,7 @@ uchar *tnt_uncompress_sized(uchar *compressed_data, const size_t size,
   size_t *uncompressed_size)
 {
     int index = size - sizeof(int);
+    printf("\n%d - %d = %d\n", (int)size, (int)sizeof(int), index);
     int net_size = *((int *)(compressed_data + (index)));
     int host_size = ntohl(net_size);
 

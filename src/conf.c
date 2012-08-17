@@ -42,18 +42,12 @@
 #include "tnetacle.h"
 #include "options.h"
 
-#define VECTOR_TYPE struct cfg_sockaddress
-#define VECTOR_PREFIX sockaddr
-#define DEFAULT_ALLOC_SIZE 2
-#define VECTOR_NON_STATIC
-#include "vector.h"
-
 extern int debug;
 struct options serv_opts;
 
 struct ctx {
     const unsigned char *map;
-    int   len;
+    size_t               len;
 };
 
 void
@@ -139,6 +133,7 @@ add_listen_addrs_ports(int family, int *ports) {
                   TNETACLE_DEFAULT_LISTEN_IPV6, ports[i]);
         }
     }
+    return 0;
 }
 
 static int
@@ -176,6 +171,7 @@ add_client_addrs_ports(int family, int *ports) {
                   TNETACLE_DEFAULT_LISTEN_IPV6, ports[i]);
         }
     }
+    return 0;
 }
 
 int yajl_null(void *ctx) {
@@ -189,11 +185,11 @@ int yajl_boolean(void *lctx, int val) {
     if (ctx->map == NULL)
         return -1;
 
-    if (strncmp("Compression", ctx->map, ctx->len) == 0) {
+    if (strncmp("Compression", (const char *)ctx->map, ctx->len) == 0) {
         serv_opts.compression = val;
-    } else if (strncmp("Encryption", ctx->map, ctx->len) == 0) {
+    } else if (strncmp("Encryption", (const char *)ctx->map, ctx->len) == 0) {
         serv_opts.encryption = val;
-    } else if (strncmp("Debug", ctx->map, ctx->len) == 0) {
+    } else if (strncmp("Debug", (const char *)ctx->map, ctx->len) == 0) {
         serv_opts.debug = val;
     } else {
         char *s;
@@ -244,15 +240,15 @@ int yajl_number(void *lctx, const char *num, size_t len) {
         return -1;
     }
 
-    if (strncmp("TunnelIndex", ctx->map, ctx->len) == 0) {
+    if (strncmp("TunnelIndex", (const char *)ctx->map, ctx->len) == 0) {
         serv_opts.tunnel_index = ret;
-    } else if (strncmp("Port", ctx->map, ctx->len) == 0) {
+    } else if (strncmp("Port", (const char *)ctx->map, ctx->len) == 0) {
         unsigned int i;
 
         for (i = 0; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i)
             ;
         serv_opts.ports[i] = ret;
-    } else if (strncmp("ClientPort", ctx->map, ctx->len) == 0) {
+    } else if (strncmp("ClientPort", (const char *)ctx->map, ctx->len) == 0) {
         unsigned int i;
 
         for (i = 0; i < TNETACLE_MAX_PORTS && serv_opts.cports[i] != -1; ++i)
@@ -278,73 +274,73 @@ int yajl_string(void *lctx, const unsigned char *str, size_t len) {
     if (ctx->map == NULL)
         return -1;
 
-    if (strncmp("Address", ctx->map, ctx->len) == 0) {
+    if (strncmp("Address", (const char *)ctx->map, ctx->len) == 0) {
         /* XXX: Address validation */
-        serv_opts.addr = strndup(str, len);
+        serv_opts.addr = strndup((const char *)str, len);
         if (serv_opts.addr == NULL) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("AddressFamily", ctx->map, ctx->len) == 0) {
-        if (strncmp("inet6", str, len) == 0) {
+    } else if (strncmp("AddressFamily", (const char *)ctx->map, ctx->len) == 0) {
+        if (strncmp("inet6", (const char *)str, len) == 0) {
             serv_opts.addr_family = AF_INET;
-        } else if (strncmp("inet", str, len) == 0) {
+        } else if (strncmp("inet", (const char *)str, len) == 0) {
             serv_opts.addr_family = AF_INET6;
-        } else if (strncmp("any", str, len) == 0) {
+        } else if (strncmp("any", (const char *)str, len) == 0) {
             serv_opts.addr_family = AF_UNSPEC;
         } else {
             fprintf(stderr, "AddressFamily: bad value, should be "
               "\"inet6\", \"inet\" or \"any\"\n");
             return -1;
         }
-    } else if (strncmp("Mode", ctx->map, ctx->len) == 0) {
-        if (strncmp("router", str, len) == 0) {
+    } else if (strncmp("Mode", (const char *)ctx->map, ctx->len) == 0) {
+        if (strncmp("router", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_DAEMONMODE_ROUTER;
-        } else if (strncmp("switch", str, len) == 0) {
+        } else if (strncmp("switch", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_DAEMONMODE_SWITCH;
-        } else if (strncmp("hub", str, len) == 0) {
+        } else if (strncmp("hub", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_DAEMONMODE_HUB;
         } else {
             fprintf(stderr, "Mode: bad value, should be "
               "\"router\", \"switch\" or \"hub\"\n");
             return -1;
         }
-    } else if (strncmp("Tunnel", ctx->map, ctx->len) == 0) {
-         if (strncmp("point-to-point", str, len) == 0) {
+    } else if (strncmp("Tunnel", (const char *)ctx->map, ctx->len) == 0) {
+         if (strncmp("point-to-point", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_TUNMODE_TUNNEL;
-        } else if (strncmp("ethernet", str, len) == 0) {
+        } else if (strncmp("ethernet", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_TUNMODE_ETHERNET;
         } else {
             fprintf(stderr, "Tunnel: bad value, should be "
               "\"ethernet\" or \"point-to-point\"\n");
             return -1;
         }
-    } else if (strncmp("PrivateKey", ctx->map, ctx->len) == 0) {
+    } else if (strncmp("PrivateKey", (const char *)ctx->map, ctx->len) == 0) {
         /* XXX: Should we check for the existence of the key now ? */
-        serv_opts.key_path = strndup(str, len);
+        serv_opts.key_path = strndup((const char *)str, len);
         if (serv_opts.key_path == NULL) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("CertFile", ctx->map, ctx->len) == 0) {
+    } else if (strncmp("CertFile", (const char *)ctx->map, ctx->len) == 0) {
         /* XXX: Should we check for the existence of the key now ? */
-        serv_opts.cert_path = strndup(str, len);
+        serv_opts.cert_path = strndup((const char *)str, len);
         if (serv_opts.cert_path == NULL) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("PeerAddress", ctx->map, ctx->len) == 0) {
+    } else if (strncmp("PeerAddress", (const char *)ctx->map, ctx->len) == 0) {
         char bufaddr[INET6_ADDRSTRLEN]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
         add_sockaddr(serv_opts.peer_addrs, bufaddr);
-    } else if (strncmp("ListenAddress", ctx->map, ctx->len) == 0) {
+    } else if (strncmp("ListenAddress", (const char *)ctx->map, ctx->len) == 0) {
         char bufaddr[INET6_ADDRSTRLEN]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
-        if (strncmp("any", str, len) == 0) {
+        if (strncmp("any", (const char *)str, len) == 0) {
 	    add_listen_addrs_ports(serv_opts.addr_family, serv_opts.ports);
         } else
             add_sockaddr(serv_opts.listen_addrs, bufaddr);
@@ -424,13 +420,13 @@ tnt_parse_buf(char *p, size_t size) {
 	yajl_config(parse, yajl_allow_comments, 1);
 
         /* yajl might be feeded a bit at a time, but it also works this way */
-	status = yajl_parse(parse, p, size);
+	status = yajl_parse(parse, (unsigned char *)p, size);
 	if (status != yajl_status_ok) {
 		char *err;
 		
-		err = yajl_get_error(parse, 1, p, size);
+		err = (char *)yajl_get_error(parse, 1, (const unsigned char *)p, size);
 		fprintf(stderr, "%s\n", err);
-		yajl_free_error(parse, err);
+		yajl_free_error(parse, (unsigned char *)err);
 	}
 
 	status = yajl_complete_parse(parse);

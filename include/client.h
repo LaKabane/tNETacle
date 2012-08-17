@@ -19,6 +19,7 @@
 #define CLIENT_CORE
 
 #include <openssl/ssl.h> /* Can not forward declare SSL* types*/
+#include "networking.h"
 #include "mc.h"
 
 struct bufferevent;
@@ -27,7 +28,24 @@ struct bufferevent;
 # define ssize_t SSIZE_T
 #endif
 
+struct t_internal
+{
+    struct bufferevent *bev;
+    struct server *s;
+};
+
 void client_mc_read_cb(struct bufferevent *bev, void *ctx);
 void client_mc_event_cb(struct bufferevent *bev, short events, void *ctx);
+void client_init_callback(void);
 
 #endif /* CLIENT_CORE */
+
+
+
+
+
+
+
+
+
+

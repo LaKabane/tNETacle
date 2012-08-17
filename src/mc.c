@@ -95,7 +95,7 @@ mc_presentation(struct mc *self,
 int
 mc_init(struct mc *self,
         struct event_base *evb,
-        int fd,
+        evutil_socket_t fd,
         struct sockaddr *s,
         socklen_t len,
         SSL_CTX *server_ctx)
@@ -132,7 +132,7 @@ mc_init(struct mc *self,
     return 0;
 }
 
-int
+struct mc *
 mc_peer_connect(struct server *s,
                 struct event_base *evbase,
                 struct sockaddr *sock,
@@ -145,28 +145,33 @@ mc_peer_connect(struct server *s,
     address_presentation(sock, socklen, peername, sizeof(peername));
     memset(&tmp, 0, sizeof(tmp));
     tmp.ssl_flags = BUFFEREVENT_SSL_CONNECTING;
+    if (mc_established(s, sock, socklen) != 0)
+    {
+        log_notice("[META] [CONNECT] connexion already established with %s", peername);
+        return NULL;
+    }
     err = mc_init(&tmp, evbase, -1, sock, socklen, s->server_ctx);
     if (err == -1) {
-        log_warn("unable to allocate a socket for connecting to %s",
+        log_warn("[META] [CONNECT] unable to allocate a socket for connecting to %s",
                  peername);
-        return err;
+        return NULL;
     }
     bufferevent_setcb(tmp.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
     err = bufferevent_socket_connect(tmp.bev, sock, socklen);
     if (err == -1) {
-        log_warn("unable to connect to %s", peername);
-        return err;
+        log_warn("[META] unable to connect to %s", peername);
+        return NULL;
     }
-    v_mc_push(s->pending_peers, &tmp);
-    return 0;
+    bufferevent_disable(tmp.bev, EV_READ|EV_WRITE);
+    return v_mc_insert(s->pending_peers, &tmp);
 }
 
-int
+struct mc *
 mc_peer_accept(struct server *s,
                struct event_base *evbase,
                struct sockaddr *sock,
                int socklen,
-               int fd)
+               evutil_socket_t fd)
 {
     int errcode;
     struct mc mc;
@@ -177,20 +182,34 @@ mc_peer_accept(struct server *s,
     /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
     /* Even if we are not in a SSL context, mc_init know what to do anyway*/
     mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
+    if (mc_established(s, sock, socklen) != 0)
+    {
+        log_notice("[META] [ACCEPT] connexion already established with %s", peername);
+        /* TODO: write a tnet_close_socket(intptr_t) */
+        close((int)fd);
+        return NULL;
+    }
     errcode = mc_init(&mc, evbase, fd, sock, socklen, s->server_ctx);
     if (errcode == -1)
     {
-        log_notice("[META] failed to open a meta connexion with %s", peername);
-        return errcode;
+        log_notice("[META] [ACCEPT] failed to open a meta connexion with %s", peername);
+        return NULL;
     }
     bufferevent_setcb(mc.bev,
                       server_mc_read_cb,
                       NULL,
                       server_mc_event_cb,
                       s);
+    if (mc.ssl_flags & TLS_ENABLE)
+    {
+        /* the handshake hasn't been done yet */
+        log_debug("[META] [TLS] waiting for the ssl handshake with %s", peername);
+        return v_mc_insert(s->pending_peers, &mc);
+    }
     log_debug("[META] opening a meta-connexion with %s", peername);
-    v_mc_push(s->peers, &mc);
-    return 0;
+    /* XXX HACK HACK HACK XXX */
+    bufferevent_disable(mc.bev, EV_READ|EV_WRITE);
+    return v_mc_insert(s->pending_peers, &mc);
 }
 
 
@@ -215,7 +234,9 @@ mc_close(struct mc *self)
  * failed, the number of bytes added otherwise
  */
 
-int
+/* This one is useless */
+
+size_t
 mc_add_raw_data(struct mc *self,
                 void *data,
                 size_t size)
@@ -241,16 +262,49 @@ int
 mc_hello(struct mc *self, struct udp *udp)
 {
     struct evbuffer *output = bufferevent_get_output(self->bev);
-    unsigned short port = udp_get_port(udp);
 
+    (void)udp;
+    bufferevent_enable(self->bev, EV_READ|EV_WRITE);
     evbuffer_add_printf(output, "Hello ~!\r\n");
-    evbuffer_add_printf(output, "udp_port:%d\r\n", port);
     return 0;
 }
 
 int
-mc_establish_tunnel(struct mc *self)
+mc_establish_tunnel(struct mc *self, struct udp *udp)
 {
-    (void)self;
+    struct evbuffer *output = bufferevent_get_output(self->bev);
+    unsigned short port = udp_get_port(udp);
+
+    evbuffer_add_printf(output, "udp_port:%d\r\n", port);
     return 0;
 }
+
+static int
+find_established(struct mc const *mc, void *ctx)
+{
+    struct sockaddr *test = (struct sockaddr *)ctx;
+   
+    return evutil_sockaddr_cmp(mc->p.address, test, 0) == 0;
+}
+
+int
+mc_established(struct server *s, struct sockaddr *sck, int socklen)
+{
+    struct mc * it;
+
+    (void)socklen;
+    it = v_mc_find_if(s->peers, find_established, sck);
+    return !(it == v_mc_end(s->peers));
+}
+
+int
+mc_pending(struct server *s, struct sockaddr *sck, int socklen)
+{
+    struct mc * it;
+
+    (void)socklen;
+    it = v_mc_find_if(s->pending_peers, find_established, sck);
+    return !(it == v_mc_end(s->pending_peers));
+}
+
+

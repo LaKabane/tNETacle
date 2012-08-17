@@ -29,6 +29,7 @@
 
 #include "networking.h"
 #include "tntsched.h"
+#include "endpoint.h"
 #include "options.h"
 #include "dtls.h"
 #include "udp.h"
@@ -39,7 +40,8 @@ extern struct options serv_opts;
 void
 log_ssl(char const *msg, ...)
 {
-    va_list ap;
+#if !defined(Windows) /* TODO */
+	va_list ap;
     char *fmt;
     char *log;
     char errstr[150];
@@ -54,6 +56,7 @@ log_ssl(char const *msg, ...)
     free(fmt);
     free(log);
     va_end(ap);
+#endif
 }
 
 SSL_CTX *
@@ -128,6 +131,8 @@ dtls_new_peer(SSL_CTX *ctx, struct udp_peer *p)
     }
 
     SSL_set_bio(ssl, p->bio, p->bio);
+
+    ssl = SSL_new(ctx);
     if (ssl == NULL)
     {
         BIO_free(p->bio);
@@ -172,7 +177,7 @@ dtls_sendto(int sockfd,
 {
     int err;
 
-    err = SSL_write(peer->ssl, buf, len);
+    err = SSL_write(peer->ssl, buf, (int)len);
     if (err != (int)len)
     {
         /*SSL_write return less bytes written than expected */
@@ -218,7 +223,7 @@ static int
 find_peer(struct udp_peer const *P, void *ctx) 
 {
     struct sockaddr *addr = ctx;
-    return !evutil_sockaddr_cmp((struct sockaddr *)&P->addr, addr, 1);
+    return !evutil_sockaddr_cmp((struct sockaddr *)&P->peer_addr.addr, addr, 1);
 }
 
 /* Not functional */
@@ -237,7 +242,7 @@ dtls_recvfrom(int sockfd,
 
     nread = async_recvfrom(async_ctx,
                          sockfd,
-                         tbuf,
+                         (char *)tbuf,
                          sizeof(tbuf),
                          flags,
                          addr,
@@ -251,18 +256,20 @@ dtls_recvfrom(int sockfd,
     {
         int err;
         struct udp_peer *peer;
-        int pending;
+        size_t pending;
 
         peer = v_udp_find_if(udp->udp_peers, find_peer, (void *)addr);
         if (peer == NULL)
         {
+            struct endpoint e;
+
+            endpoint_init(&e, addr, *socklen);
             peer = udp_register_new_peer(udp,
-                                         addr,
-                                         *socklen,
+                                         &e,
                                          DTLS_ENABLE | DTLS_SERVER);
         }
         BIO_write(peer->bio, tbuf, nread);
-        err = SSL_read(peer->ssl, buf, len);
+        err = SSL_read(peer->ssl, buf, (int)len);
         if (err < 0)
         {
             log_ssl("[DTLS] unable to read on the ssl endpoint");

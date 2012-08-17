@@ -115,6 +115,7 @@ static volatile int trampoline_done;
 static void
 trampoline (int sig)
 {
+  (void)sig;
   if (coro_setjmp (new_coro->env))
     coro_init (); /* start it */
   else

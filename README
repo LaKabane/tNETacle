@@ -15,12 +15,12 @@ Directories
     3. 'include', contains all *.h files.
     4. 'src', contains *.c files used by all versions.
     5. 'util', contains files for utility programs, such as scripts.
-    6. 'sys', contains subdirectories for OSs specific files.
-    7. 'sys/share', contains files shared by some OSs.
-    8. 'sys/unix', contains UNIX family (*BSD, Linux and Mac OS X)
+    6. 'sub', contains subdirectories for our libraries.
+    7. 'sys', contains subdirectories for OSs specific files.
+    8. 'sys/share', contains files shared by some OSs.
+    9. 'sys/unix', contains UNIX family (*BSD, Linux and Mac OS X)
        specific files.
-    9. 'sys/wnt', contains Windows NT specific files.
-   10. 'sys/vms', contains VMS specific files. (This is a joke)
+   10. 'sys/wnt', contains Windows NT specific files.
    11. 'client', contains subdirectories for our clients.
    12. 'client/share', contains files shared by some clients.
    13. 'client/qt', contains files for our Qt client.

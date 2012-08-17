@@ -1,4 +1,4 @@
-/* Here will be the Windows NT logging API implementation */
+/* TODO: Windows NT logging API implementation */
 
 #include <stdio.h>
 #include "log.h"
@@ -14,13 +14,24 @@ log_err(int eval, const char *str, ...) {
 
 	va_start(ap, str);
 	vprintf(str, ap);
-	puts("\n");
+    puts((char *)formated_error(L"%1%0", GetLastError()));
 	va_end(ap);
+    /* Abort for now */
+    (void)eval;
+    abort();
 }
 
 void
-log_errx(int eval, const char *str) {
-	printf("%s\n", str);
+log_errx(int eval, const char *str, ...) {
+	va_list	 ap;
+
+	va_start(ap, str);
+	vprintf(str, ap);
+  	puts("\n");
+    va_end(ap);
+    /* Abort for now */
+    (void)eval;
+    abort();
 }
 
 void

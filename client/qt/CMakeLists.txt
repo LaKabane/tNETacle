@@ -2,7 +2,7 @@
 # ========================
 
 cmake_minimum_required(VERSION 2.6)
-PROJECT(client)
+PROJECT(QtNETacle)
 FIND_PACKAGE(Qt4 REQUIRED)
 
 SET(QT_USE_QTNETWORK TRUE)
@@ -11,35 +11,51 @@ INCLUDE(${QT_USE_FILE})
 SET(client_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/config.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/clientgui.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/configgui.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/qclient.cpp
     ${CMAKE_CURRENT_LIST_DIR}/imodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/controller.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/addcontactgui.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/rootnodegui.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelcontact.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelconfig.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/modelconnexion.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelrootnode.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modellog.cpp
     ${CMAKE_CURRENT_LIST_DIR}/protocol.cpp
     ${CMAKE_CURRENT_LIST_DIR}/network.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/theader.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/bodyconnexion.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/bodymain.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/bodyaddgroup.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/bodyaddcontact.cpp
 )
 
 SET(client_HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/include/network.h
     ${CMAKE_CURRENT_LIST_DIR}/include/controller.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/clientgui.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/addcontactgui.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/configgui.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/rootnodegui.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/qclient.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/theader.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/bodyconnexion.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/bodymain.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/bodyaddgroup.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/bodyaddcontact.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/imodel.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/iclient.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/controller.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modelcontact.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modelconfig.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modelconnexion.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modelrootnode.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modellog.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/protocol.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/network.h
 )
 
 SET(client_FORMS
-    ${CMAKE_CURRENT_LIST_DIR}/client.ui
-    ${CMAKE_CURRENT_LIST_DIR}/config.ui
-    ${CMAKE_CURRENT_LIST_DIR}/addcontact.ui
-    ${CMAKE_CURRENT_LIST_DIR}/rootnode.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/qclient.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/theader.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/bodymain.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/bodyaddgroup.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/bodyaddcontact.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/bodyconnexion.ui
 )
 
 SET(client_RESOURCES
@@ -54,7 +70,8 @@ QT4_ADD_RESOURCES(client_RESOURCES_RCC ${client_RESOURCES})
 
 ADD_DEFINITIONS(${QT_DEFINITIONS})
 
-ADD_EXECUTABLE(client ${client_SOURCES} 
+ADD_EXECUTABLE(QtNETacle ${client_SOURCES}
+    ${client_HEADERS}
     ${client_HEADERS_MOC}
     ${client_FORMS_HEADERS}
     ${client_RESOURCES_RCC}
@@ -67,4 +84,4 @@ INCLUDE_DIRECTORIES(
     ${TCLT_INCLUDE_DIR}
 )
 
-TARGET_LINK_LIBRARIES(client ${client_LIBRARIES})
+TARGET_LINK_LIBRARIES(QtNETacle ${client_LIBRARIES})

@@ -1,82 +1,129 @@
+/*
+ * Copyright (c) 2012 Florent Tribouilloy <tribou_f AT epitech DOT net>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <QDebug>
 #include <QRegExp>
-#include "iclientgui.h"
+#include "iclient.h"
 #include "controller.h"
 #include "protocol.h"
 #include "exception.h"
 #include "imodel.h"
+#include "qclient.h"
+#include "bodyconnexion.h"
+#include "bodymain.h"
+#include "bodyaddcontact.h"
+#include "tclt.h"
+#include "tclt_command.h"
+#include <iostream>
 
-QMap<QString, QString> Controller::_correspondence = QMap<QString, QString>();
-
-Controller::Controller(IClientGUI*  gui) :
-  _view(gui),
+Controller::Controller() :
+  _view(0),
   _network(*this),
   _models()
 {
-    _modelContacts = new ModelContact(*this, gui);
+    _modelContacts = new ModelContact(*this);
     _modelNode = new ModelRootNode(*this);
     _modelLog = new ModelLog(*this);
     _modelConfig = new ModelConfig(*this);
+    _modelConnexion = new ModelConnexion(this);
 
     _models[_modelContacts->getObjectName()] = _modelContacts;
     _models[_modelNode->getObjectName()] = _modelNode;
     _models[_modelLog->getObjectName()] = _modelLog;
     _models[_modelConfig->getObjectName()] = _modelConfig;
+    _models[_modelConnexion->getObjectName()] = _modelConnexion;
 
-    _correspondence["AddContact"] = "Contact";
-    _correspondence["DeleteContact"] = "Contact";
-    _correspondence["EditContact"] = "Contact";
-
-    _correspondence["AddLog"] = "Log";
+    this->init_callback();
 }
 
 void Controller::feedData(const QVariant& data)
 {
-    if (data.canConvert(QVariant::List))
+    (void)data;
+}
+
+int
+Controller::add_peer_controll(void *f, void *internal)
+{
+    peer *p = static_cast<peer*>(f);
+    (void)internal;
+
+    BodyMain* view = dynamic_cast<BodyMain*>(BodyMain::get(0, 0));
+    if(view != 0)
     {
-        QList<QVariant> list = data.toList();
-	QList<QVariant>::const_iterator it(list.begin());      
-	const QList<QVariant>::const_iterator it_end = list.end();
-        for (; it != it_end; ++it)
-            feedData(*it);
+        view->addNewPeer(p->name);
     }
-    else if (data.canConvert(QVariant::Map))
-    {
-        QMap<QString, QVariant> map = data.toMap();
-        QMap<QString, QVariant>::const_iterator it(map.begin());
-        const QMap<QString, QVariant>::const_iterator it_end = map.end();
-        for (; it != it_end; ++it)
-	{
-            QString commande = it.key();
-            try {
-                if (_correspondence.contains(commande) == false)
-                    throw new Exception("Error: Received an invalid command");
-                _models[_correspondence[commande]]->feedData(commande, it.value());
-            }
-            catch (Exception *e)
-            {
-                this->_view->printError(e->getMessage());
-                delete e;
-            }
-        }
-    }
+    return 0;
+}
+
+int
+Controller::add_log_controll(void *f, void *internal)
+{
+    char *str = static_cast<char*>(f);
+    (void)internal;
+
+    std::cout << "add log :" << str << std::endl;
+    return 0;
+}
+
+int
+Controller::delete_peer_controll(void *f, void *internal)
+{
+    char *str = static_cast<char*>(f);
+    QString str2(str);
+    (void)internal;
+    qDebug() << str2;
+
+    return 0;
+}
+
+int
+Controller::edit_peer_controll(void *f, void*internal)
+{
+    (void)f;
+    (void)internal;
+    std::cout << "edit peer" << std::endl;
+    return 0;
+}
+
+void
+Controller::init_callback()
+{
+    tclt_set_callback_command(ADD_PEER_CMD, add_peer_controll);
+    tclt_set_callback_command(ADD_LOG_CMD, add_log_controll);
+    tclt_set_callback_command(DELETE_PEER_CMD, delete_peer_controll);
+    tclt_set_callback_command(EDIT_PEER_CMD, edit_peer_controll);
 }
 
 void Controller::appendLog(const QString& s)
 {
-    this->_view->appendLog(s);
+    (void)s;
+    //this->_view->appendLog(s);
 }
 
 void Controller::editContact(QListWidgetItem* item)
 {
+    (void)item;
     try {
-        this->_view->createAddContact(item->text(),
+        /*this->_view->createAddContact(item->text(),
                                       dynamic_cast<ModelContact*>(_modelContacts)->getKey(item->text()),
-                                      dynamic_cast<ModelContact*>(_modelContacts)->getIp(item->text()));
+                                      dynamic_cast<ModelContact*>(_modelContacts)->getIp(item->text()));*/
     }
     catch (Exception *e)
     {
-        this->_view->printError(e->getMessage());
+        //this->_view->printError(e->getMessage());
         delete e;
     }
 }
@@ -93,127 +140,133 @@ quint16 Controller::getPort() const
 
 void Controller::error(const QString &s)
 {
-    this->_view->printError(s);
+    (void)s;
+    //this->_view->printError(s);
 }
 
-void Controller::deleteContact()
+void Controller::deleteContact(const QString& name)
 {
     try
     {
-        QVector<QString> v;
-        v.append(_view->getSelected());
-        dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
-        this->writeToSocket(Protocol::delet(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
+        this->writeToSocket(tclt_delete_peer(name.toStdString().c_str()));
     }
     catch (Exception *e)
     {
-        this->_view->printError(e->getMessage());
+        error(e->getMessage());
 	delete e;
     }
 }
 
 bool Controller::addContact()
 {
-    QString pubkey = this->_view->getNewContactKey();
-    QString name = this->_view->getNewContactName();
-    QString ip = this->_view->getContactIp();
+    BodyAddContact* view = dynamic_cast<BodyAddContact*>(_view->getBody());
+    if (view == 0)
+        return false;
+
+    const QString& pubkey = view->getNewContactKey();
+    const QString& name = view->getNewContactName();
+    const QString& ip = view->getContactIp();
 
     if (name == "" || pubkey == "" || ip == "")
     {
-        this->_view->printError("One of the mandatory fields is missing");
+        error("One of the mandatory fields is missing");
         return false;
     }
     if (checkName(name) == false)
     {
-        this->_view->printError("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
+        error("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
         return false;
     }
     // if (checkIP(ip) == false)
     // {
-    //     this->_view->printError("the IP is not correctly formated");
+    //     error("the IP is not correctly formated");
     //     return false;
     // }
 
-    if (!_view->getInitialContactName().isEmpty()) // TODO if user select a different row after editing
-        this->deleteContact();
     try
     {
-        QVector<QString> v;
-        v.append(name);
-        v.append(pubkey);
-        v.append(ip);
-        dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(v);
-        this->writeToSocket(Protocol::add(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
+        peer p;
+        p.name = strdup(name.toStdString().c_str());
+        p.ip = strdup(ip.toStdString().c_str());
+        p.key = strdup(pubkey.toStdString().c_str());
+        if (p.name == 0 || p.ip == 0 || p.key == 0)
+            throw new Exception("Impossible to duplicate elements");
+        dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(&p);
+        this->writeToSocket(tclt_add_peer(&p));
+        free(p.name);
+        free(p.ip);
+        free(p.key);
+        view->cleanField();
     }
     catch (Exception *e)
     {
-        this->_view->printError(e->getMessage());
+        error(e->getMessage());
         delete e;
         return false;
     }
-    this->_view->deleteAddContact();
+    QClient* client = dynamic_cast<QClient*>(_view);
+    if (client == 0)
+        return false;
+    client->changePrevBody();
 
     return true;
-    // new Contact (this->e_view->getNewContactName(),
-    //              this->_view->getNewContactKey());
-    //TODO integrate Contact in to model, validate DATA
 }
 
 void Controller::editRootNode()
 {
-    ModelRootNode* root = dynamic_cast<ModelRootNode*>(_modelNode);
-    bool ok;
-    this->_view->createRootNodeGui(root->getName(),  root->getKey(), root->getIP(), root->getPort().toUShort(&ok));
+    //ModelRootNode* root = dynamic_cast<ModelRootNode*>(_modelNode);
+    //this->_view->createRootNodeGui(root->getName(),  root->getKey(), root->getIP(), root->getPort().toUShort(&ok));
 }
 
 void Controller::editConfig()
 {
     //ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
-    this->_view->createConfigGui();
+    //this->_view->createConfigGui();
 }
 
 bool	Controller::changeRootNode()
 {
+    BodyConnexion* body = dynamic_cast<BodyConnexion*>(_view->getBody());
+
     bool ok;
-    quint16 port =  _view->getRootPort().toUShort(&ok);
-    QString ip = this->_view->getRootIP();
-    QString pubkey = this->_view->getRootKey();
-    QString name = this->_view->getRootName();
+    QString name = body->getName();
+    QString ip = body->getAdress();
+    quint16 port =  body->getPort().toUShort(&ok);
+    QString pubkey = body->getKey();
 
     if (ok == false)
     {
-        this->_view->printError("Error: Port is not a number");
+        error("Error: Port is not a number");
         return false;
     }
     if (ip == "" || name == "" || pubkey == "")
     {
-        this->_view->printError("one of the mandatory fields is missing");
+        error("one of the mandatory fields is missing");
         return false;
     }
     if (checkName(name) == false)
     {
-        this->_view->printError("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
+        error("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
         return false;
     }
     if (checkIP(ip) == false)
     {
-        this->_view->printError("the IP is not correctly formated");
+        error("the IP is not correctly formated");
         return false;
     }
 
     try
     {
-        dynamic_cast<ModelRootNode*>(this->_modelNode)->changeRootNode(name, pubkey, ip, _view->getRootPort());
+        dynamic_cast<ModelConnexion*>(this->_modelConnexion)->changeConnexionInfo(name, pubkey, ip, body->getPort());
         if (this->_network.isConnected() == false)
             this->_network.setConnection(ip, port);
     }
     catch (Exception* e)
     {
-        this->_view->printError(e->getMessage());
+        error(e->getMessage());
         delete e;
         return false;
     }
-    this->_view->deleteRootNode();
     return true;
 }
 
@@ -233,7 +286,7 @@ void		Controller::restart()
     }
     catch (Exception* e)
     {
-        this->_view->printError(e->getMessage());
+        error(e->getMessage());
         delete e;
     }
 }
@@ -253,10 +306,29 @@ void Controller::changeConfig()
   //        write change in modelConfig
   //   }
   // }
-    this->_view->deleteConfig();
+  //  this->_view->deleteConfig();
 }
 
-bool    Controller::checkIPv4(QString& str) const
+void    Controller::setConnexionParam()
+{
+    BodyConnexion* body = dynamic_cast<BodyConnexion*>(_view->getBody());
+    const QMap<QString, QVariant>* info = dynamic_cast<ModelConnexion*>(_modelConnexion)->getData();
+    QVariant v = info->operator []("Name");
+    body->setName(v.toString());
+    v = info->operator[]("Adress");
+    body->setAdress(v.toString());
+    v = info->operator[]("Port");
+    body->setPort(v.toString());
+    v = info->operator[]("Key");
+    body->setKey(v.toString());
+}
+
+void    Controller::initWindow()
+{
+    setConnexionParam();
+}
+
+bool    Controller::checkIPv4(const QString& str) const
 {
     QStringList elements = str.split(".");
 
@@ -272,7 +344,7 @@ bool    Controller::checkIPv4(QString& str) const
     return true;
 }
 
-bool    Controller::checkIPv6(QString& str) const
+bool    Controller::checkIPv6(const QString& str) const
 {
     QStringList elements = str.split(":");
 
@@ -286,7 +358,7 @@ bool    Controller::checkIPv6(QString& str) const
     return true;
 }
 
-bool    Controller::checkIP(QString& str) const
+bool    Controller::checkIP(const QString &str) const
 {
     if (checkIPv4(str))
         return true;
@@ -297,13 +369,13 @@ bool    Controller::checkIP(QString& str) const
     return false;
 }
 
-bool    Controller::checkName(QString& str) const
+bool    Controller::checkName(const QString& str) const
 {
     QRegExp rx("^[a-zA-Z0-9_]+$");
     return str.contains(rx);
 }
 
-bool    Controller::checkHostNameFormat(QString& str) const
+bool    Controller::checkHostNameFormat(const QString &str) const
 {
     QRegExp rx("^[a-zA-Z][a-zA-Z\\-\\.0-9]*[a-zA-Z]$");
     return str.contains(rx);
@@ -342,7 +414,18 @@ void Controller::writeToSocket(const QString& buff)
     _network.write(buff);
 }
 
-void Controller::printError(const QString& message)
+void Controller::viewAddContact()
 {
-    this->_view->printError(message);
+    QClient* client = dynamic_cast<QClient*>(_view);
+    if (client == 0)
+        return ;
+    client->changeNextBody(QClient::ADDCONTACT);
+}
+
+void Controller::unuseAddContact()
+{
+    QClient* client = dynamic_cast<QClient*>(_view);
+    if (client == 0)
+        return ;
+    client->changePrevBody();
 }

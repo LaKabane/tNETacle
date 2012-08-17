@@ -1,18 +1,29 @@
+/*
+ * Copyright (c) 2012 Florent Tribouilloy <tribou_f AT epitech DOT net>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <QDebug>
 #include "exception.h"
 #include "modelcontact.h"
 
 const QString ModelContact::_name = "Contact";
-ModelContact::mapfun ModelContact::_commands = mapfun();
 
-ModelContact::ModelContact(Controller& controller, IClientGUI* gui):
+ModelContact::ModelContact(Controller& controller):
   _contacts(),
-  _controller(controller),
-  _view(gui)
+  _controller(controller)
 {
-  _commands["AddContact"] = &ModelContact::addContact;
-  _commands["DeleteContact"] = &ModelContact::delContact;
-  _commands["EditContact"] = &ModelContact::editContact;
 }
 
 void  ModelContact::print()
@@ -21,24 +32,8 @@ void  ModelContact::print()
 
 void  ModelContact::feedData(const QString& command, const QVariant& data)
 {
-    if (_commands.contains(command) == true)
-    {
-        QMap<QString, QVariant> person = data.toMap();
-        QString key = "";
-        QVector<QString> v;
-
-        if (person.contains("Name") == true)
-            v.append(person["Name"].toString());
-        if (person.contains("Key") == true)
-	    v.append(person["Key"].toString());
-        if (person.contains("Ip") == true)
-            v.append(person["Ip"].toString());
-        if (person.contains("Old") == true)
-            v.append(person["Old"].toString());
-        (this->*_commands[command])(v);
-    }
-    else
-        throw new Exception("Error: command does not exist!");
+    (void)command;
+    (void)data;
 }
 
 const QString& ModelContact::getObjectName() const
@@ -51,13 +46,16 @@ const QMap<QString, QVariant>* ModelContact::getData() const
     return &_contacts;
 }
 
-void ModelContact::addContact(const QVector<QString>& param)
+void ModelContact::addContact(peer* p)
 {
-    if (param.size() < 3)
-        throw new Exception("Error: missing parameters to add contact");
-    const QString &name = param[0];
-    const QString &key = param[1];
-    const QString &ip = param[2];
+    if (p == 0)
+        throw new Exception("addContact: peer is not defined");
+    QString name;
+    QString key;
+    QString ip;
+    name.append(p->name);
+    ip.append(p->ip);
+    key.append(p->key);
 
     if (name.length() == 0)
         throw new Exception("Error: No name");
@@ -67,7 +65,6 @@ void ModelContact::addContact(const QVector<QString>& param)
     tmp.insert("Key", QVariant(key));
     tmp.insert("Ip", QVariant(ip));
     _contacts[name] = QVariant(tmp);
-    _view->addContact(name);
 }
 
 const QString ModelContact::getKey(const QString &name)
@@ -91,7 +88,6 @@ void ModelContact::delContact(const QVector<QString>& param)
     const QString& name = param[0];
     if (_contacts.remove(name) != 1)
       throw new Exception("Error: Name (" + name + ") does not exist");
-    this->_view->deleteNamed(name);
 }
 
 void  ModelContact::editContact(const QVector<QString>& param)
@@ -110,7 +106,7 @@ void  ModelContact::editContact(const QVector<QString>& param)
     v.append(name);
     v.append(key);
     v.append(ip);
-    this->addContact(v);
+    //this->addContact(v);
 }
 
 void ModelContact::clear()

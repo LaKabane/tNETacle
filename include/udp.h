@@ -18,8 +18,11 @@
 
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
+#include <event2/util.h>
+#include "networking.h"
 #include "coro.h"
 #include "tntsched.h"
+#include "endpoint.h"
 
 #define TNETACLE_UDP_PORT   7676
 #define UDP_MTU             1500
@@ -41,8 +44,7 @@ struct vector_frame;
 
 struct udp_peer
 {
-    struct sockaddr_storage addr;
-    int                     socklen;
+    struct endpoint         peer_addr;
     BIO                     *bio;
     BIO                     *_bio_backend;
     SSL                     *ssl;
@@ -51,44 +53,46 @@ struct udp_peer
 
 #define VECTOR_TYPE struct udp_peer
 #define VECTOR_PREFIX udp
-#define VECTOR_FORWARD
 #include "vector.h"
 
 struct udp
 {
-    int                     fd;
-    int                     udp_addrlen;
+    evutil_socket_t         fd;
     SSL_CTX                 *ctx;
-    struct sched            *udp_sched;
     struct fiber            *udp_recv_fib;
     struct fiber            *udp_brd_fib;
     struct vector_udp       *udp_peers;
-    struct sockaddr_storage udp_addr;
+    struct endpoint         udp_endpoint;
 };
 
+struct udp *server_udp_new(struct server *s,
+                           struct endpoint *e);
+
 int server_udp_init(struct server *s,
-                    struct sockaddr *addr,
-                    int len);
+                    struct udp *u,
+                    struct endpoint *e);
+
+void server_udp_launch(struct udp *u);
 
 void server_udp_exit(struct udp *);
 
 struct udp_peer *udp_register_new_peer(struct udp *s,
-                           struct sockaddr *sock,
-                           int socklen,
-                           int ssl_flags);
+                                       struct endpoint *remote,
+                                       int ssl_flags);
 
-void forward_udp_frame_to_other_peers(struct udp *s,
+void forward_udp_frame_to_other_peers(void *ctx,
+                                      struct udp *s,
                                       struct frame *current_frame,
                                       struct sockaddr *current_sockaddr,
-                                      unsigned int current_socklen);
+                                      socklen_t current_socklen);
 
 void broadcast_udp_to_peers(struct server *s);
 
 int frame_recvfrom(void *ctx,
-                   int fd,
+                   evutil_socket_t fd,
                    struct frame *frame,
                    struct sockaddr *saddr,
-                   unsigned int *socklen);
+                   socklen_t *socklen);
 
 void
 server_udp(void *ctx);
@@ -100,3 +104,5 @@ unsigned short
 udp_get_port(struct udp *);
 
 #endif /* end of include guard: UDP_US4EZ32H */
+
+
