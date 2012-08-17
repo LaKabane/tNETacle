@@ -289,15 +289,22 @@ main(int argc, char *argv[]) {
         kill(chld_pid, SIGTERM);
 
     msgbuf_clear(&ibuf.w);
-    close(event_get_fd(event));
-    event_free(event);
-    event_free(sigint);
-    event_free(sigterm);
-    event_free(sigchld);
-    event_base_free(evbase);
+    if (event) {
+        close(event_get_fd(event));
+        event_free(event);
+    }
+    if (sigint)
+        event_free(sigint);
+    if (sigterm)
+        event_free(sigterm);
+    if (sigchld)
+        event_free(sigchld);
+    if (evbase)
+        event_base_free(evbase);
     if (dev != NULL)
         tnt_ttc_close(dev);
-    event_config_free(evcfg);
+    if (evcfg)
+        event_config_free(evcfg);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
