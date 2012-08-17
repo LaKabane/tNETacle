@@ -65,8 +65,7 @@ struct vector_name {
 
 specifier void vector_(init)(struct vector_name *v);
 specifier int vector_(resize)(struct vector_name *v, size_t);
-specifier void vector_(insert_range)(struct vector_name *, type *,
-                                           type *, type *);
+specifier void vector_(insert_range)(struct vector_name *, type *, type *, type *);
 specifier void vector_(insert)(struct vector_name *, type *, type *);
 specifier void vector_(pop)(struct vector_name *v);
 specifier void vector_(delete)(struct vector_name *v);
@@ -74,16 +73,14 @@ specifier type *vector_(begin)(struct vector_name *v);
 specifier type *vector_(end)(struct vector_name *v);
 specifier type *vector_(next)(type *it);
 specifier void vector_(erase)(struct vector_name *v, type *ptr);
-specifier void vector_(erase_range)(struct vector_name *v, type *,
-                                          type*);
+specifier void vector_(erase_range)(struct vector_name *v, type *, type*);
 specifier type vector_(at)(struct vector_name *v, size_t i);
 specifier type *vector_(atref)(struct vector_name *v, size_t i);
 specifier type vector_(front)(struct vector_name *v);
 specifier type vector_(back)(struct vector_name *v);
 specifier type *vector_(frontref)(struct vector_name *v);
 specifier type *vector_(backref)(struct vector_name *v);
-specifier type *vector_(find_if)(struct vector_name *v, type *val,
-                                      int (*)(type const *, type const *));
+specifier type *vector_(find_if)(struct vector_name *v, type *val, int (*)(type const *, type const *));
 specifier void vector_(clean)(struct vector_name *v);
 #ifdef VECTOR_TYPE_SCALAR
 
