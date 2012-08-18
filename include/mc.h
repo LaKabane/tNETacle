@@ -25,12 +25,12 @@ struct frame;
 
 struct mc
 {
-  struct peer {
-    struct sockaddr *address;
-    socklen_t len;
-  } p;
-  struct bufferevent *bev;
-  int ssl_flags;
+    struct peer {
+        struct sockaddr *address;
+        socklen_t len;
+    } p;
+    struct bufferevent *bev;
+    int ssl_flags;
 };
 
 int mc_init(struct mc *, struct event_base *, int fd, struct sockaddr *,
@@ -38,6 +38,9 @@ int mc_init(struct mc *, struct event_base *, int fd, struct sockaddr *,
 void mc_close(struct mc *);
 int mc_add_frame(struct mc *, struct frame *);
 int mc_add_raw_data(struct mc *, void *, size_t);
+int mc_hello(struct mc *);
+
+/* used for debug, and print a mc */
 char *mc_presentation(struct mc*, char *name, int size);
 char *address_presentation(struct sockaddr *, int socklen, char *, int);
 

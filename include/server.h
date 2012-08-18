@@ -36,6 +36,7 @@ struct event_base;
 struct frame {
   unsigned short size;
   void *frame;
+  void *raw_packet;
 };
 
 #define VECTOR_TYPE struct frame
@@ -47,9 +48,19 @@ struct frame {
 #define VECTOR_TYPE_SCALAR
 #include "vector.h"
 
+#pragma pack(push, 1)
+struct packet_hdr
+{
+    unsigned short size;
+};
+#pragma pack(pop)
+
 struct server {
   struct vector_evl srv_list; /*list of the listenners*/
-  struct event *udp_endpoint;
+  struct {
+      struct event *udp_endpoint;
+      struct vector_frame frame_udp;
+  } udp;
   struct event *device;
   struct vector_mc peers; /* The actual list of peers */
   struct vector_mc pending_peers; /* Pending in connection peers*/
@@ -66,7 +77,8 @@ int server_init(struct server *, struct event_base *);
 void server_set_device(struct server *, int fd);
 
 #if defined Windows
-void broadcast_to_peers(struct server *s);
+void broadcast_udp_to_peers(struct server *s);
+int frame_alloc(struct frame *, unsigned int size);
 #endif
 
 #endif /* end of include guard: SERVER_KW2DIKER */

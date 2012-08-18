@@ -62,25 +62,56 @@ send_buffer_to_device_thread(struct server *s, struct frame *frame)
 #endif
 
 static void
-forward_frame_to_other_peers(struct server *s, struct frame *current_frame, struct bufferevent *current_bev)
+forward_udp_frame_to_other_peers(struct server *s, struct frame *current_frame,
+                                 struct sockaddr *current_sockaddr, unsigned int
+                                 current_socklen) 
 {
     struct mc *it = NULL;
     struct mc *ite = NULL;
     char name[INET6_ADDRSTRLEN];
+    struct sockaddr_storage udp_storage;
 
+    (void)current_socklen;
     for (it = v_mc_begin(&s->peers), ite = v_mc_end(&s->peers);
         it != ite;
         it = v_mc_next(it))
     {
         int err;
+        struct sockaddr *udp_addr = (struct sockaddr *)&udp_storage;
+        int socklen;
 
-        /* If its not the peer we received the data from. */
-        if (it->bev == current_bev)
+        /* If it's not the peer we received the data from. */
+        if (evutil_sockaddr_cmp(current_sockaddr, it->p.address, 0) == 0)
             continue;
-        err = mc_add_frame(it, current_frame);
+        memcpy(&udp_storage, it->p.address, it->p.len);
+        /*
+         * This section have to be rewriten to use a port number that've
+         * been decided by the protocol.
+         */
+        /*{{{*/
+        if (udp_addr->sa_family == AF_INET)
+        {
+            struct sockaddr_in *sin = (struct sockaddr_in *)udp_addr;
+
+            sin->sin_port = htons(7676);
+            socklen = sizeof(sin);
+        }
+        else if (udp_addr->sa_family == AF_INET6)
+        {
+            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)udp_addr;
+
+            sin6->sin6_port = htons(7676);
+            socklen = sizeof(sin6);
+        }
+        /*}}}*/
+        err = sendto(event_get_fd(s->udp.udp_endpoint),
+                     current_frame->raw_packet,
+                     current_frame->size + sizeof(struct packet_hdr), 0,
+                     udp_addr, socklen);
         if (err == -1)
         {
-            log_notice("error while crafting the buffer to send to %p", it);
+            log_notice("error while sending to %s",
+                       mc_presentation(it, name, sizeof name));
             break;
         }
         log_debug("adding %d bytes to %s's output buffer",
@@ -92,56 +123,11 @@ static void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = (struct server *)ctx;
-    ssize_t n;
-    struct evbuffer *buf = NULL;
-    struct frame current_frame;
-    unsigned short size;
-    unsigned short *network_size_ptr;
+    struct evbuffer *in = bufferevent_get_input(bev);
 
-    memset(&current_frame, 0, sizeof current_frame);
-    buf = bufferevent_get_input(bev);
-    while (evbuffer_get_length(buf) != 0)
-    {
-        /*
-         * Read and convert the first bytes of the buffer from network byte
-         * order to host byte order.
-         */
-        network_size_ptr = (unsigned short *)evbuffer_pullup(buf, sizeof(size));
-        size = ntohs(*network_size_ptr);
-
-        /* We are going to drain 2 bytes just after, so we'd better count them.*/
-        if (size > evbuffer_get_length(buf) - sizeof(size))
-        {
-            log_debug("receive an incomplete frame of %d(%-#2x) bytes but "
-                "only %d bytes are available", size, *network_size_ptr,
-                      evbuffer_get_length(buf));
-            break;
-        }
-        log_debug("receive a frame of %d(%-#2x) bytes", size,
-                   *network_size_ptr);
-        evbuffer_drain(buf, sizeof(size));
-
-        /* 
-         * We fill the current_frame with the size in host byte order,
-         * and the frame's data
-         */
-        current_frame.size = size;
-        current_frame.frame = evbuffer_pullup(buf, size); 
-        /* And forward it to anyone else but except current peer*/
-        forward_frame_to_other_peers(s, &current_frame, bev);
-
-#if defined Windows
-        /*
-         * Send to current frame to the windows thread handling the tun/tap
-         * devices and clean the evbuffer
-         */
-        send_buffer_to_device_thread(s, &current_frame);
-#else
-        /* Write the current frame on the device and clean the evbuffer*/
-        n = write(event_get_fd(s->device), current_frame.frame, current_frame.size);
-#endif
-        evbuffer_drain(buf, size);
-    }
+    /* Get rid of every input */
+    (void)s;
+    evbuffer_drain(in, evbuffer_get_length(in));
 }
 
 static int
@@ -176,6 +162,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             memcpy(&tmp, mc, sizeof(tmp));
             v_mc_erase(&s->pending_peers, mc);
             v_mc_push(&s->peers, &tmp);
+            mc_hello(&tmp);
         }
     }
     if (events & BEV_EVENT_ERROR)
@@ -202,14 +189,17 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         }
         /*
          * Find if the exception come from a pending peer or a
-         * peer and close it.
+         * regular peer and close it.
          */
         mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
         if (mc != v_mc_end(&s->pending_peers))
         {
+            char name[128];
+
             mc_close(mc);
+            log_debug("%s removed from the pending list",
+                      mc_presentation(mc, name, sizeof name));
             v_mc_erase(&s->pending_peers, mc);
-            log_debug("socket removed from the pending list");
         }
         else
         {
@@ -267,10 +257,11 @@ accept_error_cb(struct evconnlistener *evl, void *ctx)
 #else
 static void
 #endif
-broadcast_to_peers(struct server *s)
+broadcast_udp_to_peers(struct server *s)
 {
     struct frame *fit = v_frame_begin(&s->frames_to_send);
     struct frame *fite = v_frame_end(&s->frames_to_send);
+    struct sockaddr_storage udp_addr;
     char name[512];
 
     /* For all the frames*/
@@ -285,12 +276,82 @@ broadcast_to_peers(struct server *s)
         for (;it != ite; it = v_mc_next(it))
         {
             int err;
+            struct packet_hdr hdr;
 
-            err = mc_add_frame(it, fit);
-            log_debug("adding %d(%-#2x) bytes to %s's output buffer",
-                fit->size, fit->size, mc_presentation(it, name, sizeof name));
+            memset(&hdr, 0, sizeof (struct packet_hdr));
+            memcpy(&udp_addr, it->p.address, it->p.len);
+            /*
+             * This section have to be rewriten to use a port number that've
+             * been decided by the protocol.
+             */
+            /*{{{*/
+            if (udp_addr.ss_family == AF_INET)
+            {
+                struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
+
+                sin->sin_port = htons(7676);
+            }
+            else if (udp_addr.ss_family == AF_INET6)
+            {
+                struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
+
+                sin6->sin6_port = htons(7676);
+            }
+            /*}}}*/
+            /* Header configuration for the packet */
+            /* Convert the size to netword presentation*/
+            hdr.size = htons(fit->size);
+            /* Copy the header to the packet */
+            /* Enought place have been allocated for header and the frame */
+            memcpy(fit->raw_packet, &hdr, sizeof(hdr));
+            err = sendto(event_get_fd(s->udp.udp_endpoint), fit->raw_packet,
+                         fit->size + sizeof(struct packet_hdr), 0,
+                         (struct sockaddr const *)&udp_addr, it->p.len);
+            if (err == -1)
+            {
+                log_notice("error while sending to %s",
+                           mc_presentation(it, name, sizeof name));
+                break;
+            }
+            log_debug("udp adding %d(%-#2x) bytes to %s's output buffer",
+                fit->size, fit->size,
+                address_presentation((struct sockaddr *)&udp_addr, it->p.len,
+                                     name, sizeof name));
         }
     }
+}
+
+static void
+frame_free(struct frame const *f)
+{
+    free(f->raw_packet);
+}
+
+#if !defined Windows
+static 
+#endif
+int
+frame_alloc(struct frame *frame, unsigned int size)
+{
+    void *tmp_raw_packet = NULL;
+    void *tmp_frame_ptr = NULL;
+
+    /* Alloc the size of the whole packet, plus the size of the header */
+    tmp_raw_packet = (void *)malloc(size
+                                    + sizeof(struct packet_hdr));
+    if (tmp_raw_packet == NULL)
+    {
+        return -1;
+    }
+    /* Shift the frame to pointer to just behind the header */
+    tmp_frame_ptr = (void *)((intptr_t)tmp_raw_packet
+                             + sizeof(struct packet_hdr));
+
+    /* Commit the results */
+    frame->raw_packet = tmp_raw_packet;
+    frame->frame = tmp_frame_ptr;
+    frame->size = size;
+    return 0;
 }
 
 #if defined Windows
@@ -312,43 +373,38 @@ server_set_device(struct server *s, int fd)
 #else
 
 static void
-free_frame(struct frame const *f)
-{
-    free(f->frame);
-}
-
-static void
 server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
 {
     struct server *s = (struct server *)ctx;
 
     if (events & EV_READ)
     {
-        int _n = 0;
         ssize_t n;
         struct frame tmp;
 
         /* I know it sucks. I'm waiting for libtuntap to handle*/
         /* a FIONREAD-like api.*/
 #define FRAME_DYN_SIZE 1600
-        tmp.frame = (char *)malloc(FRAME_DYN_SIZE); /*XXX*/
+        frame_alloc(&tmp, FRAME_DYN_SIZE);
         while ((n = read(device_fd, tmp.frame, FRAME_DYN_SIZE)) > 0)
         {
-            tmp.size = (unsigned short)n;/* We cannot read more than a ushort*/
+            /* We cannot read more than a ushort, can we ? */
+            tmp.size = (unsigned short)n;
             v_frame_push(&s->frames_to_send, &tmp);
-            //log_debug("Read a new frame of %d bytes.", n);
-            tmp.frame = (char *)malloc(FRAME_DYN_SIZE); /*XXX*/
-            _n++;
+            frame_alloc(&tmp, FRAME_DYN_SIZE);
         }
+#undef FRAME_DYN_SIZE
         if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
         {
-            //log_debug("Read %d frames in this pass.", _n);
-            broadcast_to_peers(s);
-            v_frame_foreach(&s->frames_to_send, free_frame);
+            broadcast_udp_to_peers(s);
+            v_frame_foreach(&s->frames_to_send, frame_free);
             v_frame_clean(&s->frames_to_send);
         }
         else if (n == -1)
             log_warn("read on the device failed:");
+        /* Don't forget to free the last allocated frame */
+        /* As we are out of the loop, the last call to frame alloc is useless */
+        frame_free(&tmp);
     }
 }
 
@@ -417,6 +473,113 @@ evssl_init(void)
     return server_ctx;
 }
 
+static int
+frame_recvfrom(int fd, struct frame *frame, struct sockaddr *saddr, unsigned int *socklen)
+{
+    int err = 0;
+    struct packet_hdr hdr;
+    unsigned short local_size;
+
+    err = recvfrom(fd, (char *)&hdr, sizeof(struct packet_hdr),
+        MSG_PEEK, saddr, socklen);
+    /*
+    ** Sometimes, on some OS, recvfrom return EMSGSIZE when the size of the
+    ** peeked buffer is not enough to read the entire datagram.
+    ** So we need to check for this specific case.
+    */
+    if (err == -1)
+    {
+        int local_err = EVUTIL_SOCKET_ERROR();
+
+#if defined Windows
+#define MSG_TOO_LONG WSAEMSGSIZE
+#else
+#define MSG_TOO_LONG EMSGSIZE
+#endif
+        if (local_err != MSG_TOO_LONG)
+        {
+            /* So there is a real error */
+            return err;
+        }
+#undef MSG_TOO_LONG
+    }
+    local_size = ntohs(hdr.size);
+    frame_alloc(frame, local_size);
+    err = recv(fd, (char *)frame->raw_packet,
+        frame->size + sizeof(struct packet_hdr), 0);
+    return err;
+}
+
+static void
+server_udp_cb(evutil_socket_t udp_fd, short event, void *ctx)
+{
+    struct server *s = (struct server *)ctx;
+    struct frame current_frame;
+    struct sockaddr_storage sockaddr;
+    unsigned int socklen = sizeof sockaddr;
+    int err;
+
+    if (event & EV_READ)
+    {
+        memset(&current_frame, 0, sizeof current_frame);
+        while((err = frame_recvfrom(udp_fd, &current_frame, (struct sockaddr *)&sockaddr, &socklen)) != -1)
+        {
+            log_debug("udp recv packet size=%d(%-#2x)", current_frame.size, current_frame.size);
+
+            /* And forward it to anyone else but except current peer*/
+            forward_udp_frame_to_other_peers(s, &current_frame,
+                                             (struct sockaddr *)&sockaddr,
+                                             socklen);
+#if defined Windows
+            /*
+            * Send to current frame to the windows thread handling the tun/tap
+            * devices and clean the evbuffer
+            */
+            send_buffer_to_device_thread(s, &current_frame);
+#else
+            /* Write the current frame on the device and clean the evbuffer*/
+            write(event_get_fd(s->device), current_frame.frame, current_frame.size);
+#endif
+        }
+    }
+}
+
+static int
+server_init_udp(struct sockaddr *addr, int len)
+{
+    struct sockaddr_storage udp_addr;
+    evutil_socket_t tmp_sock;
+    int err;
+
+    memcpy(&udp_addr, addr, len);
+    tmp_sock = tnt_udp_socket(addr->sa_family);
+    if (tmp_sock == -1)
+        return -1;
+    if (udp_addr.ss_family == AF_INET)
+    {
+        struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
+
+        sin->sin_port = htons(7676);
+    }
+    else if (udp_addr.ss_family == AF_INET6)
+    {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
+
+        sin6->sin6_port = htons(7676);
+    }
+    err = bind(tmp_sock, (struct sockaddr *)&udp_addr, len);
+    if (err == -1)
+    {
+        return -1;
+    }
+    err = evutil_make_socket_nonblocking(tmp_sock);
+    if (err == -1)
+    {
+        return -1;
+    }
+    return tmp_sock;
+}
+
 int
 server_init(struct server *s, struct event_base *evbase)
 {
@@ -424,9 +587,9 @@ server_init(struct server *s, struct event_base *evbase)
     struct cfg_sockaddress *ite_listen = NULL;
     struct cfg_sockaddress *it_peer = NULL;
     struct cfg_sockaddress *ite_peer = NULL;
+    evutil_socket_t udp_socket;
     int err;
     size_t i = 0;
-
 
     v_mc_init(&s->peers);
     v_mc_init(&s->pending_peers);
@@ -439,6 +602,7 @@ server_init(struct server *s, struct event_base *evbase)
     /* Listen on all ListenAddress */
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
     {
+        struct event *ev_udp = NULL;
         struct evconnlistener *evl = NULL;
         char listenname[INET6_ADDRSTRLEN];
 
@@ -453,6 +617,36 @@ server_init(struct server *s, struct event_base *evbase)
         }
         evconnlistener_set_error_cb(evl, accept_error_cb);
         evconnlistener_disable(evl);
+
+        /* udp endpoint init */
+
+        /*
+         * We listen on the same address for the udp socket
+         */
+        udp_socket = server_init_udp((struct sockaddr *)&it_listen->sockaddr,
+                                     it_listen->len);
+        if (udp_socket == -1)
+        {
+            log_warnx("Failed to init the udp socket on %s",
+                  address_presentation((struct sockaddr *)&it_listen->sockaddr,
+                                           it_listen->len, listenname,
+                                           sizeof listenname));
+            continue;
+        }
+        ev_udp = event_new(evbase, udp_socket, EV_PERSIST | EV_READ,
+                           server_udp_cb, s);
+        if (ev_udp == NULL)
+        {
+            log_warnx("Failed to allocate the udp socket on %s",
+                  address_presentation((struct sockaddr *)&it_listen->sockaddr,
+                                           it_listen->len, listenname,
+                                           sizeof listenname));
+            continue;
+        }
+        s->udp.udp_endpoint = ev_udp;
+
+        event_add(s->udp.udp_endpoint, NULL);
+
         v_evl_push(&s->srv_list, evl);
     }
 
