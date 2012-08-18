@@ -441,19 +441,33 @@ server_init(struct server *s, struct event_base *evbase)
     {
         struct evconnlistener *evl = NULL;
         char listenname[INET6_ADDRSTRLEN];
+	int ports;
 
-        evl = evconnlistener_new_bind(evbase, listen_callback,
-            s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
-            (struct sockaddr *)&it_listen->sockaddr, it_listen->len);
-        if (evl == NULL) {
-            log_warnx("Failed to allocate the listener to listen to %s",
-                address_presentation((struct sockaddr *)&it_listen->sockaddr,
-                it_listen->len, listenname, sizeof listenname));
-             continue;
+        if (it_listen->sockaddr.ss_family == AF_INET) {
+            struct sockaddr_in *s = (struct sockaddr_in *)&it_listen->sockaddr;
+	    ports = s->sin_port;
+        } else if (it_listen->sockaddr.ss_family == AF_INET6) {
+            struct sockaddr_in6 *s =
+	      (struct sockaddr_in6 *)&it_listen->sockaddr;
+	    ports = s->sin6_port;
         }
-        evconnlistener_set_error_cb(evl, accept_error_cb);
-        evconnlistener_disable(evl);
-        v_evl_push(&s->srv_list, evl);
+        for (; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i) {
+            if (serv_opts.ports[i] == ports) {
+                evl = evconnlistener_new_bind(evbase, listen_callback,
+                    s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
+                    (struct sockaddr *)&it_listen->sockaddr, it_listen->len);
+                if (evl == NULL) {
+                    log_warnx("Failed to allocate the listener to listen to %s",
+                      address_presentation((struct sockaddr *)
+                        &it_listen->sockaddr, it_listen->len, listenname,
+                        sizeof listenname));
+                     continue;
+                }
+                evconnlistener_set_error_cb(evl, accept_error_cb);
+                evconnlistener_disable(evl);
+                v_evl_push(&s->srv_list, evl);
+            }
+	}
     }
 
     /* If we don't have any PeerAddress it's finished */

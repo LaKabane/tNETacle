@@ -47,6 +47,7 @@ struct options {
     int encryption;                /* If true encryption is allowed */
 
     int ports[TNETACLE_MAX_PORTS]; /* Port number to listen on */
+    int cports[TNETACLE_MAX_PORTS];/* Port number to listen on, for clients */
     int addr_family;               /* Address family used by the server */
     /* Addresses on which the server listens */
     struct vector_sockaddr listen_addrs;
