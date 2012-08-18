@@ -136,26 +136,10 @@ mc_close(struct mc *self)
 int
 mc_add_frame(struct mc *self, struct frame *f)
 {
-    unsigned short size_networked = htons(f->size);
-    struct evbuffer *output = bufferevent_get_output(self->bev);
-    char name[128];
-    int err;
-
-    err = evbuffer_add(output, &size_networked, sizeof(size_networked));
-    if (err == -1)
-    {
-        log_notice("error while crafting the buffer to send to %s",
-                   mc_presentation(self, name, sizeof name));
-        return -1;
-    }
-    err = evbuffer_add(output, f->frame, f->size);
-    if (err == -1)
-    {
-        log_notice("error while crafting the buffer to send to %s",
-                   mc_presentation(self, name, sizeof name));
-        return -1;
-    }
-    return f->size;
+    (void)self;
+    (void)f;
+    log_warnx("mc_add_frame is deprecated");
+    return -1;
 }
 
 /*
@@ -179,4 +163,16 @@ mc_add_raw_data(struct mc *self, void *data, size_t size)
             size, mc_presentation(self, name, sizeof name));
     }
     return size;
+}
+
+/*
+ * This function is called when we connect to a peer.
+ * tNETacle is a polite software, using a polite protocol, so we say hello !
+ */
+int
+mc_hello(struct mc *self)
+{
+    struct evbuffer *output = bufferevent_get_output(self->bev);
+
+    return evbuffer_add_printf(output, "Hello ~!");
 }
