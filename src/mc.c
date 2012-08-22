@@ -15,14 +15,78 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include <event2/event.h>
+#include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/bufferevent_ssl.h>
+#include <event2/util.h>
 
 #include <openssl/err.h>
 
+#include "networking.h"
 #include "mc.h"
 #include "log.h"
+#include "server.h"
+#include "tnetacle.h"
+#include "options.h"
+
+extern struct options serv_opts;
+
+/*
+ * A simple wrapper over inet_ntop :)
+ */
+
+char *
+address_presentation(struct sockaddr *sock, int socklen,
+                     char *name, int namelen)
+{
+    (void)socklen;
+    if (sock->sa_family == AF_INET)
+    {
+        struct sockaddr_in *sin = (struct sockaddr_in *)sock;
+        char tmp[INET_ADDRSTRLEN];
+
+        evutil_inet_ntop(AF_INET, &sin->sin_addr, tmp, sizeof tmp);
+        evutil_snprintf(name, namelen, "%s:%d", tmp, ntohs(sin->sin_port));
+        return name;
+    }
+    else
+    {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sock;
+        char tmp[INET6_ADDRSTRLEN];
+
+        evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, tmp, sizeof tmp);
+        evutil_snprintf(name, namelen, "%s:%d", tmp, ntohs(sin6->sin6_port));
+        return name;
+    }
+}
+
+/*
+ * Returns a human readable presentation of the mc endpoint.
+ * Fills the char *name parameter, and return its address.
+ */
+char *
+mc_presentation(struct mc *self, char *name, int len)
+{
+    struct sockaddr *sock = self->p.address;
+    int socklen = self->p.len;
+
+    return address_presentation(sock, socklen, name, len);
+}
+
+/*
+ * This function init a new struct mc.
+ * struct event_base *evb: a pointer to a correct event_base
+ * int fd: optional, an fd already opened to create the underlying event layer.
+ *     -1 for creating the socket here.
+ * struct sockaddr *s, socklent_t len: pointer to the coresponding sockaddr
+ *     and its len. It will be copied inside.
+ * SSL_CTX* server_ctx: optional, the ssl context of the server.
+ *     Used to initialised the underlying bufferevent_ssl. Can be NULL.
+ *
+ */
+
 int
 mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
         socklen_t len, SSL_CTX *server_ctx)
@@ -60,4 +124,59 @@ mc_close(struct mc *self)
 {
     free(self->p.address);
     bufferevent_free(self->bev);
+}
+
+/*
+ * This function will add a frame to the output buffer of "self".
+ * This function will take care to convert the size to network byte order
+ * before adding it.
+ * Returns -1 on error, and the frame size otherwise.
+ */
+
+int
+mc_add_frame(struct mc *self, struct frame *f)
+{
+    unsigned short size_networked = htons(f->size);
+    struct evbuffer *output = bufferevent_get_output(self->bev);
+    char name[128];
+    int err;
+
+    err = evbuffer_add(output, &size_networked, sizeof(size_networked));
+    if (err == -1)
+    {
+        log_notice("error while crafting the buffer to send to %s",
+                   mc_presentation(self, name, sizeof name));
+        return -1;
+    }
+    err = evbuffer_add(output, f->frame, f->size);
+    if (err == -1)
+    {
+        log_notice("error while crafting the buffer to send to %s",
+                   mc_presentation(self, name, sizeof name));
+        return -1;
+    }
+    return f->size;
+}
+
+/*
+ * This function will add raw data to the output buffer.
+ * As you might guess, this function can not check anything about the input
+ * data, so try not to use it to much.  The return value is -1 if the function
+ * failed, the number of bytes added otherwise
+ */
+
+int
+mc_add_raw_data(struct mc *self, void *data, size_t size)
+{
+    struct evbuffer *output = bufferevent_get_output(self->bev);
+    char name[128];
+    int err;
+
+    err = evbuffer_add(output, data, size);
+    if (err == -1)
+    {
+        log_notice("error while add %d raw data into %p's output buffer",
+            size, mc_presentation(self, name, sizeof name));
+    }
+    return size;
 }
