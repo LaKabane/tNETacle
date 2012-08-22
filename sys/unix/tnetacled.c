@@ -106,7 +106,7 @@ imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
 
     if (events & EV_READ || data->is_ready_read == 1) {
 	data->is_ready_read = 1;
-	if (dispatch_imsg(data->ibuf) == -1)
+    if (dispatch_imsg(data->ibuf) == -1)
 	    data->is_ready_read = 0;
     }
 
@@ -212,7 +212,7 @@ main(int argc, char *argv[]) {
     data.is_ready_read = 0;
     data.ibuf = &ibuf;
     imsg_init(&ibuf, imsg_fds[0]);
-    evutil_make_socket_nonblocking(imsg_fds[0]);
+//    evutil_make_socket_nonblocking(imsg_fds[0]);
     event = event_new(evbase, imsg_fds[0],
 		      EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
 		      &imsg_callback_handler, &data);
