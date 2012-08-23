@@ -93,7 +93,10 @@ tnt_ttc_set_ip(struct device *dev, const char *addr) {
 
 	mask = strchr(ip, '/');
 	if (mask == NULL)
+    {
+        free(ip);
 		return -1;
+    }
 	*mask= '\0';
 	++mask;
 
