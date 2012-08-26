@@ -72,14 +72,14 @@ struct imsg_data {
 };
 
 static void
-_sighdlr(int sig) {
+sig_chld_hdlr(int sig) {
     printf("%s\n", __PRETTY_FUNCTION__);
     if (sig == SIGCHLD)
 	sigchld_recv = 1;
 }
 
 static void
-sighdlr(evutil_socket_t sig, short events, void *args) {
+sig_gen_hdlr(evutil_socket_t sig, short events, void *args) {
     struct event_base *evbase = args;
     char *name = "unknow";
     (void)events;
@@ -178,7 +178,7 @@ main(int argc, char *argv[]) {
     /* The child can die while we are still in the init phase. So we need to
      * monitor for SIGCHLD by signal
      */
-    signal(SIGCHLD, _sighdlr);
+    signal(SIGCHLD, sig_chld_hdlr);
     chld_pid = tnt_fork(imsg_fds);
 
 #ifdef Darwin
@@ -200,9 +200,9 @@ main(int argc, char *argv[]) {
         log_err(1, "libevent");
     }
 #endif /* Darwin */
-    sigint = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
-    sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
-    sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sighdlr, evbase);
+    sigint = event_new(evbase, SIGINT, EV_SIGNAL, &sig_gen_hdlr, evbase);
+    sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sig_gen_hdlr, evbase);
+    sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sig_gen_hdlr, evbase);
 
     if (close(imsg_fds[1]))
 	log_notice("close");
@@ -243,6 +243,7 @@ main(int argc, char *argv[]) {
     event_free(sigterm);
     event_free(sigchld);
     event_base_free(evbase);
+    tnt_ttc_close(dev);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
