@@ -332,3 +332,8 @@ void Controller::writeToSocket(const QString& buff)
 {
   _network.write(buff);
 }
+
+void Controller::printError(const QString& message)
+{
+  this->_view->printError(message);
+}

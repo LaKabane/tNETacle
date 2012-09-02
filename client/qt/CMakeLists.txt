@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 2.6)
 PROJECT(client)
 FIND_PACKAGE(Qt4 REQUIRED)
-find_package(Qjson REQUIRED)
+FIND_PACKAGE(Tclt REQUIRED)
 
 SET(QT_USE_QTNETWORK TRUE)
 INCLUDE(${QT_USE_FILE})
@@ -24,6 +24,7 @@ SET(client_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/modellog.cpp
     ${CMAKE_CURRENT_LIST_DIR}/protocol.cpp
     ${CMAKE_CURRENT_LIST_DIR}/network.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
 )
 
 SET(client_HEADERS
@@ -46,7 +47,8 @@ SET(client_RESOURCES
     ${CMAKE_CURRENT_LIST_DIR}/../share/img/client.qrc
 )
 
-SET(client_LIBRARIES ${QT_LIBRARIES} ${QJSON_LIBRARIES})
+message(${TCLT_LIBRARY})
+SET(client_LIBRARIES ${QT_LIBRARIES} ${TCLT_LIBRARY})
 
 QT4_WRAP_CPP(client_HEADERS_MOC ${client_HEADERS})
 QT4_WRAP_UI(client_FORMS_HEADERS ${client_FORMS})
@@ -64,7 +66,7 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_BINARY_DIR}
     ${CMAKE_CURRENT_LIST_DIR}/include
-    ${QJSON_INCLUDE_DIR}
+    ${TCLT_INCLUDE_DIR}
 )
 
 TARGET_LINK_LIBRARIES(client ${client_LIBRARIES})
