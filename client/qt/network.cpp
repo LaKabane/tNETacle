@@ -26,7 +26,6 @@ void Network::read()
   QByteArray data = _socket.peek(_socket.size());
   device.write(data);
   device.close();
-   //QVariant var = _parser.parse(&_socket, &ok);
 
   QVariant* var;
   try
