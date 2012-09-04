@@ -51,6 +51,8 @@ struct options {
     int addr_family;               /* Address family used by the server */
     /* Addresses on which the server listens */
     struct vector_sockaddr listen_addrs;
+    /* Addresses for the client */
+    struct vector_sockaddr client_addrs;
     /* Addresses of others tNETacle daemons */
     struct vector_sockaddr peer_addrs;
     char *addr;                    /* Address on the VPN */

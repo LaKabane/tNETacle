@@ -45,13 +45,13 @@ tnt_ttc_open(int tunmode) {
 		return NULL;
 
     if (tunmode == TNT_TUNMODE_TUNNEL)
-        tunmode = TUNTAP_MODE_TUNNEL;
+        tunmode = TUNTAP_TUNMODE_TUNNEL;
     else if (tunmode == TNT_TUNMODE_ETHERNET)
-        tunmode = TUNTAP_MODE_ETHERNET;
+        tunmode = TUNTAP_TUNMODE_ETHERNET;
     else
         return NULL;
 
-	if (tuntap_start(dev, tunmode, TUNTAP_ID_ANY) == -1) {
+	if (tuntap_start(dev, tunmode, TUNTAP_TUNID_ANY) == -1) {
 		tuntap_release(dev);
 		return NULL;
 	}

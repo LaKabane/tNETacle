@@ -132,6 +132,43 @@ add_listen_addrs_ports(int family, int *ports) {
     }
 }
 
+static int
+add_client_addrs_ports(int family, int *ports) {
+    unsigned int i;
+    struct cfg_sockaddress tmp_store;
+    struct sockaddr_in *sin = (struct sockaddr_in *)&tmp_store.sockaddr;
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&tmp_store.sockaddr;
+
+    for (i = 0; i < TNETACLE_MAX_PORTS && ports[i] != -1; ++i) {
+        (void)memset(&tmp_store, 0, sizeof tmp_store);
+    
+        if (family == AF_INET || family == AF_UNSPEC) {
+            sin->sin_family = AF_INET;
+            sin->sin_port = htons(ports[i]);
+            if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
+              &sin->sin_addr.s_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin;
+            v_sockaddr_push(&serv_opts.client_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenAddr: Added %s:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV4, ports[i]);
+        }
+        if (family == AF_INET6 || family == AF_UNSPEC) {
+            sin6->sin6_family = AF_INET6;
+            sin6->sin6_port = htons(ports[i]);
+            if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
+              &sin6->sin6_addr.s6_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin6;
+            v_sockaddr_push(&serv_opts.client_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV6, ports[i]);
+        }
+    }
+}
+
 int yajl_null(void *ctx) {
     (void)ctx;
     return -1;
@@ -305,7 +342,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
 
         if (strncmp("any", str, len) == 0) {
 	    add_listen_addrs_ports(serv_opts.addr_family, serv_opts.ports);
-	    add_listen_addrs_ports(serv_opts.addr_family, serv_opts.cports);
+	    add_client_addrs_ports(serv_opts.addr_family, serv_opts.cports);
         } else
             add_sockaddr(&serv_opts.listen_addrs, bufaddr);
     } else {
