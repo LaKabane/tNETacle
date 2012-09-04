@@ -23,24 +23,16 @@ void  ModelContact::feedData(const QString& command, const QVariant& data)
 {
   if (_commands.contains(command) == true)
     {
-      QMap<QString, QVariant> people = data.toMap();
-      QMap<QString, QVariant>::const_iterator it_p(people.begin());
-      const QMap<QString, QVariant>::const_iterator ite_p(people.end());
-
-      for (; it_p != ite_p; ++it_p)
-	{
-	  QMap<QString, QVariant> person = (*it_p).toMap();
-	  QString key = "";
-	  QVector<QString> v;
-	  v.append(it_p.key());
-	  if (person.contains("Name") == true)
-	    v[0] = person["Name"].toString();
-	  if (person.contains("Key") == true)
-	    v.append(person["Key"].toString());
-	  if (person.contains("Old") == true)
-	    v.append(person["Old"].toString());
-	  (this->*_commands[command])(v);
-	}
+      QMap<QString, QVariant> person = data.toMap();
+      QString key = "";
+      QVector<QString> v;
+      if (person.contains("Name") == true)
+	v.append(person["Name"].toString());
+      if (person.contains("Key") == true)
+	v.append(person["Key"].toString());
+      if (person.contains("Old") == true)
+	v.append(person["Old"].toString());
+      (this->*_commands[command])(v);
     }
   else
     throw new Exception("Error: command does not exist!");

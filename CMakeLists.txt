@@ -227,3 +227,8 @@ if (Windows)
 endif()
 
 include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.link.local OPTIONAL)
+if (ClientQT)
+  include(${CMAKE_SOURCE_DIR}/client/qt/CMakeLists.txt)
+endif()
+
+include(CMakeLists.txt.local OPTIONAL)

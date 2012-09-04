@@ -40,6 +40,10 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    QObject::connect(actionConnect, SIGNAL(activated()), this, SLOT(start()));
    QObject::connect(actionConnect2, SIGNAL(activated()), this, SLOT(start()));
 
+   QObject::connect(actionAbout, SIGNAL(activated()), this, SLOT(about()));
+
+   QObject::connect(actionAboutQt, SIGNAL(activated()), this, SLOT(aboutQt()));
+
    actionConnect->setVisible(true);
    actionConnect2->setVisible(true);
    actionAddContact->setVisible(false);
@@ -286,4 +290,17 @@ void ClientGUI::disconnected()
   actionDeleteContact->setVisible(false);
   actionAddAContact->setVisible(false);
   actionDeleteAContact->setVisible(false);
+}
+
+void ClientGUI::about()
+{
+   QMessageBox messageAbout;
+   QString message = tr(QString::fromUtf8("tNETacle permet de créer de façon simple des réseaux privés virtuels hautement configurables. Grâce à son interface claire il met à la portée de tous l'utilisation de ces réseaux et est intrinsèquement résistant aux pannes et respectueux de la vie privée du fait de son architecture décentralisée et de son chiffrement fort.").toStdString().c_str());
+   messageAbout.about(0, "tNETacle", message);
+}
+
+void ClientGUI::aboutQt()
+{
+   QMessageBox messageAbout;
+   messageAbout.aboutQt(0, "tNETacle");
 }

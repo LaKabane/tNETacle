@@ -32,24 +32,36 @@ Controller::Controller(IClientGUI*  gui) :
 
 void Controller::feedData(const QVariant& data)
 {
-  QMap<QString, QVariant> map = data.toMap();
-  QMap<QString, QVariant>::const_iterator it(map.begin());
-  const QMap<QString, QVariant>::const_iterator it_end = map.end();
-  for (; it != it_end; ++it)
+  if (data.canConvert(QVariant::List))
     {
-      QString commande = it.key();
-      try {
-	if (_correspondence.contains(commande) == false)
-	  throw new Exception("Error: Received an invalid command");
-	_models[_correspondence[commande]]->feedData(commande, it.value());
-      }
-      catch (Exception *e)
+      QList<QVariant> list = data.toList();
+      QList<QVariant>::const_iterator it(list.begin());      
+      const QList<QVariant>::const_iterator it_end = list.end();
+      for (; it != it_end; ++it)
+	feedData(*it);
+    }
+  else if (data.canConvert(QVariant::Map))
+    {
+      QMap<QString, QVariant> map = data.toMap();
+      QMap<QString, QVariant>::const_iterator it(map.begin());
+      const QMap<QString, QVariant>::const_iterator it_end = map.end();
+      for (; it != it_end; ++it)
 	{
-	  this->_view->printError(e->getMessage());
-	  delete e;
+	  QString commande = it.key();
+	  try {
+	    if (_correspondence.contains(commande) == false)
+	      throw new Exception("Error: Received an invalid command");
+	    _models[_correspondence[commande]]->feedData(commande, it.value());
+	  }
+	  catch (Exception *e)
+	    {
+	      this->_view->printError(e->getMessage());
+	      delete e;
+	    }
 	}
     }
 }
+
 void Controller::appendLog(const QString& s)
 {
   this->_view->appendLog(s);
@@ -319,4 +331,9 @@ void Controller::disconnected()
 void Controller::writeToSocket(const QString& buff)
 {
   _network.write(buff);
+}
+
+void Controller::printError(const QString& message)
+{
+  this->_view->printError(message);
 }

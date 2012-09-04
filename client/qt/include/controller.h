@@ -36,6 +36,8 @@ public:
 
   const QMap<QString, QVariant>* getConfigMenu() const;
 
+  void			printError(const QString&);
+
 public slots:
   bool			addContact();
   void			deleteContact();
