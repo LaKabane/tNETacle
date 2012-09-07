@@ -1,12 +1,6 @@
 #include <QMap>
 #include <QVariant>
 #include "imodel.h"
-#ifdef WIN32
-#include <qjson/serializer>
-#else
-#include <qjson/serializer.h>
-#endif
-
 // const QMap<QString, QVariant> Model::mapToVar(const QMap<QString, QString> &map)
 // {
 //   QMap<QString, QVariant> var;
