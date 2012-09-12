@@ -427,7 +427,7 @@ void listen_client_callback(struct evconnlistener *evl, evutil_socket_t fd,
     int errcode;
     struct mc mc;
 
-	log_debug("A client has connected");
+	log_debug("A client is connecting");
     memset(&mc, 0, sizeof mc);
     /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
     /* Even if we are not in a SSL context, mc_init know what to do anyway*/
@@ -437,8 +437,8 @@ void listen_client_callback(struct evconnlistener *evl, evutil_socket_t fd,
     {
         bufferevent_setcb(mc.bev, client_mc_read_cb, NULL,
                           NULL, s);
-        log_debug("add the ssl client to the list");
-        v_mc_push(&s->peers, &mc);
+        log_debug("client connected");
+        //v_mc_push(&s->peers, &mc);
     }
     else
     {
