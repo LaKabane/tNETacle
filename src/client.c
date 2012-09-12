@@ -24,59 +24,32 @@
 #endif
 
 #include "client.h"
+#include "tclt_json.h"
 
 void
 client_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = (struct server *)ctx;
-    ssize_t n;
+    size_t size;
     struct evbuffer *buf = NULL;
-    //struct frame current_frame;
-    unsigned short size;
-    unsigned short *network_size_ptr;
+	char buff[4096];
+	elements *ele;
+	int i;
 
-    //memset(&current_frame, 0, sizeof current_frame);
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
     {
-        /*
-         * Read and convert the first bytes of the buffer from network byte
-         * order to host byte order.
-         */
-        network_size_ptr = (unsigned short *)evbuffer_pullup(buf, sizeof(size));
-        size = ntohs(*network_size_ptr);
-
-        /* We are going to drain 2 bytes just after, so we'd better count them.*/
-        if (size > evbuffer_get_length(buf) - sizeof(size))
-        {
-            log_debug("receive an incomplete frame of %d(%-#2x) bytes but "
-                "only %d bytes are available", size, *network_size_ptr,
-                      evbuffer_get_length(buf));
-            break;
-        }
-        log_debug("receive a frame of %d(%-#2x) bytes", size,
-                   *network_size_ptr);
-        evbuffer_drain(buf, sizeof(size));
-
-        /* 
-         * We fill the current_frame with the size in host byte order,
-         * and the frame's data
-         */
-        //current_frame.size = size;
-        //current_frame.frame = evbuffer_pullup(buf, size); 
-        /* And forward it to anyone else but except current peer*/
-        //forward_frame_to_other_peers(s, &current_frame, bev);
-
-#if defined Windows
-        /*
-         * Send to current frame to the windows thread handling the tun/tap
-         * devices and clean the evbuffer
-         */
-        send_buffer_to_device_thread(s, &current_frame);
-#else
-        /* Write the current frame on the device and clean the evbuffer*/
-        //n = write(event_get_fd(s->device), current_frame.frame, current_frame.size);
-#endif
-        evbuffer_drain(buf, size);
-    }
+		size = bufferevent_read(bev, buff, 4095);
+		if (size != 0 && size != -1)
+		{
+			buff[size] = '\0';
+			log_debug(" %d   [%s]\n", size, buff);
+			ele = tclt_parse(buff, size);
+			/* while (ele != NULL) */
+			/* { */
+			/* 	log_debug("%d\n", ele->type); */
+			/* 	ele = ele->next; */
+			/* } */
+		}
+	}
 }
