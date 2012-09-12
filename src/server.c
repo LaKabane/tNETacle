@@ -46,6 +46,7 @@
 #include "log.h"
 #include "hexdump.h"
 #include "wincompat.h"
+#include "client.h"
 
 extern struct options serv_opts;
 
@@ -421,7 +422,28 @@ static
 void listen_client_callback(struct evconnlistener *evl, evutil_socket_t fd,
   struct sockaddr *sock, int len, void *ctx)
 {
-	log_debug("A client has connected");	
+	struct server *s = (struct server *)ctx;
+    struct event_base *base = evconnlistener_get_base(evl);
+    int errcode;
+    struct mc mc;
+
+	log_debug("A client has connected");
+    memset(&mc, 0, sizeof mc);
+    /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
+    /* Even if we are not in a SSL context, mc_init know what to do anyway*/
+    mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
+    errcode = mc_init(&mc, base, fd, sock, (socklen_t)len, s->server_ctx);
+    if (errcode != -1)
+    {
+        bufferevent_setcb(mc.bev, client_mc_read_cb, NULL,
+                          NULL, s);
+        log_debug("add the ssl client to the list");
+        v_mc_push(&s->peers, &mc);
+    }
+    else
+    {
+        log_notice("Failed to init a meta connexion");
+    }
 }
 
 int
@@ -470,7 +492,7 @@ server_init(struct server *s, struct event_base *evbase)
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
     {
         char listenname[INET6_ADDRSTRLEN];
-		evl = evconnlistener_new_bind(evbase, listen_callback,
+		evl = evconnlistener_new_bind(evbase, listen_client_callback,
 			  s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
 		  (struct sockaddr *)&it_listen->sockaddr, it_listen->len);
 		if (evl == NULL) {

@@ -71,7 +71,9 @@ set(SOURCES_LIST
   #src/pipeline.c
   src/mc.c
   src/hexdump.c
-  src/server.c)
+  src/server.c
+  src/client.c
+)
 
 # OS families specific things
 # ---------------------------
