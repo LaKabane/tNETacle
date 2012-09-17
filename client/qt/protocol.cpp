@@ -14,13 +14,12 @@ QString	Protocol::add(const QString& object, const QVector<QString>& v)
   json += "\": {";
 
   // TODO : make it generic, work only for Contact
-  json += "\"";
+  json += "\"Name\":\"";
   json += v[0];
-  json += "\": {";
+  json += "\",";
   json += "\"Key\": \"";
   json += v[1];
   json += "\"";
-  json += "}";
   //!TODO
 
   json += "}";
