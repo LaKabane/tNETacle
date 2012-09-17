@@ -27,8 +27,7 @@ struct bufferevent;
 # define ssize_t SSIZE_T
 #endif
 
-void
-client_mc_read_cb(struct bufferevent *bev, void *ctx);
-
+void client_mc_read_cb(struct bufferevent *bev, void *ctx);
+void client_mc_event_cb(struct bufferevent *bev, short events, void *ctx);
 
 #endif /* CLIENT_CORE */

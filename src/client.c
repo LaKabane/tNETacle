@@ -23,8 +23,17 @@
 # include <unistd.h>
 #endif
 
+#include <event2/bufferevent.h>
+
 #include "client.h"
 #include "tclt_json.h"
+#include "server.h"
+
+static int
+_server_match_bev(struct mc const *a, struct mc const *b)
+{
+    return a->bev == b->bev;
+}
 
 void
 client_mc_read_cb(struct bufferevent *bev, void *ctx)
@@ -43,13 +52,87 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
 		if (size != 0 && size != -1)
 		{
 			buff[size] = '\0';
-			log_debug(" %d   [%s]\n", size, buff);
+			log_debug("%s\n", buff);
 			ele = tclt_parse(buff, size);
-			/* while (ele != NULL) */
-			/* { */
-			/* 	log_debug("%d\n", ele->type); */
-			/* 	ele = ele->next; */
-			/* } */
+			while (ele != NULL)
+			{
+				if (ele->type == 7)
+					log_debug("%s\n", ele->u_value.buf);
+				ele = ele->next;
+			}
 		}
 	}
+}
+
+void
+client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
+{
+	struct server *s = (struct server *)ctx;
+
+	if (events & BEV_EVENT_CONNECTED)
+	{
+		struct mc *mc;
+        struct mc tmp;
+
+        /*
+         * If we received the notification that the connection is established,
+         * then we move the corresponding struct mc from s->pending_peers to
+         * s->peers.
+         */
+
+        tmp.bev = bev;
+        mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
+        if (mc != v_mc_end(&s->pending_peers))
+        {
+            log_info("connexion established.");
+            memcpy(&tmp, mc, sizeof(tmp));
+            v_mc_erase(&s->pending_peers, mc);
+            v_mc_push(&s->peers, &tmp);
+        }
+		//send peers to the client
+	}
+	if (events & BEV_EVENT_ERROR)
+    {
+        struct mc *mc;
+        struct mc tmp;
+        int everr;
+        int sslerr;
+
+        tmp.bev = bev;
+        everr = EVUTIL_SOCKET_ERROR();
+
+        if (everr != 0)
+        {
+            log_warnx("Unexpected shutdown of the meta-connexion: (%d) %s",
+                       everr, evutil_socket_error_to_string(everr));
+        }
+        while ((sslerr = bufferevent_get_openssl_error(bev)) != 0)
+        {
+            log_warnx("SSL error code (%d): %s in %s %s",
+                       sslerr, ERR_reason_error_string(sslerr),
+                       ERR_lib_error_string(sslerr),
+                       ERR_func_error_string(sslerr));
+        }
+        /*
+         * Find if the exception come from a pending peer or a
+         * peer and close it.
+         */
+        mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
+        if (mc != v_mc_end(&s->pending_peers))
+        {
+            mc_close(mc);
+            v_mc_erase(&s->pending_peers, mc);
+            log_debug("socket removed from the pending list");
+        }
+        else
+        {
+            mc = v_mc_find_if(&s->peers, &tmp, _server_match_bev);
+            if (mc != v_mc_end(&s->peers))
+            {
+                mc_close(mc);
+                v_mc_erase(&s->peers, mc);
+                log_debug("socket removed from the peer list");
+            }
+        }
+    }
 }

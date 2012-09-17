@@ -436,7 +436,7 @@ void listen_client_callback(struct evconnlistener *evl, evutil_socket_t fd,
     if (errcode != -1)
     {
         bufferevent_setcb(mc.bev, client_mc_read_cb, NULL,
-                          NULL, s);
+                          client_mc_event_cb, s);
         log_debug("client connected");
         //v_mc_push(&s->peers, &mc);
     }
