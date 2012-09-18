@@ -56,9 +56,7 @@
 int debug;
 volatile sig_atomic_t sigchld_recv;
 extern struct options serv_opts;
-
-/* XXX: clean that after the TA2 */
-struct device *dev = NULL;
+static struct device *dev;
 
 static void usage(void);
 static int dispatch_imsg(struct imsgbuf *);
@@ -228,7 +226,8 @@ main(int argc, char *argv[]) {
     event_free(sigterm);
     event_free(sigchld);
     event_base_free(evbase);
-    tnt_ttc_close(dev);
+    if (dev != NULL)
+        tnt_ttc_close(dev);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
