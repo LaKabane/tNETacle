@@ -56,10 +56,6 @@ struct options {
 
     const char *key_path;
     const char *cert_path;
-
-    /* Parsing stuff */
-    const unsigned char *last_map_key;
-    int   last_map_key_len;
 };
 
 enum {

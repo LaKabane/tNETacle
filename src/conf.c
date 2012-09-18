@@ -45,6 +45,11 @@
 extern int debug;
 struct options serv_opts;
 
+struct ctx {
+    const unsigned char *map;
+    int   len;
+};
+
 void
 init_options(struct options *opt) {
     unsigned int i;
@@ -69,9 +74,6 @@ init_options(struct options *opt) {
     opt->addr = NULL;
 
     opt->key_path= NULL;
-
-    opt->last_map_key = NULL;
-    opt->last_map_key_len = 0;
 }
 
 static int
@@ -97,26 +99,24 @@ int yajl_null(void *ctx) {
     return -1;
 }
 
-int yajl_boolean(void *ctx, int val) {
-    const char *map = serv_opts.last_map_key;
-    const int map_len = serv_opts.last_map_key_len;
+int yajl_boolean(void *lctx, int val) {
+    struct ctx *ctx = lctx;
 
-    (void)ctx;
-    if (map == NULL)
+    if (ctx->map == NULL)
         return -1;
 
-    if (strncmp("Compression", map, map_len) == 0) {
+    if (strncmp("Compression", ctx->map, ctx->len) == 0) {
         serv_opts.compression = val;
-    } else if (strncmp("Encryption", map, map_len) == 0) {
+    } else if (strncmp("Encryption", ctx->map, ctx->len) == 0) {
         serv_opts.encryption = val;
-    } else if (strncmp("Debug", map, map_len) == 0) {
+    } else if (strncmp("Debug", ctx->map, ctx->len) == 0) {
         serv_opts.debug = val;
     } else {
         char *s;
 
-        s = alloca(map_len);
-        (void)memcpy(s, map, map_len);
-        s[map_len] = '\0';
+        s = alloca(ctx->len);
+        (void)memcpy(s, ctx->map, ctx->len);
+        s[ctx->len] = '\0';
         fprintf(stderr, "%s: unknown boolean\n", s);
         return -1;
     }
@@ -135,14 +135,13 @@ int yajl_double(void *ctx, double val) {
     return -1;
 }
 
-int yajl_number(void *ctx, const char *num, size_t len) {
-    const char *map = serv_opts.last_map_key;
-    const int map_len = serv_opts.last_map_key_len;
+int yajl_number(void *lctx, const char *num, size_t len) {
     char *errstr;
     long ret;
     char nptr[20];
+    struct ctx *ctx = lctx;
 
-    if (map == NULL)
+    if (ctx->map == NULL)
         return -1;
 
     if (len > 20) {
@@ -161,9 +160,9 @@ int yajl_number(void *ctx, const char *num, size_t len) {
         return -1;
     }
 
-    if (strncmp("TunnelIndex", map, map_len) == 0) {
+    if (strncmp("TunnelIndex", ctx->map, ctx->len) == 0) {
         serv_opts.tunnel_index = ret;
-    } else if (strncmp("Port", map, map_len) == 0) {
+    } else if (strncmp("Port", ctx->map, ctx->len) == 0) {
         unsigned int i;
 
         for (i = 0; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i)
@@ -172,9 +171,9 @@ int yajl_number(void *ctx, const char *num, size_t len) {
     } else {
        char *s;
 
-       s = alloca(map_len);
-       (void)memcpy(s, map, map_len);
-       s[map_len] = '\0';
+       s = alloca(ctx->len);
+       (void)memcpy(s, ctx->map, ctx->len);
+       s[ctx->len] = '\0';
 
        fprintf(stderr, "%s: unknown integer\n", s);
         return -1;
@@ -183,22 +182,20 @@ int yajl_number(void *ctx, const char *num, size_t len) {
     return 1;
 }
 
-int yajl_string(void *ctx, const unsigned char *str, size_t len) {
-    const char *map = serv_opts.last_map_key;
-    const int map_len = serv_opts.last_map_key_len;
+int yajl_string(void *lctx, const unsigned char *str, size_t len) {
+    struct ctx *ctx = lctx;
 
-    (void)ctx;
-    if (map == NULL)
+    if (ctx->map == NULL)
         return -1;
 
-    if (strncmp("Address", map, map_len) == 0) {
+    if (strncmp("Address", ctx->map, ctx->len) == 0) {
         /* XXX: Address validation */
         serv_opts.addr = strndup(str, len);
         if (serv_opts.addr == NULL) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("AddressFamily", map, map_len) == 0) {
+    } else if (strncmp("AddressFamily", ctx->map, ctx->len) == 0) {
         if (strncmp("inet6", str, len) == 0) {
             serv_opts.addr_family = AF_INET;
         } else if (strncmp("inet", str, len) == 0) {
@@ -210,7 +207,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
               "\"inet6\", \"inet\" or \"any\"\n");
             return -1;
         }
-    } else if (strncmp("Mode", map, map_len) == 0) {
+    } else if (strncmp("Mode", ctx->map, ctx->len) == 0) {
         if (strncmp("router", str, len) == 0) {
             serv_opts.tunnel = TNT_DAEMONMODE_ROUTER;
         } else if (strncmp("switch", str, len) == 0) {
@@ -222,7 +219,7 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
               "\"router\", \"switch\" or \"hub\"\n");
             return -1;
         }
-    } else if (strncmp("Tunnel", map, map_len) == 0) {
+    } else if (strncmp("Tunnel", ctx->map, ctx->len) == 0) {
          if (strncmp("point-to-point", str, len) == 0) {
             serv_opts.tunnel = TNT_TUNMODE_TUNNEL;
         } else if (strncmp("ethernet", str, len) == 0) {
@@ -232,27 +229,27 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
               "\"ethernet\" or \"point-to-point\"\n");
             return -1;
         }
-    } else if (strncmp("PrivateKey", map, map_len) == 0) {
+    } else if (strncmp("PrivateKey", ctx->map, ctx->len) == 0) {
         /* XXX: Should we check for the existence of the key now ? */
         serv_opts.key_path = strndup(str, len);
         if (serv_opts.key_path == NULL) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("CertFile", map, map_len) == 0) {
+    } else if (strncmp("CertFile", ctx->map, ctx->len) == 0) {
         /* XXX: Should we check for the existence of the key now ? */
         serv_opts.cert_path = strndup(str, len);
         if (serv_opts.cert_path == NULL) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("PeerAddress", map, map_len) == 0) {
+    } else if (strncmp("PeerAddress", ctx->map, ctx->len) == 0) {
         char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
         add_addr_text(&serv_opts.peer_addrs, bufaddr);
-    } else if (strncmp("ListenAddress", map, map_len) == 0) {
+    } else if (strncmp("ListenAddress", ctx->map, ctx->len) == 0) {
         char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
@@ -298,9 +295,9 @@ int yajl_string(void *ctx, const unsigned char *str, size_t len) {
     } else {
         char *s;
 
-        s = alloca(map_len);
-        (void)memcpy(s, map, map_len);
-        s[map_len] = '\0';
+        s = alloca(ctx->len);
+        (void)memcpy(s, ctx->map, ctx->len);
+        s[ctx->len] = '\0';
         fprintf(stderr, "%s: unknown variable\n", s);
         return -1;
     }
@@ -312,17 +309,19 @@ int yajl_start_map(void *ctx) {
     return -1;
 }
 
-int yajl_map_key(void *ctx, const unsigned char *key, size_t len) {
-    (void)ctx;
-    serv_opts.last_map_key = key;
-    serv_opts.last_map_key_len = len;
+int yajl_map_key(void *lctx, const unsigned char *key, size_t len) {
+    struct ctx *ctx = lctx;
+
+    ctx->map = key;
+    ctx->len = len;
     return 1;
 }
 
-int yajl_end_map(void *ctx) {
-    (void)ctx;
-    serv_opts.last_map_key = NULL;
-    serv_opts.last_map_key_len = 0;
+int yajl_end_map(void *lctx) {
+    struct ctx *ctx = lctx;
+
+    ctx->map = NULL;
+    ctx->len = 0;
     return -1;
 }
 
@@ -331,10 +330,11 @@ int yajl_start_array(void *ctx) {
     return -1;
 }
 
-int yajl_end_array(void *ctx) {
-    (void)ctx;
-    serv_opts.last_map_key = NULL;
-    serv_opts.last_map_key_len = 0;
+int yajl_end_array(void *lctx) {
+    struct ctx *ctx = lctx;
+
+    ctx->map = NULL;
+    ctx->len = 0;
     return -1;
 }
 
@@ -356,11 +356,14 @@ int
 tnt_parse_buf(char *p, size_t size) {
 	yajl_handle parse;
 	yajl_status status;
+	struct ctx ctx;
 
         /* Overwrite previous configuration in case of SIGHUP */
         init_options(&serv_opts);
+	ctx.map = NULL;
+	ctx.len = 0;
 
-	parse = yajl_alloc(&callbacks, NULL, NULL);
+	parse = yajl_alloc(&callbacks, NULL, &ctx);
 	yajl_config(parse, yajl_allow_comments, 1);
 
         /* yajl might be feeded a bit at a time, but it also works this way */
