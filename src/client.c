@@ -113,10 +113,6 @@ client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
                        ERR_lib_error_string(sslerr),
                        ERR_func_error_string(sslerr));
         }
-        /*
-         * Find if the exception come from a pending peer or a
-         * peer and close it.
-         */
         mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
         if (mc != v_mc_end(&s->pending_peers))
         {
