@@ -24,6 +24,7 @@ find_package(ZLIB REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
 find_package(OpenSSL REQUIRED)
+find_package(Tclt REQUIRED)
 
 if(WIN32)
 	find_package(Event COMPONENTS core REQUIRED)
@@ -54,6 +55,7 @@ include_directories(${EVENT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
+include_directories(${TCLT_INCLUDE_DIR})
 if (TUNTAP_FOUND)
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
@@ -71,7 +73,9 @@ set(SOURCES_LIST
   #src/pipeline.c
   src/mc.c
   src/hexdump.c
-  src/server.c)
+  src/server.c
+  src/client.c
+)
 
 # OS families specific things
 # ---------------------------
@@ -205,6 +209,7 @@ target_link_libraries(tNETacle
         ${ZLIB_LIBRARY}
         ${YAJL_LIBRARIES}
         ${OPENSSL_LIBRARIES}
+	${TCLT_LIBRARY}
 )
 
 if (TUNTAP_FOUND)
