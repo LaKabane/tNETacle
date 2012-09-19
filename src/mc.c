@@ -119,6 +119,36 @@ mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
     return 0;
 }
 
+int
+mc_peer_connect(struct server *s,
+                struct event_base *evbase,
+                struct sockaddr *sock,
+                int socklen)
+{
+    int err;
+    struct mc tmp;
+    char peername[INET6_ADDRSTRLEN];
+
+    address_presentation(sock, socklen, peername, sizeof(peername));
+    memset(&tmp, 0, sizeof(tmp));
+    tmp.ssl_flags = BUFFEREVENT_SSL_CONNECTING;
+    err = mc_init(&tmp, evbase, -1, sock, socklen, s->server_ctx);
+    if (err == -1) {
+        log_warn("unable to allocate a socket for connecting to %s",
+                 peername);
+        return err;
+    }
+    bufferevent_setcb(tmp.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
+    err = bufferevent_socket_connect(tmp.bev, sock, socklen);
+    if (err == -1) {
+        log_warn("unable to connect to %s", peername);
+        return err;
+    }
+    v_mc_push(&s->pending_peers, &tmp);
+    return 0;
+}
+
+
 void
 mc_close(struct mc *self)
 {

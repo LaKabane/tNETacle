@@ -73,12 +73,22 @@ struct server {
 };
 
 SSL_CTX *evssl_init(void);
-int server_init(struct server *, struct event_base *);
-void server_set_device(struct server *, int fd);
+int server_init(struct server *,
+                struct event_base *);
+void server_set_device(struct server *,
+                       int fd);
 
 #if defined Windows
 void broadcast_udp_to_peers(struct server *s);
-int frame_alloc(struct frame *, unsigned int size);
+int frame_alloc(struct frame *,
+                unsigned int size);
 #endif
+
+/* I didn't want to do this */
+void server_mc_event_cb(struct bufferevent *bev,
+                        short events,
+                        void *ctx);
+void server_mc_read_cb(struct bufferevent *bev,
+                       void *ctx);
 
 #endif /* end of include guard: SERVER_KW2DIKER */

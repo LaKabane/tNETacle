@@ -119,7 +119,7 @@ forward_udp_frame_to_other_peers(struct server *s, struct frame *current_frame,
     }
 }
 
-static void
+void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = (struct server *)ctx;
@@ -136,7 +136,7 @@ _server_match_bev(struct mc const *a, struct mc const *b)
     return a->bev == b->bev;
 }
 
-static void
+void
 server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
     struct server *s = (struct server *)ctx;
@@ -588,7 +588,6 @@ server_init(struct server *s, struct event_base *evbase)
     struct cfg_sockaddress *it_peer = NULL;
     struct cfg_sockaddress *ite_peer = NULL;
     evutil_socket_t udp_socket;
-    int err;
     size_t i = 0;
 
     v_mc_init(&s->peers);
@@ -658,29 +657,8 @@ server_init(struct server *s, struct event_base *evbase)
     ite_peer = v_sockaddr_end(&serv_opts.peer_addrs);
     for (;it_peer != ite_peer; it_peer = v_sockaddr_next(it_peer))
     {
-        struct mc mc;
-        char peername[INET6_ADDRSTRLEN];
-
-        memset(&mc, 0, sizeof mc);
-        address_presentation((struct sockaddr *)&it_peer->sockaddr,
-            it_peer->len, peername, sizeof peername);
-        /* Notifiy the mc_init that we are in an SSL_CONNECTING state*/
-        /* Even if we are not in a SSL context, mc_init know what to do anyway*/
-        mc.ssl_flags = BUFFEREVENT_SSL_CONNECTING;
-        err = mc_init(&mc, evbase, -1, (struct sockaddr *)&it_peer->sockaddr,
-                      it_peer->len, s->server_ctx);
-        if (err == -1) {
-            log_warn("unable to allocate a socket for connecting to %s", peername);
-            continue;
-        }
-        bufferevent_setcb(mc.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
-        err = bufferevent_socket_connect(mc.bev,
-            (struct sockaddr *)&it_peer->sockaddr, it_peer->len);
-        if (err == -1) {
-            log_warn("unable to connect to %s", peername);
-            continue;
-        }
-        v_mc_push(&s->pending_peers, &mc);
+        mc_peer_connect(s, evbase, (struct sockaddr *)&it_peer->sockaddr,
+                        it_peer->len);
     }
     return 0;
 }
