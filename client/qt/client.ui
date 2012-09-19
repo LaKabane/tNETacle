@@ -584,6 +584,7 @@ p, li { white-space: pre-wrap; }
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionAboutQt"/>
     <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuContact">
@@ -758,6 +759,11 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="text">
     <string>Connect</string>
+   </property>
+  </action>
+  <action name="actionAboutQt">
+   <property name="text">
+    <string>About Qt</string>
    </property>
   </action>
  </widget>
