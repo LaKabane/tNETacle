@@ -144,7 +144,7 @@ mc_peer_connect(struct server *s,
         log_warn("unable to connect to %s", peername);
         return err;
     }
-    v_mc_push(&s->pending_peers, &tmp);
+    v_mc_push(s->pending_peers, &tmp);
     return 0;
 }
 
@@ -153,7 +153,7 @@ mc_peer_accept(struct server *s,
                struct event_base *evbase,
                struct sockaddr *sock,
                int socklen,
-               evutil_socket_t fd)
+               int fd)
 {
     int errcode;
     struct mc mc;
@@ -173,7 +173,7 @@ mc_peer_accept(struct server *s,
     bufferevent_setcb(mc.bev, server_mc_read_cb, NULL,
                       server_mc_event_cb, s);
     log_debug("Starting to peer with %s", peername);
-    v_mc_push(&s->peers, &mc);
+    v_mc_push(s->peers, &mc);
     return 0;
 }
 

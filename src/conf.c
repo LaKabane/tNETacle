@@ -68,8 +68,8 @@ init_options(struct options *opt) {
         opt->ports[i] = -1;
 
     opt->addr_family = AF_UNSPEC;
-    v_sockaddr_init(&serv_opts.listen_addrs);
-    v_sockaddr_init(&serv_opts.peer_addrs);
+    serv_opts.listen_addrs = v_sockaddr_new();
+    serv_opts.peer_addrs = v_sockaddr_new();
 
     opt->addr = NULL;
 
@@ -248,7 +248,7 @@ int yajl_string(void *lctx, const unsigned char *str, size_t len) {
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
-        add_addr_text(&serv_opts.peer_addrs, bufaddr);
+        add_addr_text(serv_opts.peer_addrs, bufaddr);
     } else if (strncmp("ListenAddress", ctx->map, ctx->len) == 0) {
         char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
@@ -272,7 +272,7 @@ int yajl_string(void *lctx, const unsigned char *str, size_t len) {
                       &sin->sin_addr.s_addr) == -1)
                         return -1;
                     tmp_store.len = sizeof *sin;
-                    v_sockaddr_push(&serv_opts.listen_addrs, &tmp_store);
+                    v_sockaddr_push(serv_opts.listen_addrs, &tmp_store);
                     if (debug == 1)
                         fprintf(stderr, "ListenAddr: Added %s:%i\n",
                           TNETACLE_DEFAULT_LISTEN_IPV4, serv_opts.ports[i]);
@@ -284,14 +284,14 @@ int yajl_string(void *lctx, const unsigned char *str, size_t len) {
                       &sin6->sin6_addr.s6_addr) == -1)
                         return -1;
                     tmp_store.len = sizeof *sin6;
-                    v_sockaddr_push(&serv_opts.listen_addrs, &tmp_store);
+                    v_sockaddr_push(serv_opts.listen_addrs, &tmp_store);
                     if (debug == 1)
                         fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
                           TNETACLE_DEFAULT_LISTEN_IPV6, serv_opts.ports[i]);
                 }
             }
         } else
-            add_addr_text(&serv_opts.listen_addrs, bufaddr);
+            add_addr_text(serv_opts.listen_addrs, bufaddr);
     } else {
         char *s;
 

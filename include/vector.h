@@ -63,6 +63,7 @@ struct vector_name {
 #define NAME_(p, t, name) NAME__(p, t, name)
 #define vector_(name) NAME_(v, VECTOR_PREFIX, name)
 
+specifier struct vector_name vector_(alloc)(void);
 specifier void vector_(init)(struct vector_name *v);
 specifier int vector_(resize)(struct vector_name *v, size_t);
 specifier void vector_(insert_range)(struct vector_name *, type *, type *, type *);
@@ -96,6 +97,14 @@ specifier void vector_(foreach_ctx)(struct vector_name *v, void (*)(type const *
 specifier void vector_(push)(struct vector_name *v, type *val);
 #endif
 
+specifier struct vector_name *vector_(new)(void)
+{
+    struct vector_name *v = NULL;
+
+    v = malloc(sizeof(struct vector_name));
+    vector_(init)(v);
+    return v;
+}
 
 specifier void vector_(init)(struct vector_name  *v)
 {
@@ -222,6 +231,7 @@ specifier void vector_(delete)(struct vector_name  *v)
   if (v->vec != NULL) {
     free(v->vec);
   }
+  free(v);
 }
 
 specifier type * vector_(begin)(struct vector_name  *v)

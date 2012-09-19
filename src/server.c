@@ -37,6 +37,9 @@
 #include <openssl/rand.h>
 
 #include "networking.h"
+#include "udp.h"
+#include "frame.h"
+#include "device.h"
 
 #include "tnetacle.h"
 #include "options.h"
@@ -48,76 +51,6 @@
 #include "wincompat.h"
 
 extern struct options serv_opts;
-
-#if defined Windows
-static void
-send_buffer_to_device_thread(struct server *s, struct frame *frame)
-{
-    struct evbuffer *output = bufferevent_get_output(s->pipe_endpoint);
-
-    /*No need to networkize the size, we are in local !*/
-    evbuffer_add(output, &frame->size, sizeof frame->size);
-    evbuffer_add(output, frame->frame, frame->size);
-}
-#endif
-
-static void
-forward_udp_frame_to_other_peers(struct server *s, struct frame *current_frame,
-                                 struct sockaddr *current_sockaddr, unsigned int
-                                 current_socklen) 
-{
-    struct mc *it = NULL;
-    struct mc *ite = NULL;
-    char name[INET6_ADDRSTRLEN];
-    struct sockaddr_storage udp_storage;
-
-    (void)current_socklen;
-    for (it = v_mc_begin(&s->peers), ite = v_mc_end(&s->peers);
-        it != ite;
-        it = v_mc_next(it))
-    {
-        int err;
-        struct sockaddr *udp_addr = (struct sockaddr *)&udp_storage;
-        int socklen;
-
-        /* If it's not the peer we received the data from. */
-        if (evutil_sockaddr_cmp(current_sockaddr, it->p.address, 0) == 0)
-            continue;
-        memcpy(&udp_storage, it->p.address, it->p.len);
-        /*
-         * This section have to be rewriten to use a port number that've
-         * been decided by the protocol.
-         */
-        /*{{{*/
-        if (udp_addr->sa_family == AF_INET)
-        {
-            struct sockaddr_in *sin = (struct sockaddr_in *)udp_addr;
-
-            sin->sin_port = htons(7676);
-            socklen = sizeof(sin);
-        }
-        else if (udp_addr->sa_family == AF_INET6)
-        {
-            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)udp_addr;
-
-            sin6->sin6_port = htons(7676);
-            socklen = sizeof(sin6);
-        }
-        /*}}}*/
-        err = sendto(event_get_fd(s->udp.udp_endpoint),
-                     current_frame->raw_packet,
-                     current_frame->size + sizeof(struct packet_hdr), 0,
-                     udp_addr, socklen);
-        if (err == -1)
-        {
-            log_notice("error while sending to %s",
-                       mc_presentation(it, name, sizeof name));
-            break;
-        }
-        log_debug("adding %d bytes to %s's output buffer",
-            current_frame->size, mc_presentation(it, name, sizeof name));
-    }
-}
 
 void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
@@ -155,13 +88,13 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
          */
 
         tmp.bev = bev;
-        mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
-        if (mc != v_mc_end(&s->pending_peers))
+        mc = v_mc_find_if(s->pending_peers, &tmp, _server_match_bev);
+        if (mc != v_mc_end(s->pending_peers))
         {
             log_info("connexion established.");
             memcpy(&tmp, mc, sizeof(tmp));
-            v_mc_erase(&s->pending_peers, mc);
-            v_mc_push(&s->peers, &tmp);
+            v_mc_erase(s->pending_peers, mc);
+            v_mc_push(s->peers, &tmp);
             mc_hello(&tmp);
         }
     }
@@ -191,23 +124,23 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
          * Find if the exception come from a pending peer or a
          * regular peer and close it.
          */
-        mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
-        if (mc != v_mc_end(&s->pending_peers))
+        mc = v_mc_find_if(s->pending_peers, &tmp, _server_match_bev);
+        if (mc != v_mc_end(s->pending_peers))
         {
             char name[128];
 
             mc_close(mc);
             log_debug("%s removed from the pending list",
                       mc_presentation(mc, name, sizeof name));
-            v_mc_erase(&s->pending_peers, mc);
+            v_mc_erase(s->pending_peers, mc);
         }
         else
         {
-            mc = v_mc_find_if(&s->peers, &tmp, _server_match_bev);
-            if (mc != v_mc_end(&s->peers))
+            mc = v_mc_find_if(s->peers, &tmp, _server_match_bev);
+            if (mc != v_mc_end(s->peers))
             {
                 mc_close(mc);
-                v_mc_erase(&s->peers, mc);
+                v_mc_erase(s->peers, mc);
                 log_debug("socket removed from the peer list");
             }
         }
@@ -220,212 +153,10 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
 {
     struct server *s = (struct server *)ctx;
     struct event_base *base = evconnlistener_get_base(evl);
-    int errcode;
 
     mc_peer_accept(s, base, sock, len, fd);
 }
 
-static void
-accept_error_cb(struct evconnlistener *evl, void *ctx)
-{
-    (void)evl;
-    (void)ctx;
-}
-
-
-/*
- * On Windows, we use this function outside server.c for readability purpose.
- */
-#if defined Windows
-/*static*/ void
-#else
-static void
-#endif
-broadcast_udp_to_peers(struct server *s)
-{
-    struct frame *fit = v_frame_begin(&s->frames_to_send);
-    struct frame *fite = v_frame_end(&s->frames_to_send);
-    struct sockaddr_storage udp_addr;
-    char name[512];
-
-    /* For all the frames*/
-    for (;fit != fite; fit = v_frame_next(fit))
-    {
-        struct mc *it = NULL;
-        struct mc *ite = NULL;
-
-        it = v_mc_begin(&s->peers);
-        ite = v_mc_end(&s->peers);
-        /* For all the peers*/
-        for (;it != ite; it = v_mc_next(it))
-        {
-            int err;
-            struct packet_hdr hdr;
-
-            memset(&hdr, 0, sizeof (struct packet_hdr));
-            memcpy(&udp_addr, it->p.address, it->p.len);
-            /*
-             * This section have to be rewriten to use a port number that've
-             * been decided by the protocol.
-             */
-            /*{{{*/
-            if (udp_addr.ss_family == AF_INET)
-            {
-                struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
-
-                sin->sin_port = htons(7676);
-            }
-            else if (udp_addr.ss_family == AF_INET6)
-            {
-                struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
-
-                sin6->sin6_port = htons(7676);
-            }
-            /*}}}*/
-            /* Header configuration for the packet */
-            /* Convert the size to netword presentation*/
-            hdr.size = htons(fit->size);
-            /* Copy the header to the packet */
-            /* Enought place have been allocated for header and the frame */
-            memcpy(fit->raw_packet, &hdr, sizeof(hdr));
-            err = sendto(event_get_fd(s->udp.udp_endpoint), fit->raw_packet,
-                         fit->size + sizeof(struct packet_hdr), 0,
-                         (struct sockaddr const *)&udp_addr, it->p.len);
-            if (err == -1)
-            {
-                log_notice("error while sending to %s",
-                           mc_presentation(it, name, sizeof name));
-                break;
-            }
-            log_debug("udp adding %d(%-#2x) bytes to %s's output buffer",
-                fit->size, fit->size,
-                address_presentation((struct sockaddr *)&udp_addr, it->p.len,
-                                     name, sizeof name));
-        }
-    }
-}
-
-static void
-frame_free(struct frame const *f)
-{
-    free(f->raw_packet);
-}
-
-#if !defined Windows
-static 
-#endif
-int
-frame_alloc(struct frame *frame, unsigned int size)
-{
-    void *tmp_raw_packet = NULL;
-    void *tmp_frame_ptr = NULL;
-
-    /* Alloc the size of the whole packet, plus the size of the header */
-    tmp_raw_packet = (void *)malloc(size
-                                    + sizeof(struct packet_hdr));
-    if (tmp_raw_packet == NULL)
-    {
-        return -1;
-    }
-    /* Shift the frame to pointer to just behind the header */
-    tmp_frame_ptr = (void *)((intptr_t)tmp_raw_packet
-                             + sizeof(struct packet_hdr));
-
-    /* Commit the results */
-    frame->raw_packet = tmp_raw_packet;
-    frame->frame = tmp_frame_ptr;
-    frame->size = size;
-    return 0;
-}
-
-#if defined Windows
-void
-server_set_device(struct server *s, int fd)
-{
-    struct evconnlistener **it = NULL;
-    struct evconnlistener **ite = NULL;
-
-    it = v_evl_begin(&s->srv_list);
-    ite = v_evl_end(&s->srv_list);
-    /* Enable all the listeners */
-    for (; it != ite; it = v_evl_next(it))
-    {
-        evconnlistener_enable(*it);
-    }
-    log_info("listeners started");
-}
-#else
-
-static void
-server_device_cb(evutil_socket_t device_fd, short events, void *ctx)
-{
-    struct server *s = (struct server *)ctx;
-
-    if (events & EV_READ)
-    {
-        ssize_t n;
-        struct frame tmp;
-
-        /* I know it sucks. I'm waiting for libtuntap to handle*/
-        /* a FIONREAD-like api.*/
-#define FRAME_DYN_SIZE 1600
-        frame_alloc(&tmp, FRAME_DYN_SIZE);
-        while ((n = read(device_fd, tmp.frame, FRAME_DYN_SIZE)) > 0)
-        {
-            /* We cannot read more than a ushort, can we ? */
-            tmp.size = (unsigned short)n;
-            v_frame_push(&s->frames_to_send, &tmp);
-            frame_alloc(&tmp, FRAME_DYN_SIZE);
-        }
-#undef FRAME_DYN_SIZE
-        if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
-        {
-            broadcast_udp_to_peers(s);
-            v_frame_foreach(&s->frames_to_send, frame_free);
-            v_frame_clean(&s->frames_to_send);
-        }
-        else if (n == -1)
-            log_warn("read on the device failed:");
-        /* Don't forget to free the last allocated frame */
-        /* As we are out of the loop, the last call to frame alloc is useless */
-        frame_free(&tmp);
-    }
-}
-
-void
-server_set_device(struct server *s, int fd)
-{
-    struct evconnlistener **it = NULL;
-    struct evconnlistener **ite = NULL;
-    struct event_base *evbase = s->evbase;
-    struct event *ev = event_new(evbase, fd, EV_READ | EV_PERSIST,
-                                 server_device_cb, s);
-    int err;
-
-    err = evutil_make_socket_nonblocking(fd);
-    if (err == -1)
-        log_debug("fuck !");
-
-    if (ev == NULL)
-    {
-        log_warn("failed to allocate the event handler for the device:");
-        return;
-    }
-    s->device = ev;
-    event_add(s->device, NULL);
-    log_info("event handler for the device sucessfully configured");
-
-    it = v_evl_begin(&s->srv_list);
-    ite = v_evl_end(&s->srv_list);
-    /* Enable all the listeners */
-    for (; it != ite; it = v_evl_next(it))
-    {
-        evconnlistener_enable(*it);
-    }
-    log_info("listener started");
-}
-
-#endif
 
 SSL_CTX *
 evssl_init(void)
@@ -455,43 +186,6 @@ evssl_init(void)
         return NULL;
     }
     return server_ctx;
-}
-
-static int
-frame_recvfrom(int fd, struct frame *frame, struct sockaddr *saddr, unsigned int *socklen)
-{
-    int err = 0;
-    struct packet_hdr hdr;
-    unsigned short local_size;
-
-    err = recvfrom(fd, (char *)&hdr, sizeof(struct packet_hdr),
-        MSG_PEEK, saddr, socklen);
-    /*
-    ** Sometimes, on some OS, recvfrom return EMSGSIZE when the size of the
-    ** peeked buffer is not enough to read the entire datagram.
-    ** So we need to check for this specific case.
-    */
-    if (err == -1)
-    {
-        int local_err = EVUTIL_SOCKET_ERROR();
-
-#if defined Windows
-#define MSG_TOO_LONG WSAEMSGSIZE
-#else
-#define MSG_TOO_LONG EMSGSIZE
-#endif
-        if (local_err != MSG_TOO_LONG)
-        {
-            /* So there is a real error */
-            return err;
-        }
-#undef MSG_TOO_LONG
-    }
-    local_size = ntohs(hdr.size);
-    frame_alloc(frame, local_size);
-    err = recv(fd, (char *)frame->raw_packet,
-        frame->size + sizeof(struct packet_hdr), 0);
-    return err;
 }
 
 static void
@@ -528,42 +222,6 @@ server_udp_cb(evutil_socket_t udp_fd, short event, void *ctx)
     }
 }
 
-static int
-server_init_udp(struct sockaddr *addr, int len)
-{
-    struct sockaddr_storage udp_addr;
-    evutil_socket_t tmp_sock;
-    int err;
-
-    memcpy(&udp_addr, addr, len);
-    tmp_sock = tnt_udp_socket(addr->sa_family);
-    if (tmp_sock == -1)
-        return -1;
-    if (udp_addr.ss_family == AF_INET)
-    {
-        struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
-
-        sin->sin_port = htons(7676);
-    }
-    else if (udp_addr.ss_family == AF_INET6)
-    {
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
-
-        sin6->sin6_port = htons(7676);
-    }
-    err = bind(tmp_sock, (struct sockaddr *)&udp_addr, len);
-    if (err == -1)
-    {
-        return -1;
-    }
-    err = evutil_make_socket_nonblocking(tmp_sock);
-    if (err == -1)
-    {
-        return -1;
-    }
-    return tmp_sock;
-}
-
 int
 server_init(struct server *s, struct event_base *evbase)
 {
@@ -574,14 +232,14 @@ server_init(struct server *s, struct event_base *evbase)
     evutil_socket_t udp_socket;
     size_t i = 0;
 
-    v_mc_init(&s->peers);
-    v_mc_init(&s->pending_peers);
-    v_frame_init(&s->frames_to_send);
-    v_evl_init(&s->srv_list);
+    s->peers = v_mc_new();
+    s->pending_peers = v_mc_new();
+    s->frames_to_send = v_frame_new();
+    s->srv_list = v_evl_new();
     s->evbase = evbase;
 
-    it_listen = v_sockaddr_begin(&serv_opts.listen_addrs);
-    ite_listen = v_sockaddr_end(&serv_opts.listen_addrs);
+    it_listen = v_sockaddr_begin(serv_opts.listen_addrs);
+    ite_listen = v_sockaddr_end(serv_opts.listen_addrs);
     /* Listen on all ListenAddress */
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
     {
@@ -598,7 +256,7 @@ server_init(struct server *s, struct event_base *evbase)
                 it_listen->len, listenname, sizeof listenname));
              continue;
         }
-        evconnlistener_set_error_cb(evl, accept_error_cb);
+        evconnlistener_set_error_cb(evl, NULL);
         evconnlistener_disable(evl);
 
         /* udp endpoint init */
@@ -630,15 +288,15 @@ server_init(struct server *s, struct event_base *evbase)
 
         event_add(s->udp.udp_endpoint, NULL);
 
-        v_evl_push(&s->srv_list, evl);
+        v_evl_push(s->srv_list, evl);
     }
 
     /* If we don't have any PeerAddress it's finished */
-    if (serv_opts.peer_addrs.size == 0)
+    if (serv_opts.peer_addrs->size == 0)
         return 0;
 
-    it_peer = v_sockaddr_begin(&serv_opts.peer_addrs);
-    ite_peer = v_sockaddr_end(&serv_opts.peer_addrs);
+    it_peer = v_sockaddr_begin(serv_opts.peer_addrs);
+    ite_peer = v_sockaddr_end(serv_opts.peer_addrs);
     for (;it_peer != ite_peer; it_peer = v_sockaddr_next(it_peer))
     {
         mc_peer_connect(s, evbase, (struct sockaddr *)&it_peer->sockaddr,

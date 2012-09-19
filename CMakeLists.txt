@@ -71,7 +71,10 @@ set(SOURCES_LIST
   #src/pipeline.c
   src/mc.c
   src/hexdump.c
-  src/server.c)
+  src/server.c
+  src/udp.c
+  src/device.c
+  src/frame.c)
 
 # OS families specific things
 # ---------------------------
@@ -115,7 +118,10 @@ if (Windows)
 		include/tun.h
 		include/vector.h
 		include/imsg.h
-		include/wincompat.h)
+		include/wincompat.h
+                include/udp.h
+                include/device.h
+                include/frame.h)
 	set(SOURCES_LIST ${SOURCES_LIST} ${HEADERS_LIST}
 		sys/wnt/conf.c
 		sys/wnt/log.c

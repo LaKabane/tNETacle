@@ -34,8 +34,6 @@ struct cfg_sockaddress {
 #define VECTOR_PREFIX sockaddr
 #define DEFAULT_ALLOC_SIZE 2
 #include "vector.h"
-#undef VECTOR_TYPE
-#undef VECTOR_PREFIX
 
 struct options {
     int tunnel;                    /* Tunnel type: layer 2 or 3 */
@@ -49,9 +47,9 @@ struct options {
     int ports[TNETACLE_MAX_PORTS]; /* Port number to listen on */
     int addr_family;               /* Address family used by the server */
     /* Addresses on which the server listens */
-    struct vector_sockaddr listen_addrs;
+    struct vector_sockaddr *listen_addrs;
     /* Addresses of others tNETacle daemons */
-    struct vector_sockaddr peer_addrs;
+    struct vector_sockaddr *peer_addrs;
     char *addr;                    /* Address on the VPN */
 
     const char *key_path;

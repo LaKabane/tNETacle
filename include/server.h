@@ -19,6 +19,7 @@
 
 #include <openssl/ssl.h> /* Can not forward declare SSL* types*/
 #include "mc.h"
+#include "frame.h"
 
 struct evconnlistener;
 struct sockaddr;
@@ -31,16 +32,6 @@ struct event_base;
 
 #define VECTOR_TYPE struct mc
 #define VECTOR_PREFIX mc
-#include "vector.h"
-
-struct frame {
-  unsigned short size;
-  void *frame;
-  void *raw_packet;
-};
-
-#define VECTOR_TYPE struct frame
-#define VECTOR_PREFIX frame
 #include "vector.h"
 
 #define VECTOR_TYPE struct evconnlistener*
@@ -56,15 +47,15 @@ struct packet_hdr
 #pragma pack(pop)
 
 struct server {
-  struct vector_evl srv_list; /*list of the listenners*/
+  struct vector_evl *srv_list; /*list of the listenners*/
   struct {
       struct event *udp_endpoint;
-      struct vector_frame frame_udp;
+      struct vector_frame *frame_udp;
   } udp;
   struct event *device;
-  struct vector_mc peers; /* The actual list of peers */
-  struct vector_mc pending_peers; /* Pending in connection peers*/
-  struct vector_frame frames_to_send;
+  struct vector_mc *peers; /* The actual list of peers */
+  struct vector_mc *pending_peers; /* Pending in connection peers*/
+  struct vector_frame *frames_to_send;
   SSL_CTX *server_ctx;
   struct event_base *evbase;
 #if defined Windows
