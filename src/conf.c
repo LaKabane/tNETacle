@@ -25,8 +25,8 @@
 # include <sys/mman.h>
 #else
 # define WIN32_LEAN_AND_MEAN
-# include <Windows.h>
 # include <Winsock2.h>
+# include <Windows.h>
 # include <Ws2tcpip.h>
 # include "wincompat.h"
 #endif

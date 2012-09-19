@@ -13,9 +13,6 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#ifdef Windows
-# include <WinSock2.h>
-#endif
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>

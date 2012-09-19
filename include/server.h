@@ -17,6 +17,7 @@
 #ifndef SERVER_KW2DIKER
 #define SERVER_KW2DIKER
 
+#include "networking.h"
 #include <openssl/ssl.h> /* Can not forward declare SSL* types*/
 #include "mc.h"
 #include "frame.h"

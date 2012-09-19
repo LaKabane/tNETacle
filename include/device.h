@@ -16,11 +16,13 @@
 #ifndef DEVICE_3U2N3YXR
 #define DEVICE_3U2N3YXR
 
+#include "networking.h"
+
 #if defined Windows
 
 void
 send_buffer_to_device_thread(struct server *s,
-                             struct frame *frame)
+                             struct frame *frame);
 
 #endif
 
