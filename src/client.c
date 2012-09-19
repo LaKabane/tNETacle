@@ -41,37 +41,37 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
     struct server *s = (struct server *)ctx;
     size_t size;
     struct evbuffer *buf = NULL;
-	char buff[4096];
-	elements *ele;
-	int i;
+    char buff[4096];
+    elements *ele;
+    int i;
 
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
     {
-		size = bufferevent_read(bev, buff, 4095);
-		if (size != 0 && size != -1)
-		{
-			buff[size] = '\0';
-			log_debug("%s\n", buff);
-			ele = tclt_parse(buff, size);
-			while (ele != NULL)
-			{
-				if (ele->type == 7)
-					log_debug("%s\n", ele->u_value.buf);
-				ele = ele->next;
-			}
-		}
-	}
+        size = bufferevent_read(bev, buff, 4095);
+	if (size != 0 && size != -1)
+        {
+            buff[size] = '\0';
+            log_debug("%s\n", buff);
+            ele = tclt_parse(buff, size);
+            while (ele != NULL)
+            {
+                if (ele->type == 7)
+                    log_debug("%s\n", ele->u_value.buf);
+                ele = ele->next;
+            }
+        }
+    }
 }
 
 void
 client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
-	struct server *s = (struct server *)ctx;
+    struct server *s = (struct server *)ctx;
 
-	if (events & BEV_EVENT_CONNECTED)
-	{
-		struct mc *mc;
+    if (events & BEV_EVENT_CONNECTED)
+    {
+        struct mc *mc;
         struct mc tmp;
 
         /*
@@ -90,8 +90,8 @@ client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             v_mc_push(&s->peers, &tmp);
         }
 		//send peers to the client
-	}
-	if (events & BEV_EVENT_ERROR)
+    }
+    if (events & BEV_EVENT_ERROR)
     {
         struct mc *mc;
         struct mc tmp;
