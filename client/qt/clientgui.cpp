@@ -123,6 +123,13 @@ QString ClientGUI::getNewContactKey() const
   return this->_addContact->getNewContactKey();
 }
 
+QString ClientGUI::getContactIp() const
+{
+    if (this->_addContact == 0)
+        return *new QString("");// TODO throw a fatal exception
+    return this->_addContact->getContactIp();
+}
+
 QString ClientGUI::getRootName() const
 {
   if (!this->_rootNode)
@@ -160,10 +167,10 @@ const QMap<QString, QVariant>* ClientGUI::getChangesInConfig() const
 }
 
 
-void ClientGUI::createAddContact(const QString& name, const QString &key) {
+void ClientGUI::createAddContact(const QString& name, const QString& key, const QString& ip) {
   if (_addContact)
     return ;
-  _addContact = new AddContactGui(this->_controller, *this, name, key);
+  _addContact = new AddContactGui(this->_controller, *this, name, key, ip);
 
   QObject::connect(_addContact, SIGNAL(destroyed()), this, SLOT(addContactDeleted()));
   _addContact->show();
