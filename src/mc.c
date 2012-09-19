@@ -148,6 +148,35 @@ mc_peer_connect(struct server *s,
     return 0;
 }
 
+int
+mc_peer_accept(struct server *s,
+               struct event_base *evbase,
+               struct sockaddr *sock,
+               int socklen,
+               evutil_socket_t fd)
+{
+    int errcode;
+    struct mc mc;
+    char peername[INET6_ADDRSTRLEN];
+
+    memset(&mc, 0, sizeof mc);
+    address_presentation(sock, socklen, peername, sizeof(peername));
+    /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
+    /* Even if we are not in a SSL context, mc_init know what to do anyway*/
+    mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
+    errcode = mc_init(&mc, evbase, fd, sock, socklen, s->server_ctx);
+    if (errcode == -1)
+    {
+        log_notice("Failed to init a meta connexion with %s", peername);
+        return errcode;
+    }
+    bufferevent_setcb(mc.bev, server_mc_read_cb, NULL,
+                      server_mc_event_cb, s);
+    log_debug("Starting to peer with %s", peername);
+    v_mc_push(&s->peers, &mc);
+    return 0;
+}
+
 
 void
 mc_close(struct mc *self)

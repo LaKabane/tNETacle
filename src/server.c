@@ -221,24 +221,8 @@ listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
     struct server *s = (struct server *)ctx;
     struct event_base *base = evconnlistener_get_base(evl);
     int errcode;
-    struct mc mc;
 
-    memset(&mc, 0, sizeof mc);
-    /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
-    /* Even if we are not in a SSL context, mc_init know what to do anyway*/
-    mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
-    errcode = mc_init(&mc, base, fd, sock, (socklen_t)len, s->server_ctx);
-    if (errcode != -1)
-    {
-        bufferevent_setcb(mc.bev, server_mc_read_cb, NULL,
-                          server_mc_event_cb, s);
-        log_debug("add the ssl client to the list");
-        v_mc_push(&s->peers, &mc);
-    }
-    else
-    {
-        log_notice("Failed to init a meta connexion");
-    }
+    mc_peer_accept(s, base, sock, len, fd);
 }
 
 static void
