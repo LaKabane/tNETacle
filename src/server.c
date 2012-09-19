@@ -148,8 +148,11 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 }
 
 static void
-listen_callback(struct evconnlistener *evl, evutil_socket_t fd,
-                struct sockaddr *sock, int len, void *ctx)
+listen_callback(struct evconnlistener *evl,
+                evutil_socket_t fd,
+                struct sockaddr *sock,
+                int len,
+                void *ctx)
 {
     struct server *s = (struct server *)ctx;
     struct event_base *base = evconnlistener_get_base(evl);

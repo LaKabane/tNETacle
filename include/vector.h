@@ -53,6 +53,10 @@
 #define _TYPE_NAME(name, pr) _XTYPE_NAME(name, pr)
 #define vector_name _TYPE_NAME(vector_, VECTOR_PREFIX)
 
+#ifdef VECTOR_FORWARD
+struct vector_name;
+#else
+
 struct vector_name {
   VECTOR_TYPE *vec;
   size_t size;
@@ -417,4 +421,6 @@ specifier void vector_(foreach_ctx)(struct vector_name *v,
 # undef VECTOR_TYPE
 # undef VECTOR_PREFIX
 # undef VECTOR_TYPE_SCALAR
+# undef VECTOR_FORWARD
+#endif
 #endif
