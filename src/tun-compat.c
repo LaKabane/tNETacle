@@ -134,3 +134,12 @@ tnt_ttc_get_fd(struct device *dev) {
 #endif
 }
 
+int
+tnt_ttc_get_mtu(struct device *dev) {
+#if defined USE_LIBTUNTAP
+	return tuntap_get_mtu(dev);
+#elif defined USE_TAPCFG
+	return tapcfg_iface_get_mtu(dev);
+#endif
+}
+

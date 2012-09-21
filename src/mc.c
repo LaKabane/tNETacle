@@ -119,6 +119,65 @@ mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
     return 0;
 }
 
+int
+mc_peer_connect(struct server *s,
+                struct event_base *evbase,
+                struct sockaddr *sock,
+                int socklen)
+{
+    int err;
+    struct mc tmp;
+    char peername[INET6_ADDRSTRLEN];
+
+    address_presentation(sock, socklen, peername, sizeof(peername));
+    memset(&tmp, 0, sizeof(tmp));
+    tmp.ssl_flags = BUFFEREVENT_SSL_CONNECTING;
+    err = mc_init(&tmp, evbase, -1, sock, socklen, s->server_ctx);
+    if (err == -1) {
+        log_warn("unable to allocate a socket for connecting to %s",
+                 peername);
+        return err;
+    }
+    bufferevent_setcb(tmp.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
+    err = bufferevent_socket_connect(tmp.bev, sock, socklen);
+    if (err == -1) {
+        log_warn("unable to connect to %s", peername);
+        return err;
+    }
+    v_mc_push(s->pending_peers, &tmp);
+    return 0;
+}
+
+int
+mc_peer_accept(struct server *s,
+               struct event_base *evbase,
+               struct sockaddr *sock,
+               int socklen,
+               int fd)
+{
+    int errcode;
+    struct mc mc;
+    char peername[INET6_ADDRSTRLEN];
+
+    memset(&mc, 0, sizeof mc);
+    address_presentation(sock, socklen, peername, sizeof(peername));
+    /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
+    /* Even if we are not in a SSL context, mc_init know what to do anyway*/
+    mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
+    errcode = mc_init(&mc, evbase, fd, sock, socklen, s->server_ctx);
+    if (errcode == -1)
+    {
+        log_notice("Failed to init a meta connexion with %s", peername);
+        return errcode;
+    }
+    bufferevent_setcb(mc.bev, server_mc_read_cb, NULL,
+                      server_mc_event_cb, s);
+    log_debug("Starting to peer with %s", peername);
+    v_mc_push(s->peers, &mc);
+    return 0;
+}
+
+
 void
 mc_close(struct mc *self)
 {
@@ -136,26 +195,10 @@ mc_close(struct mc *self)
 int
 mc_add_frame(struct mc *self, struct frame *f)
 {
-    unsigned short size_networked = htons(f->size);
-    struct evbuffer *output = bufferevent_get_output(self->bev);
-    char name[128];
-    int err;
-
-    err = evbuffer_add(output, &size_networked, sizeof(size_networked));
-    if (err == -1)
-    {
-        log_notice("error while crafting the buffer to send to %s",
-                   mc_presentation(self, name, sizeof name));
-        return -1;
-    }
-    err = evbuffer_add(output, f->frame, f->size);
-    if (err == -1)
-    {
-        log_notice("error while crafting the buffer to send to %s",
-                   mc_presentation(self, name, sizeof name));
-        return -1;
-    }
-    return f->size;
+    (void)self;
+    (void)f;
+    log_warnx("mc_add_frame is deprecated");
+    return -1;
 }
 
 /*
@@ -179,4 +222,16 @@ mc_add_raw_data(struct mc *self, void *data, size_t size)
             size, mc_presentation(self, name, sizeof name));
     }
     return size;
+}
+
+/*
+ * This function is called when we connect to a peer.
+ * tNETacle is a polite software, using a polite protocol, so we say hello !
+ */
+int
+mc_hello(struct mc *self)
+{
+    struct evbuffer *output = bufferevent_get_output(self->bev);
+
+    return evbuffer_add_printf(output, "Hello ~!");
 }

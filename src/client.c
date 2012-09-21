@@ -81,13 +81,13 @@ client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
          */
 
         tmp.bev = bev;
-        mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
-        if (mc != v_mc_end(&s->pending_peers))
+        mc = v_mc_find_if(s->pending_peers, &tmp, _server_match_bev);
+        if (mc != v_mc_end(s->pending_peers))
         {
             log_info("connexion established.");
             memcpy(&tmp, mc, sizeof(tmp));
-            v_mc_erase(&s->pending_peers, mc);
-            v_mc_push(&s->peers, &tmp);
+            v_mc_erase(s->pending_peers, mc);
+            v_mc_push(s->peers, &tmp);
         }
 		//send peers to the client
     }
@@ -113,20 +113,20 @@ client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
                        ERR_lib_error_string(sslerr),
                        ERR_func_error_string(sslerr));
         }
-        mc = v_mc_find_if(&s->pending_peers, &tmp, _server_match_bev);
-        if (mc != v_mc_end(&s->pending_peers))
+        mc = v_mc_find_if(s->pending_peers, &tmp, _server_match_bev);
+        if (mc != v_mc_end(s->pending_peers))
         {
             mc_close(mc);
-            v_mc_erase(&s->pending_peers, mc);
+            v_mc_erase(s->pending_peers, mc);
             log_debug("socket removed from the pending list");
         }
         else
         {
-            mc = v_mc_find_if(&s->peers, &tmp, _server_match_bev);
-            if (mc != v_mc_end(&s->peers))
+            mc = v_mc_find_if(s->peers, &tmp, _server_match_bev);
+            if (mc != v_mc_end(s->peers))
             {
                 mc_close(mc);
-                v_mc_erase(&s->peers, mc);
+                v_mc_erase(s->peers, mc);
                 log_debug("socket removed from the peer list");
             }
         }

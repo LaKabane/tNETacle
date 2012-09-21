@@ -56,9 +56,8 @@
 int debug;
 volatile sig_atomic_t sigchld_recv;
 extern struct options serv_opts;
-
-/* XXX: clean that after the TA2 */
-struct device *dev = NULL;
+static struct device *dev;
+pid_t chld_pid = -1; /* Usefull for the signal handler */
 
 static void usage(void);
 static int dispatch_imsg(struct imsgbuf *);
@@ -72,10 +71,18 @@ struct imsg_data {
 };
 
 static void
-sig_chld_hdlr(int sig) {
-    printf("%s\n", __PRETTY_FUNCTION__);
+init_sig_hdlr(int sig) {
     if (sig == SIGCHLD)
-	sigchld_recv = 1;
+        sigchld_recv = 1;
+    if (sig == SIGSEGV)
+    {
+        /* This is useless, our code does not segfault ! */
+        fprintf(stderr, "The tNETacle failed seriously. This is not our fault.\n"
+            "- I mean, our code is flawless, for sure.\n"
+            "- Ok ok, we SIGSEGVed, sorry x(\n");
+        kill(chld_pid, SIGTERM);
+        exit(-1);
+    }
 }
 
 static void
@@ -85,17 +92,17 @@ sig_gen_hdlr(evutil_socket_t sig, short events, void *args) {
     (void)events;
 
     switch (sig) {
-    case SIGCHLD:
-        name = "sigchld";
-	break;
-    case SIGTERM:
-        name = "sigterm";
-	break;
-    case SIGINT:
-        name = "sigint";
-	break;
+        case SIGCHLD:
+            name = "sigchld";
+            break;
+        case SIGTERM:
+            name = "sigterm";
+            break;
+        case SIGINT:
+            name = "sigint";
+            break;
     }
-    log_warnx("received signal %d(%s), stopping", sig, name);
+    log_warnx("received signal %s(%d), stopping", name, sig);
     event_base_loopbreak(evbase);
 }
 
@@ -105,17 +112,17 @@ imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
     struct imsg_data *data = args;
 
     if (events & EV_READ || data->is_ready_read == 1) {
-	data->is_ready_read = 1;
-	if (dispatch_imsg(data->ibuf) == -1)
-	    data->is_ready_read = 0;
+        data->is_ready_read = 1;
+        if (dispatch_imsg(data->ibuf) == -1)
+            data->is_ready_read = 0;
     }
 
     if (events & EV_WRITE || data->is_ready_write == 1) {
-	data->is_ready_write = 1;
-	if (data->ibuf->w.queued > 0) {
-	    if (msgbuf_write(&data->ibuf->w) == -1)
-		data->is_ready_write = 0;
-	}
+        data->is_ready_write = 1;
+        if (data->ibuf->w.queued > 0) {
+            if (msgbuf_write(&data->ibuf->w) == -1)
+                data->is_ready_write = 0;
+        }
     }
     return ;
 }
@@ -123,7 +130,6 @@ imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
 int
 main(int argc, char *argv[]) {
     int ch;
-    pid_t chld_pid;
     int imsg_fds[2];
     struct imsgbuf ibuf;
     struct imsg_data data;
@@ -178,7 +184,8 @@ main(int argc, char *argv[]) {
     /* The child can die while we are still in the init phase. So we need to
      * monitor for SIGCHLD by signal
      */
-    signal(SIGCHLD, sig_chld_hdlr);
+    signal(SIGCHLD, init_sig_hdlr);
+    signal(SIGSEGV, init_sig_hdlr);
     chld_pid = tnt_fork(imsg_fds);
 
     if ((evbase = event_base_new()) == NULL) {
@@ -218,6 +225,7 @@ main(int argc, char *argv[]) {
 	log_notice("tNETacle initialisation failed");
 
     signal(SIGCHLD, SIG_DFL);
+    signal(SIGSEGV, SIG_DFL);
 
     if (chld_pid != 0)
 	kill(chld_pid, SIGTERM);
@@ -228,7 +236,8 @@ main(int argc, char *argv[]) {
     event_free(sigterm);
     event_free(sigchld);
     event_base_free(evbase);
-    tnt_ttc_close(dev);
+    if (dev != NULL)
+        tnt_ttc_close(dev);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
@@ -276,9 +285,13 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	switch (imsg.hdr.type) {
 	case IMSG_CREATE_DEV:
 	    dev = tnt_ttc_open(serv_opts.tunnel);
-	    fd = tnt_ttc_get_fd(dev);
-	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
-	      NULL, 0);
+        if (dev != NULL) {
+            fd = tnt_ttc_get_fd(dev);
+            imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
+                         NULL, 0);
+        } else {
+            log_warn("Can't open a tun device:");
+        }
 	    break;
 	case IMSG_SET_IP:
 	    if (dev == NULL) {
@@ -297,7 +310,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	default:
 	    break;
 	}
-	imsg_free(&imsg);
+    imsg_free(&imsg);
     }
     return 0;
 }

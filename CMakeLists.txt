@@ -75,6 +75,9 @@ set(SOURCES_LIST
   src/hexdump.c
   src/server.c
   src/client.c
+  src/udp.c
+  src/device.c
+  src/frame.c
 )
 
 # OS families specific things
@@ -119,7 +122,10 @@ if (Windows)
 		include/tun.h
 		include/vector.h
 		include/imsg.h
-		include/wincompat.h)
+		include/wincompat.h
+                include/udp.h
+                include/device.h
+                include/frame.h)
 	set(SOURCES_LIST ${SOURCES_LIST} ${HEADERS_LIST}
 		sys/wnt/conf.c
 		sys/wnt/log.c
@@ -231,9 +237,9 @@ if (Windows)
     target_link_libraries(tNETacle Ws2_32.lib)
 endif()
 
-include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.link.local OPTIONAL)
 if (ClientQT)
   include(${CMAKE_SOURCE_DIR}/client/qt/CMakeLists.txt)
 endif()
 
 include(CMakeLists.txt.local OPTIONAL)
+include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.link.local OPTIONAL)
