@@ -20,19 +20,6 @@
 #include "log.h"
 #include "sched.h"
 
-int async_recvfrom(struct fiber_args *s,
-                   int fd,
-                   char *buf,
-                   int len,
-                   int flag,
-                   struct sockaddr *sock,
-                   int *socklen);
-
-int async_accept(struct fiber_args *s,
-                 int fd,
-                 struct sockaddr *sock,
-                 int *socklen);
-
 struct fiber_args
 {
     struct fiber *fib;
@@ -156,10 +143,11 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
 
 void sched_launch(struct sched *S)
 {
+    unsigned int i;
     struct event_base *evbase = S->evbase;
 
     coro_create(&S->base_ctx, NULL, NULL, NULL, 0);
-    for (unsigned int i = 0;
+    for (i = 0;
          i < S->fibers->size;
          ++i)
     {
