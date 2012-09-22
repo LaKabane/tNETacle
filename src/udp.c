@@ -42,6 +42,11 @@
 #include "udp.h"
 #include "frame.h"
 
+#define VECTOR_TYPE struct udp_peer
+#define VECTOR_PREFIX udp
+#define VECTOR_NON_STATIC
+#include "vector.h"
+
 void
 forward_udp_frame_to_other_peers(struct server *s,
                                  struct frame *current_frame,
@@ -168,7 +173,8 @@ broadcast_udp_to_peers(struct server *s)
 }
 
 int
-server_init_udp(struct sockaddr *addr, int len)
+server_init_udp(struct sockaddr *addr,
+                int len)
 {
     struct sockaddr_storage udp_addr;
     evutil_socket_t tmp_sock;
@@ -182,13 +188,13 @@ server_init_udp(struct sockaddr *addr, int len)
     {
         struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
 
-        sin->sin_port = htons(7676);
+        sin->sin_port = htons(TNETACLE_UDP_PORT);
     }
     else if (udp_addr.ss_family == AF_INET6)
     {
         struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
 
-        sin6->sin6_port = htons(7676);
+        sin6->sin6_port = htons(TNETACLE_UDP_PORT);
     }
     err = bind(tmp_sock, (struct sockaddr *)&udp_addr, len);
     if (err == -1)
@@ -242,4 +248,39 @@ frame_recvfrom(int fd,
     err = recv(fd, (char *)frame->raw_packet,
         frame->size + sizeof(struct packet_hdr), 0);
     return err;
+}
+
+
+void
+server_udp_cb(evutil_socket_t udp_fd, short event, void *ctx)
+{
+    struct server *s = (struct server *)ctx;
+    struct frame current_frame;
+    struct sockaddr_storage sockaddr;
+    unsigned int socklen = sizeof sockaddr;
+    int err;
+
+    if (event & EV_READ)
+    {
+        memset(&current_frame, 0, sizeof current_frame);
+        while((err = frame_recvfrom(udp_fd, &current_frame, (struct sockaddr *)&sockaddr, &socklen)) != -1)
+        {
+            log_debug("udp recv packet size=%d(%-#2x)", current_frame.size, current_frame.size);
+
+            /* And forward it to anyone else but except current peer*/
+            forward_udp_frame_to_other_peers(s, &current_frame,
+                                             (struct sockaddr *)&sockaddr,
+                                             socklen);
+#if defined Windows
+            /*
+            * Send to current frame to the windows thread handling the tun/tap
+            * devices and clean the evbuffer
+            */
+            send_buffer_to_device_thread(s, &current_frame);
+#else
+            /* Write the current frame on the device and clean the evbuffer*/
+            write(event_get_fd(s->device), current_frame.frame, current_frame.size);
+#endif
+        }
+    }
 }

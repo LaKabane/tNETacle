@@ -33,6 +33,7 @@ struct cfg_sockaddress {
 #define VECTOR_TYPE struct cfg_sockaddress
 #define VECTOR_PREFIX sockaddr
 #define DEFAULT_ALLOC_SIZE 2
+#define VECTOR_FORWARD
 #include "vector.h"
 
 struct options {

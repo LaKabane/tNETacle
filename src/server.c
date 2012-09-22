@@ -50,6 +50,17 @@
 #include "hexdump.h"
 #include "wincompat.h"
 
+#define VECTOR_TYPE struct mc
+#define VECTOR_PREFIX mc
+#define VECTOR_NON_STATIC
+#include "vector.h"
+
+#define VECTOR_TYPE struct evconnlistener*
+#define VECTOR_PREFIX evl
+#define VECTOR_TYPE_SCALAR
+#define VECTOR_NON_STATIC
+#include "vector.h"
+
 extern struct options serv_opts;
 
 void
@@ -191,40 +202,6 @@ evssl_init(void)
     return server_ctx;
 }
 
-static void
-server_udp_cb(evutil_socket_t udp_fd, short event, void *ctx)
-{
-    struct server *s = (struct server *)ctx;
-    struct frame current_frame;
-    struct sockaddr_storage sockaddr;
-    unsigned int socklen = sizeof sockaddr;
-    int err;
-
-    if (event & EV_READ)
-    {
-        memset(&current_frame, 0, sizeof current_frame);
-        while((err = frame_recvfrom(udp_fd, &current_frame, (struct sockaddr *)&sockaddr, &socklen)) != -1)
-        {
-            log_debug("udp recv packet size=%d(%-#2x)", current_frame.size, current_frame.size);
-
-            /* And forward it to anyone else but except current peer*/
-            forward_udp_frame_to_other_peers(s, &current_frame,
-                                             (struct sockaddr *)&sockaddr,
-                                             socklen);
-#if defined Windows
-            /*
-            * Send to current frame to the windows thread handling the tun/tap
-            * devices and clean the evbuffer
-            */
-            send_buffer_to_device_thread(s, &current_frame);
-#else
-            /* Write the current frame on the device and clean the evbuffer*/
-            write(event_get_fd(s->device), current_frame.frame, current_frame.size);
-#endif
-        }
-    }
-}
-
 int
 server_init(struct server *s, struct event_base *evbase)
 {
@@ -237,8 +214,8 @@ server_init(struct server *s, struct event_base *evbase)
 
     s->peers = v_mc_new();
     s->pending_peers = v_mc_new();
-    s->frames_to_send = v_frame_new();
     s->srv_list = v_evl_new();
+    s->frames_to_send = v_frame_new();
     s->evbase = evbase;
 
     it_listen = v_sockaddr_begin(serv_opts.listen_addrs);
@@ -295,7 +272,7 @@ server_init(struct server *s, struct event_base *evbase)
     }
 
     /* If we don't have any PeerAddress it's finished */
-    if (serv_opts.peer_addrs->size == 0)
+    if (v_sockaddr_size(serv_opts.peer_addrs) == 0)
         return 0;
 
     it_peer = v_sockaddr_begin(serv_opts.peer_addrs);

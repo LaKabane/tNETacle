@@ -28,11 +28,11 @@ struct server;
 struct mc
 {
     struct peer {
-        struct sockaddr *address;
-        socklen_t len;
+        struct sockaddr     *address;
+        socklen_t           len;
     } p;
-    struct bufferevent *bev;
-    int ssl_flags;
+    struct bufferevent  *bev;
+    int                 ssl_flags;
 };
 
 int mc_init(struct mc *,
@@ -43,9 +43,6 @@ int mc_init(struct mc *,
             SSL_CTX *server_ctx);
 
 void mc_close(struct mc *);
-
-int mc_add_frame(struct mc *,
-                 struct frame *);
 
 int mc_add_raw_data(struct mc *,
                     void *,
