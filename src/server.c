@@ -209,7 +209,6 @@ server_init(struct server *s, struct event_base *evbase)
     struct cfg_sockaddress *ite_listen = NULL;
     struct cfg_sockaddress *it_peer = NULL;
     struct cfg_sockaddress *ite_peer = NULL;
-    evutil_socket_t udp_socket;
     size_t i = 0;
 
     s->peers = v_mc_new();
@@ -223,9 +222,9 @@ server_init(struct server *s, struct event_base *evbase)
     /* Listen on all ListenAddress */
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
     {
-        struct event *ev_udp = NULL;
         struct evconnlistener *evl = NULL;
         char listenname[INET6_ADDRSTRLEN];
+        int err;
 
         evl = evconnlistener_new_bind(evbase, listen_callback,
             s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
@@ -244,9 +243,10 @@ server_init(struct server *s, struct event_base *evbase)
         /*
          * We listen on the same address for the udp socket
          */
-        udp_socket = server_init_udp((struct sockaddr *)&it_listen->sockaddr,
-                                     it_listen->len);
-        if (udp_socket == -1)
+        err = server_init_udp(s,
+                              (struct sockaddr *)&it_listen->sockaddr,
+                              it_listen->len);
+        if (err == -1)
         {
             log_warnx("Failed to init the udp socket on %s",
                   address_presentation((struct sockaddr *)&it_listen->sockaddr,
@@ -254,19 +254,6 @@ server_init(struct server *s, struct event_base *evbase)
                                            sizeof listenname));
             continue;
         }
-        ev_udp = event_new(evbase, udp_socket, EV_PERSIST | EV_READ,
-                           server_udp_cb, s);
-        if (ev_udp == NULL)
-        {
-            log_warnx("Failed to allocate the udp socket on %s",
-                  address_presentation((struct sockaddr *)&it_listen->sockaddr,
-                                           it_listen->len, listenname,
-                                           sizeof listenname));
-            continue;
-        }
-        s->udp.udp_endpoint = ev_udp;
-
-        event_add(s->udp.udp_endpoint, NULL);
 
         v_evl_push(s->srv_list, evl);
     }

@@ -92,7 +92,7 @@ forward_udp_frame_to_other_peers(struct server *s,
             socklen = sizeof(sin6);
         }
         /*}}}*/
-        err = sendto(event_get_fd(s->udp.udp_endpoint),
+        err = sendto(s->udp.fd,
                      current_frame->raw_packet,
                      current_frame->size + sizeof(struct packet_hdr), 0,
                      udp_addr, socklen);
@@ -155,9 +155,11 @@ broadcast_udp_to_peers(struct server *s)
             /* Copy the header to the packet */
             /* Enought place have been allocated for header and the frame */
             memcpy(fit->raw_packet, &hdr, sizeof(hdr));
-            err = sendto(event_get_fd(s->udp.udp_endpoint), fit->raw_packet,
+            err = sendto(s->udp.fd,
+                         fit->raw_packet,
                          fit->size + sizeof(struct packet_hdr), 0,
-                         (struct sockaddr const *)&udp_addr, it->p.len);
+                         (struct sockaddr const *)&udp_addr,
+                         it->p.len);
             if (err == -1)
             {
                 log_notice("error while sending to %s",
@@ -172,13 +174,56 @@ broadcast_udp_to_peers(struct server *s)
     }
 }
 
+void
+server_udp(void *ctx)
+{
+    struct server *s = (struct server *)sched_get_userptr(ctx);
+    struct frame current_frame;
+    struct sockaddr_storage sockaddr;
+    unsigned int socklen = sizeof sockaddr;
+    evutil_socket_t udp_fd;
+    int err;
+
+    udp_fd = s->udp.fd;
+    memset(&current_frame, 0, sizeof current_frame);
+    while((err = frame_recvfrom(ctx,
+                                udp_fd,
+                                &current_frame,
+                                (struct sockaddr *)&sockaddr,
+                                &socklen)) != -1)
+    {
+        log_debug("udp recv packet size=%d(%-#2x)",
+                  current_frame.size,
+                  current_frame.size);
+
+        /* And forward it to anyone else but except current peer*/
+        forward_udp_frame_to_other_peers(s, &current_frame,
+                                         (struct sockaddr *)&sockaddr,
+                                         socklen);
+#if defined Windows
+        /*
+         * Send to current frame to the windows thread handling the tun/tap
+         * devices and clean the evbuffer
+         */
+        send_buffer_to_device_thread(s, &current_frame);
+#else
+        /* Write the current frame on the device and clean the evbuffer*/
+        write(event_get_fd(s->device), current_frame.frame, current_frame.size);
+#endif
+    }
+}
+
+
 int
-server_init_udp(struct sockaddr *addr,
+server_init_udp(struct server *s,
+                struct sockaddr *addr,
                 int len)
 {
-    struct sockaddr_storage udp_addr;
-    evutil_socket_t tmp_sock;
     int err;
+    struct event_base *evbase = s->evbase;
+    struct udp *udp = &s->udp;
+    struct sockaddr_storage udp_addr = {};
+    evutil_socket_t tmp_sock = 0;
 
     memcpy(&udp_addr, addr, len);
     tmp_sock = tnt_udp_socket(addr->sa_family);
@@ -206,12 +251,16 @@ server_init_udp(struct sockaddr *addr,
     {
         return -1;
     }
-    return tmp_sock;
+    udp->fd = tmp_sock;
+    udp->udp_sched = sched_new(evbase);
+    udp->udp_fiber = sched_new_fiber(udp->udp_sched, server_udp, s);
+    sched_launch(udp->udp_sched);
+    return 0;
 }
 
-
 int
-frame_recvfrom(int fd,
+frame_recvfrom(void *ctx,
+               int fd,
                struct frame *frame,
                struct sockaddr *saddr,
                unsigned int *socklen)
@@ -220,8 +269,14 @@ frame_recvfrom(int fd,
     struct packet_hdr hdr;
     unsigned short local_size;
 
-    err = recvfrom(fd, (char *)&hdr, sizeof(struct packet_hdr),
-        MSG_PEEK, saddr, socklen);
+    /* lol */
+    err = async_recvfrom(ctx,
+                         fd,
+                         (char *)&hdr,
+                         sizeof(struct packet_hdr),
+                         MSG_PEEK,
+                         saddr,
+                         socklen);
     /*
     ** Sometimes, on some OS, recvfrom return EMSGSIZE when the size of the
     ** peeked buffer is not enough to read the entire datagram.
@@ -250,37 +305,3 @@ frame_recvfrom(int fd,
     return err;
 }
 
-
-void
-server_udp_cb(evutil_socket_t udp_fd, short event, void *ctx)
-{
-    struct server *s = (struct server *)ctx;
-    struct frame current_frame;
-    struct sockaddr_storage sockaddr;
-    unsigned int socklen = sizeof sockaddr;
-    int err;
-
-    if (event & EV_READ)
-    {
-        memset(&current_frame, 0, sizeof current_frame);
-        while((err = frame_recvfrom(udp_fd, &current_frame, (struct sockaddr *)&sockaddr, &socklen)) != -1)
-        {
-            log_debug("udp recv packet size=%d(%-#2x)", current_frame.size, current_frame.size);
-
-            /* And forward it to anyone else but except current peer*/
-            forward_udp_frame_to_other_peers(s, &current_frame,
-                                             (struct sockaddr *)&sockaddr,
-                                             socklen);
-#if defined Windows
-            /*
-            * Send to current frame to the windows thread handling the tun/tap
-            * devices and clean the evbuffer
-            */
-            send_buffer_to_device_thread(s, &current_frame);
-#else
-            /* Write the current frame on the device and clean the evbuffer*/
-            write(event_get_fd(s->device), current_frame.frame, current_frame.size);
-#endif
-        }
-    }
-}

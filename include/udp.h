@@ -18,6 +18,8 @@
 
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
+#include "coro.h"
+#include "sched.h"
 
 #define TNETACLE_UDP_PORT 7676
 
@@ -42,11 +44,14 @@ struct udp_peer
 
 struct udp
 {
-    struct event            *udp_endpoint;
+    int                     fd;
+    struct sched            *udp_sched;
+    struct fiber            *udp_fiber;
     struct vector_frame     *frame_udp;
 };
 
-int server_init_udp(struct sockaddr *addr,
+int server_init_udp(struct server *s,
+                    struct sockaddr *addr,
                     int len);
 
 void forward_udp_frame_to_other_peers(struct server *s,
@@ -56,14 +61,13 @@ void forward_udp_frame_to_other_peers(struct server *s,
 
 void broadcast_udp_to_peers(struct server *s);
 
-int frame_recvfrom(int fd,
+int frame_recvfrom(void *ctx,
+                   int fd,
                    struct frame *frame,
                    struct sockaddr *saddr,
                    unsigned int *socklen);
 
 void
-server_udp_cb(int udp_fd,
-              short event,
-              void *ctx);
+server_udp(void *ctx);
 
 #endif /* end of include guard: UDP_US4EZ32H */
