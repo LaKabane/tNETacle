@@ -41,6 +41,7 @@
 #include "wincompat.h"
 #include "udp.h"
 #include "frame.h"
+#include "device.h"
 
 #define VECTOR_TYPE struct udp_peer
 #define VECTOR_PREFIX udp
@@ -222,7 +223,7 @@ server_init_udp(struct server *s,
     int err;
     struct event_base *evbase = s->evbase;
     struct udp *udp = &s->udp;
-    struct sockaddr_storage udp_addr = {};
+    struct sockaddr_storage udp_addr;
     evutil_socket_t tmp_sock = 0;
 
     memcpy(&udp_addr, addr, len);

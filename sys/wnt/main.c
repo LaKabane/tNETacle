@@ -27,10 +27,12 @@
 #include "log.h"
 #include "tun.h"
 #include "options.h"
-#include "server.h"
 #include "pathnames.h"
 #include "hexdump.h"
 #include "wincompat.h"
+#include "server.h"
+#include "frame.h"
+#include "udp.h"
 
 int debug;
 extern struct options serv_opts;
@@ -353,12 +355,12 @@ pipe_read_cb(struct bufferevent *bev, void *data)
         memcpy(tmp.frame, frame_ptr, frame_size);
         tmp.size = frame_size;
 
-        v_frame_push(&s->frames_to_send, &tmp);
+        v_frame_push(s->frames_to_send, &tmp);
         evbuffer_drain(input, frame_size);
     }
     broadcast_udp_to_peers(s);
-    v_frame_foreach(&s->frames_to_send, free_frame);
-    v_frame_clean(&s->frames_to_send);
+    v_frame_foreach(s->frames_to_send, free_frame);
+    v_frame_clean(s->frames_to_send);
 }
 
 int

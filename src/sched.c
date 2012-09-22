@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <event2/event.h>
+#include "networking.h"
 #include "coro.h"
 #include "log.h"
 #include "sched.h"
