@@ -123,7 +123,8 @@ if (Windows)
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
   	add_definitions(-DWindows)
-        add_definitions(-DCORO_LOSER)
+    add_definitions(-DCORO_WIN32)
+
 
 	# Windows source files
 	# ------------------

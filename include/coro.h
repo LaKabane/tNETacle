@@ -123,6 +123,11 @@ extern "C" {
  *    this automatically selects a suitable workaround for this platform.
  *    (untested)
  *
+ * -DCORO_WIN32
+ *
+ *   Microsoft's API for fibers, Using CreateFiber, SwitchToFiber and
+ *   ConvertThreadToFiber.
+ *
  * -DCORO_IRIX
  *
  *    SGI's version of Microsoft's NT ;)
@@ -208,7 +213,7 @@ void coro_destroy (coro_context *ctx);
 #if !defined(CORO_LOSER) && !defined(CORO_UCONTEXT) \
     && !defined(CORO_SJLJ) && !defined(CORO_LINUX) \
     && !defined(CORO_IRIX) && !defined(CORO_ASM) \
-    && !defined(CORO_PTHREAD)
+    && !defined(CORO_PTHREAD) && !defined(CORO_WIN32) 
 # if defined(WINDOWS) || defined(_WIN32)
 #  define CORO_LOSER 1 /* you don't win with windoze */
 # elif defined(__linux) && (defined(__x86) || defined (__amd64))
@@ -298,6 +303,22 @@ struct coro_context {
 
 void coro_transfer (coro_context *prev, coro_context *next);
 void coro_destroy (coro_context *ctx);
+
+#endif
+
+#if CORO_WIN32
+
+#define _WIN32_WINNT 0x0400
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <WinBase.h>
+
+struct coro_context {
+    LPVOID  fiber_addr;
+};
+
+void coro_transfer(coro_context *prev, coro_context *next);
+void coro_destroy(coro_context *ctx);
 
 #endif
 

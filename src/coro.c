@@ -45,7 +45,7 @@
 /*****************************************************************************/
 /* ucontext/setjmp/asm backends                                              */
 /*****************************************************************************/
-#if CORO_UCONTEXT || CORO_SJLJ || CORO_LOSER || CORO_LINUX || CORO_IRIX || CORO_ASM
+#if CORO_UCONTEXT || CORO_SJLJ || CORO_LOSER || CORO_LINUX || CORO_IRIX || CORO_ASM || CORO_WIN32
 
 # if CORO_UCONTEXT
 #  include <stddef.h>
@@ -97,6 +97,15 @@ coro_init (void)
   /* the new coro returned. bad. just abort() for now */
   abort ();
 }
+
+#if CORO_WIN32
+void coro_transfer(coro_context *prev, coro_context *next)
+{
+    /* Set the context in prev, and jump to next */
+    prev->fiber_addr = GetCurrentFiber();
+    SwitchToFiber(next->fiber_addr);
+}
+#endif
 
 # if CORO_SJLJ
 
@@ -297,6 +306,7 @@ coro_create (coro_context *ctx, coro_func coro, void *arg, void *sptr, long ssiz
     ((_JUMP_BUFFER *)&ctx->env)->IntSp = (__int64) STACK_ADJUST_PTR (sptr, ssize) - sizeof (__int64);
   #else
     #error "microsoft libc or architecture not supported"
+
   #endif
 
 # elif CORO_LINUX
@@ -350,9 +360,15 @@ coro_create (coro_context *ctx, coro_func coro, void *arg, void *sptr, long ssiz
 
   makecontext (&(ctx->uc), (void (*)())coro_init, 0);
 
+# elif CORO_WIN32
+{
+    ConvertThreadToFiber(NULL);
+    ctx->fiber_addr = CreateFiber(ssize, (LPFIBER_START_ROUTINE)coro_init, 0);
+}
 # endif
 
   coro_transfer (create_coro, new_coro);
+  1 == 1;
 }
 
 /*****************************************************************************/
@@ -466,8 +482,7 @@ coro_destroy (coro_context *ctx)
 
   pthread_cond_destroy (&ctx->cv);
 }
-
 #else
-# error unsupported backend
+#error backend not supported
 #endif
 
