@@ -123,6 +123,7 @@ if (Windows)
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
   	add_definitions(-DWindows)
+        add_definitions(-DCORO_LOSER)
 
 	# Windows source files
 	# ------------------
@@ -173,6 +174,7 @@ if(Linux)
 endif()
 
 if (OpenBSD)
+        add_definitions(-DCORO_SJLJ)
         set(CMAKE_SYSTEM_INCLUDE_PATH
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 	include_directories(/usr/local/include)
@@ -181,6 +183,7 @@ if (OpenBSD)
 endif()
 
 if (NetBSD)
+        add_definitions(-DCORO_SJLJ)
         set(CMAKE_SYSTEM_INCLUDE_PATH
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/pkg/include)
 	include_directories(/usr/pkg/include)
@@ -188,6 +191,7 @@ if (NetBSD)
 endif()
 
 if (FreeBSD)
+        add_definitions(-DCORO_SJLJ)
         set(CMAKE_SYSTEM_INCLUDE_PATH
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 	include_directories(/usr/local/include)
@@ -196,6 +200,7 @@ if (FreeBSD)
 endif()
 
 if (Darwin)
+        add_definitions(-DCORO_SJLJ)
 	# Darwin specific include directories (macport)
 	# ------------------
         set(CMAKE_SYSTEM_INCLUDE_PATH
