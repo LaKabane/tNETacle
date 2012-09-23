@@ -368,7 +368,6 @@ coro_create (coro_context *ctx, coro_func coro, void *arg, void *sptr, long ssiz
 # endif
 
   coro_transfer (create_coro, new_coro);
-  1 == 1;
 }
 
 /*****************************************************************************/
