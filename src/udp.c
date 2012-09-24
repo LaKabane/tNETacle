@@ -65,9 +65,9 @@ forward_udp_frame_to_other_peers(struct server *s,
         it != ite;
         it = v_mc_next(it))
     {
-        int err;
         struct sockaddr *udp_addr = (struct sockaddr *)&udp_storage;
         int socklen;
+        int err;
 
         /* If it's not the peer we received the data from. */
         if (evutil_sockaddr_cmp(current_sockaddr, it->p.address, 0) == 0)
@@ -82,14 +82,14 @@ forward_udp_frame_to_other_peers(struct server *s,
         {
             struct sockaddr_in *sin = (struct sockaddr_in *)udp_addr;
 
-            sin->sin_port = htons(7676);
+            sin->sin_port = htons(TNETACLE_UDP_PORT);
             socklen = sizeof(sin);
         }
         else if (udp_addr->sa_family == AF_INET6)
         {
             struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)udp_addr;
 
-            sin6->sin6_port = htons(7676);
+            sin6->sin6_port = htons(TNETACLE_UDP_PORT);
             socklen = sizeof(sin6);
         }
         /*}}}*/
@@ -114,7 +114,7 @@ broadcast_udp_to_peers(struct server *s)
     struct frame *fit = v_frame_begin(s->frames_to_send);
     struct frame *fite = v_frame_end(s->frames_to_send);
     struct sockaddr_storage udp_addr;
-    char name[512];
+    char name[INET6_ADDRSTRLEN];
 
     /* For all the frames*/
     for (;fit != fite; fit = v_frame_next(fit))
@@ -221,6 +221,7 @@ server_init_udp(struct server *s,
                 int len)
 {
     int err;
+    char name[INET6_ADDRSTRLEN];
     struct event_base *evbase = s->evbase;
     struct udp *udp = &s->udp;
     struct sockaddr_storage udp_addr;
@@ -234,19 +235,23 @@ server_init_udp(struct server *s,
     {
         struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
 
-        sin->sin_port = htons(TNETACLE_UDP_PORT);
+        /*sin->sin_port = htons(TNETACLE_UDP_PORT);*/
+        sin->sin_port = 0; /* XXX */
     }
     else if (udp_addr.ss_family == AF_INET6)
     {
         struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
 
-        sin6->sin6_port = htons(TNETACLE_UDP_PORT);
+        /*sin6->sin6_port = htons(TNETACLE_UDP_PORT);*/
+        sin6->sin6_port = 0;
     }
     err = bind(tmp_sock, (struct sockaddr *)&udp_addr, len);
     if (err == -1)
     {
         return -1;
     }
+    getsockname(tmp_sock, (struct sockaddr *)&udp_addr, &len);
+    log_debug("%s", address_presentation(&udp_addr, len, name, sizeof name));
     err = evutil_make_socket_nonblocking(tmp_sock);
     if (err == -1)
     {
