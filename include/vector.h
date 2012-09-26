@@ -438,7 +438,8 @@ specifier void vector_(foreach_ctx)(struct vector_name *v,
 #endif
 
 #ifndef VECTOR_DEV_MODE
-# undef vector_
+# undef vector
+# undef type
 # undef vector_name
 # undef DEFAULT_ALLOC_SIZE
 # undef default_alloc_size
