@@ -32,6 +32,7 @@ struct vector_frame;
 struct udp_peer
 {
     struct sockaddr_storage addr;
+    int                     socklen;
     BIO                     *bio;
     BIO                     *_bio_backend;
     SSL                     *ssl;
@@ -45,16 +46,23 @@ struct udp_peer
 struct udp
 {
     int                     fd;
+    struct sockaddr_storage udp_addr;
+    int                     udp_addrlen;
     struct sched            *udp_sched;
     struct fiber            *udp_fiber;
     struct vector_frame     *frame_udp;
+    struct vector_udp       *udp_peers;
 };
 
 int server_init_udp(struct server *s,
                     struct sockaddr *addr,
                     int len);
 
-void forward_udp_frame_to_other_peers(struct server *s,
+void udp_register_new_peer(struct udp *s,
+                           struct sockaddr *sock,
+                           int socklen);
+
+void forward_udp_frame_to_other_peers(struct udp *s,
                                       struct frame *current_frame,
                                       struct sockaddr *current_sockaddr,
                                       unsigned int current_socklen);
@@ -69,5 +77,8 @@ int frame_recvfrom(void *ctx,
 
 void
 server_udp(void *ctx);
+
+unsigned short
+udp_get_port(struct udp *);
 
 #endif /* end of include guard: UDP_US4EZ32H */

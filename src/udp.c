@@ -50,63 +50,62 @@
 #include "vector.h"
 
 void
-forward_udp_frame_to_other_peers(struct server *s,
+forward_udp_frame_to_other_peers(struct udp *udp,
                                  struct frame *current_frame,
                                  struct sockaddr *current_sockaddr,
                                  unsigned int
                                  current_socklen) 
 {
-    struct mc *it = NULL;
-    struct mc *ite = NULL;
+    struct udp_peer *it = NULL;
+    struct udp_peer *ite = NULL;
     char name[INET6_ADDRSTRLEN];
-    struct sockaddr_storage udp_storage;
 
     (void)current_socklen;
-    for (it = v_mc_begin(s->peers), ite = v_mc_end(s->peers);
+    for (it = v_udp_begin(udp->udp_peers), ite = v_udp_end(udp->udp_peers);
         it != ite;
-        it = v_mc_next(it))
+        it = v_udp_next(it))
     {
-        struct sockaddr *udp_addr = (struct sockaddr *)&udp_storage;
-        int socklen;
         int err;
 
         /* If it's not the peer we received the data from. */
-        if (evutil_sockaddr_cmp(current_sockaddr, it->p.address, 0) == 0)
+        if (evutil_sockaddr_cmp(current_sockaddr,
+                                (struct sockaddr *)&it->addr, 0)
+            == 0)
             continue;
-        memcpy(&udp_storage, it->p.address, it->p.len);
-        /*
-         * This section have to be rewriten to use a port number that've
-         * been decided by the protocol.
-         */
-        /*{{{*/
-        if (udp_addr->sa_family == AF_INET)
-        {
-            struct sockaddr_in *sin = (struct sockaddr_in *)udp_addr;
 
-            sin->sin_port = htons(TNETACLE_UDP_PORT);
-            socklen = sizeof(sin);
-        }
-        else if (udp_addr->sa_family == AF_INET6)
-        {
-            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)udp_addr;
-
-            sin6->sin6_port = htons(TNETACLE_UDP_PORT);
-            socklen = sizeof(sin6);
-        }
-        /*}}}*/
-        err = sendto(s->udp.fd,
+        err = sendto(udp->fd,
                      current_frame->raw_packet,
                      current_frame->size + sizeof(struct packet_hdr), 0,
-                     udp_addr, socklen);
+                     (struct sockaddr *)&it->addr,
+                     it->socklen);
         if (err == -1)
         {
             log_notice("error while sending to %s",
-                       mc_presentation(it, name, sizeof name));
+                       address_presentation((struct sockaddr *)&it->addr,
+                                            it->socklen,
+                                            name,
+                                            sizeof name));
             break;
         }
         log_debug("adding %d bytes to %s's output buffer",
-            current_frame->size, mc_presentation(it, name, sizeof name));
+            current_frame->size,
+            address_presentation((struct sockaddr *)&it->addr,
+                                 it->socklen,
+                                 name,
+                                 sizeof name));
     }
+}
+
+void
+udp_register_new_peer(struct udp *udp,
+                      struct sockaddr *s,
+                      int socklen)
+{
+    struct udp_peer tmp_udp;
+
+    memcpy(&tmp_udp.addr, s, socklen);
+    tmp_udp.socklen = socklen;
+    v_udp_push(udp->udp_peers, &tmp_udp);
 }
 
 void
@@ -114,64 +113,51 @@ broadcast_udp_to_peers(struct server *s)
 {
     struct frame *fit = v_frame_begin(s->frames_to_send);
     struct frame *fite = v_frame_end(s->frames_to_send);
-    struct sockaddr_storage udp_addr;
+    struct udp   *udp = &s->udp;
     char name[INET6_ADDRSTRLEN];
 
     /* For all the frames*/
     for (;fit != fite; fit = v_frame_next(fit))
     {
-        struct mc *it = NULL;
-        struct mc *ite = NULL;
+        struct udp_peer *it = NULL;
+        struct udp_peer *ite = NULL;
 
-        it = v_mc_begin(s->peers);
-        ite = v_mc_end(s->peers);
+        it = v_udp_begin(udp->udp_peers);
+        ite = v_udp_end(udp->udp_peers);
         /* For all the peers*/
-        for (;it != ite; it = v_mc_next(it))
+        for (;it != ite; it = v_udp_next(it))
         {
             int err;
             struct packet_hdr hdr;
 
             memset(&hdr, 0, sizeof (struct packet_hdr));
-            memcpy(&udp_addr, it->p.address, it->p.len);
-            /*
-             * This section have to be rewriten to use a port number that've
-             * been decided by the protocol.
-             */
-            /*{{{*/
-            if (udp_addr.ss_family == AF_INET)
-            {
-                struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
 
-                sin->sin_port = htons(7676);
-            }
-            else if (udp_addr.ss_family == AF_INET6)
-            {
-                struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
-
-                sin6->sin6_port = htons(7676);
-            }
-            /*}}}*/
             /* Header configuration for the packet */
             /* Convert the size to netword presentation*/
             hdr.size = htons(fit->size);
             /* Copy the header to the packet */
             /* Enought place have been allocated for header and the frame */
             memcpy(fit->raw_packet, &hdr, sizeof(hdr));
-            err = sendto(s->udp.fd,
+            err = sendto(udp->fd,
                          fit->raw_packet,
                          fit->size + sizeof(struct packet_hdr), 0,
-                         (struct sockaddr const *)&udp_addr,
-                         it->p.len);
+                         (struct sockaddr const *)&it->addr,
+                         it->socklen);
             if (err == -1)
             {
                 log_notice("error while sending to %s",
-                           mc_presentation(it, name, sizeof name));
+                           address_presentation((struct sockaddr *)&it->addr,
+                                                it->socklen,
+                                                name,
+                                                sizeof name));
                 break;
             }
             log_debug("udp adding %d(%-#2x) bytes to %s's output buffer",
                 fit->size, fit->size,
-                address_presentation((struct sockaddr *)&udp_addr, it->p.len,
-                                     name, sizeof name));
+                address_presentation((struct sockaddr *)&it->addr,
+                                     it->socklen,
+                                     name,
+                                     sizeof name));
         }
     }
 }
@@ -199,7 +185,8 @@ server_udp(void *ctx)
                   current_frame.size);
 
         /* And forward it to anyone else but except current peer*/
-        forward_udp_frame_to_other_peers(s, &current_frame,
+        forward_udp_frame_to_other_peers(&s->udp,
+                                         &current_frame,
                                          (struct sockaddr *)&sockaddr,
                                          socklen);
 #if defined Windows
@@ -236,15 +223,13 @@ server_init_udp(struct server *s,
     {
         struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
 
-        /*sin->sin_port = htons(TNETACLE_UDP_PORT);*/
-        sin->sin_port = 0; /* XXX */
+        sin->sin_port = 0; /* 0 means random */
     }
     else if (udp_addr.ss_family == AF_INET6)
     {
         struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
 
-        /*sin6->sin6_port = htons(TNETACLE_UDP_PORT);*/
-        sin6->sin6_port = 0;
+        sin6->sin6_port = 0; /* 0 means random */
     }
     err = bind(tmp_sock, (struct sockaddr *)&udp_addr, len);
     if (err == -1)
@@ -252,13 +237,19 @@ server_init_udp(struct server *s,
         return -1;
     }
     getsockname(tmp_sock, (struct sockaddr *)&udp_addr, &len);
-    log_debug("%s", address_presentation(&udp_addr, len, name, sizeof name));
+    log_debug("%s", address_presentation((struct sockaddr *)&udp_addr,
+                                         len,
+                                         name,
+                                         sizeof name));
     err = evutil_make_socket_nonblocking(tmp_sock);
     if (err == -1)
     {
         return -1;
     }
+    memcpy(&udp->udp_addr, &udp_addr, len);
+    udp->udp_addrlen = len;
     udp->fd = tmp_sock;
+    udp->udp_peers = v_udp_new();
     udp->udp_sched = sched_new(evbase);
     udp->udp_fiber = sched_new_fiber(udp->udp_sched, server_udp, s);
     sched_launch(udp->udp_sched);
@@ -276,7 +267,6 @@ frame_recvfrom(void *ctx,
     struct packet_hdr hdr;
     unsigned short local_size;
 
-    /* lol */
     err = async_recvfrom(ctx,
                          fd,
                          (char *)&hdr,
@@ -310,5 +300,25 @@ frame_recvfrom(void *ctx,
     err = recv(fd, (char *)frame->raw_packet,
         frame->size + sizeof(struct packet_hdr), 0);
     return err;
+}
+
+unsigned short
+udp_get_port(struct udp *udp)
+{
+    unsigned short port;
+
+    if (udp->udp_addr.ss_family == AF_INET)
+    {
+        struct sockaddr_in *sin = (struct sockaddr_in *)&udp->udp_addr;
+
+        port = ntohs(sin->sin_port);
+    }
+    else if (udp->udp_addr.ss_family == AF_INET6)
+    {
+        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp->udp_addr;
+
+        port = ntohs(sin6->sin6_port);
+    }
+    return port;
 }
 

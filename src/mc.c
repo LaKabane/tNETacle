@@ -30,6 +30,7 @@
 #include "server.h"
 #include "tnetacle.h"
 #include "options.h"
+#include "udp.h"
 
 extern struct options serv_opts;
 
@@ -223,9 +224,19 @@ mc_add_raw_data(struct mc *self,
  * tNETacle is a polite software, using a polite protocol, so we say hello !
  */
 int
-mc_hello(struct mc *self)
+mc_hello(struct mc *self, struct udp *udp)
 {
     struct evbuffer *output = bufferevent_get_output(self->bev);
+    unsigned short port = udp_get_port(udp);
 
-    return evbuffer_add_printf(output, "Hello ~!");
+    evbuffer_add_printf(output, "Hello ~!\r\n");
+    evbuffer_add_printf(output, "udp_port:%d\r\n", port);
+    return 0;
+}
+
+int
+mc_establish_tunnel(struct mc *self)
+{
+    (void)self;
+    return 0;
 }

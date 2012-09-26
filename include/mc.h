@@ -20,10 +20,11 @@
 #include "networking.h"
 
 struct bufferevent;
-struct sockaddr;
 struct event_base;
-struct frame;
+struct sockaddr;
 struct server;
+struct frame;
+struct udp;
 
 struct mc
 {
@@ -33,6 +34,7 @@ struct mc
     } p;
     struct bufferevent  *bev;
     int                 ssl_flags;
+    int                 tunel;
 };
 
 int mc_init(struct mc *,
@@ -48,7 +50,8 @@ int mc_add_raw_data(struct mc *,
                     void *,
                     size_t);
 
-int mc_hello(struct mc *);
+int mc_hello(struct mc *,
+             struct udp *);
 
 int mc_peer_accept(struct server *s,
                struct event_base *evbase,
@@ -70,4 +73,6 @@ char *address_presentation(struct sockaddr *,
                            int socklen,
                            char *, int);
 
+int
+mc_establish_tunnel(struct mc *self);
 #endif /* end of include guard: MC_ENDPOINT_JU2N66SJ */
