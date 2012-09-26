@@ -56,15 +56,13 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
             ele = tclt_parse(buff, size);
             while (ele != NULL)
             {
-                if (ele->type == 7)
+                if (ele->type == MAP_KEY)
                 {
-					log_debug("1%d\n", ele->type);
 					if (strcmp(ele->u_value.buf, "Ip") == 0)
 					{
                         ele = ele->next;
 						if (ele == NULL)
 							return;
-						log_debug("%s\n", ele->u_value.buf);
 						struct cfg_sockaddress out;
 						(void)memset(&out, 0, sizeof out);
 						/* Take the size from the sockaddr_storage*/
