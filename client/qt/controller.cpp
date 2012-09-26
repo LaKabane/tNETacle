@@ -128,11 +128,11 @@ bool Controller::addContact()
         this->_view->printError("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
         return false;
     }
-    if (checkIP(ip) == false)
-    {
-        this->_view->printError("the IP is not correctly formated");
-        return false;
-    }
+    // if (checkIP(ip) == false)
+    // {
+    //     this->_view->printError("the IP is not correctly formated");
+    //     return false;
+    // }
 
     if (!_view->getInitialContactName().isEmpty()) // TODO if user select a different row after editing
         this->deleteContact();

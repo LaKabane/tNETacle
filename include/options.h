@@ -22,6 +22,8 @@
 #include <arpa/inet.h>
 #endif /* Windows */
 
+#include "tnetacle.h"
+
 #ifndef TNT_OPTIONS_H_ 
 #define TNT_OPTIONS_H_ 
 
