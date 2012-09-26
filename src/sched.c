@@ -19,7 +19,7 @@
 #include "networking.h"
 #include "coro.h"
 #include "log.h"
-#include "sched.h"
+#include "tntsched.h"
 
 struct fiber_args
 {
