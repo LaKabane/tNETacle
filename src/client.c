@@ -28,6 +28,7 @@
 #include "client.h"
 #include "tclt_json.h"
 #include "server.h"
+#include "options.h"
 
 static int
 _server_match_bev(struct mc const *a, struct mc const *b)
@@ -49,15 +50,36 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
     while (evbuffer_get_length(buf) != 0)
     {
         size = bufferevent_read(bev, buff, 4095);
-	if (size != 0 && size != -1)
+        if (size != 0 && size != -1)
         {
             buff[size] = '\0';
-            log_debug("%s\n", buff);
             ele = tclt_parse(buff, size);
             while (ele != NULL)
             {
                 if (ele->type == 7)
-                    log_debug("%s\n", ele->u_value.buf);
+                {
+					log_debug("1%d\n", ele->type);
+					if (strcmp(ele->u_value.buf, "Ip") == 0)
+					{
+                        ele = ele->next;
+						if (ele == NULL)
+							return;
+						log_debug("%s\n", ele->u_value.buf);
+						struct cfg_sockaddress out;
+						(void)memset(&out, 0, sizeof out);
+						/* Take the size from the sockaddr_storage*/
+						out.len = sizeof(out.sockaddr);
+						/* TODO: Sanity check with socklen */
+						if (evutil_parse_sockaddr_port(ele->u_value.buf,
+							(struct sockaddr *)&out.sockaddr,
+							&out.len) == -1) {
+							(void)fprintf(stderr, "%s: not a valid IP address\n", ele->u_value.buf);
+							return ;
+						}
+						mc_peer_connect(s, bufferevent_get_base(bev), (struct sockaddr *)&out.sockaddr, out.len);
+						log_debug("%s\n", ele->u_value.buf);
+					}
+                }
                 ele = ele->next;
             }
         }
