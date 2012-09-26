@@ -99,7 +99,9 @@ specifier type vector_(front)(struct vector_name *v);
 specifier type vector_(back)(struct vector_name *v);
 specifier type *vector_(frontref)(struct vector_name *v);
 specifier type *vector_(backref)(struct vector_name *v);
-specifier type *vector_(find_if)(struct vector_name *v, type *val, int (*)(type const *, type const *));
+specifier type *vector_(find_if)(struct vector_name *v,
+                                 int (*)(type const *, void *),
+                                 void *ctx);
 specifier void vector_(clean)(struct vector_name *v);
 # ifdef VECTOR_TYPE_SCALAR
 
@@ -334,8 +336,9 @@ specifier void vector_(erase_range)(struct vector_name *v,
   }
 }
 
-specifier type *vector_(find_if)(struct vector_name *v, type *ptr,
-                                       int (*cmp)(type const *, type const *))
+specifier type *vector_(find_if)(struct vector_name *v,
+                                 int (*cmp)(type const *, void *),
+                                 void *ctx)
 {
   type* it = NULL;
   type* ite = NULL;
@@ -344,7 +347,7 @@ specifier type *vector_(find_if)(struct vector_name *v, type *ptr,
        ite = vector_(end)(v);
        it != ite;
        it = vector_(next)(it)) {
-    if (cmp(it, ptr)) {
+    if (cmp(it, ctx)) {
       return it;
     }
   }

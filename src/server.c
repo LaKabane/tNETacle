@@ -62,23 +62,114 @@
 #define VECTOR_NON_STATIC
 #include "vector.h"
 
+#define VECTOR_TYPE char*
+#define VECTOR_PREFIX cptr
+#define DEFAULT_ALLOC_SIZE 4
+#define VECTOR_TYPE_SCALAR
+#include "vector.h"
+
 extern struct options serv_opts;
+
+static int
+_server_match_bev(struct mc const *a, struct bufferevent *bev)
+{
+    return a->bev == bev;
+}
+
+char *next_token(char *ptr, char **saveit, char const *delimit)
+{
+    char *tmp;
+
+    if (ptr == NULL)
+    {
+        ptr = *saveit;
+        if (ptr == NULL)
+            return NULL;
+    }
+    else
+        ptr += strspn(ptr, delimit);
+
+    tmp = strpbrk(ptr, delimit);
+    if (tmp != NULL) 
+    {
+        *tmp = '\0';
+        *saveit = tmp + 1;
+    } 
+    else
+        *saveit = NULL;
+
+    return ptr;
+}
+
+struct vector_cptr *
+split(char *line)
+{
+    char *ptr;
+    char *saveptr = NULL;
+    struct vector_cptr *tmp = v_cptr_new();
+
+    for (ptr = next_token(line, &saveptr, " :");
+         ptr != NULL;
+         ptr = next_token(NULL, &saveptr, " :"))
+    {
+        v_cptr_push(tmp, ptr);
+    }
+    return tmp;
+}
 
 void
 server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = (struct server *)ctx;
     struct evbuffer *in = bufferevent_get_input(bev);
+    struct evbuffer *out = bufferevent_get_output(bev);
+    size_t len;
+    char *line;
 
     /* Get rid of every input */
     (void)s;
-    evbuffer_drain(in, evbuffer_get_length(in));
-}
+    while ((line = evbuffer_readln(in, &len, EVBUFFER_EOL_CRLF)) != NULL)
+    {
+        struct vector_cptr *splited;
+        char *cmd_name;
 
-static int
-_server_match_bev(struct mc const *a, struct mc const *b)
-{
-    return a->bev == b->bev;
+        splited = split(line);
+        cmd_name = v_cptr_at(splited, 0);
+        if (strcmp(cmd_name, "udp_port") == 0)
+        {
+            char *s_udp_port = v_cptr_at(splited, 1);
+            struct mc *mc = v_mc_find_if(s->peers, (void *)_server_match_bev, bev);
+            unsigned short port = atoi(s_udp_port);
+            struct sockaddr_storage udp_addr;
+            unsigned int socklen;
+
+            memcpy(&udp_addr, mc->p.address, mc->p.len);
+            if (udp_addr.ss_family == AF_INET)
+            {
+                struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
+
+                sin->sin_port = htons(port);
+                socklen = sizeof *sin;
+            }
+            else if (udp_addr.ss_family == AF_INET6)
+            {
+                struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
+
+                sin6->sin6_port = htons(port);
+                socklen = sizeof *sin6;
+            }
+            if (mc->tunel != 1)
+            {
+                evbuffer_add_printf(out, "udp_port:%d\r\n", udp_get_port(&s->udp)); 
+                udp_register_new_peer(&s->udp,
+                                      (struct sockaddr *)&udp_addr,
+                                      socklen);
+            }
+            mc->tunel = 1;
+        }
+        v_cptr_delete(splited);
+        free(line);
+    }
 }
 
 void
@@ -86,12 +177,9 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
     struct server *s = (struct server *)ctx;
 
-    (void)bev;
-    (void)s;
     if (events & BEV_EVENT_CONNECTED)
     {
         struct mc *mc;
-        struct mc tmp;
 
         /*
          * If we received the notification that the connection is established,
@@ -99,25 +187,27 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
          * s->peers.
          */
 
-        tmp.bev = bev;
-        mc = v_mc_find_if(s->pending_peers, &tmp, _server_match_bev);
+        mc = v_mc_find_if(s->pending_peers, (void *)_server_match_bev, bev);
         if (mc != v_mc_end(s->pending_peers))
         {
+            struct mc tmp;
+
             log_info("connexion established.");
             memcpy(&tmp, mc, sizeof(tmp));
             v_mc_erase(s->pending_peers, mc);
             v_mc_push(s->peers, &tmp);
-            mc_hello(&tmp);
+            mc_hello(&tmp, &s->udp);
+            //mc_establish_tunnel(&tmp, s->udp);
         }
     }
+    if (events & BEV_EVENT_EOF)
+        log_warnx("Event callback EOF: Je fais quoi ?");
     if (events & BEV_EVENT_ERROR)
     {
         struct mc *mc;
-        struct mc tmp;
         int everr;
         int sslerr;
 
-        tmp.bev = bev;
         everr = EVUTIL_SOCKET_ERROR();
 
         if (everr != 0)
@@ -136,7 +226,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
          * Find if the exception come from a pending peer or a
          * regular peer and close it.
          */
-        mc = v_mc_find_if(s->pending_peers, &tmp, _server_match_bev);
+        mc = v_mc_find_if(s->pending_peers, (void *)_server_match_bev, bev);
         if (mc != v_mc_end(s->pending_peers))
         {
             char name[128];
@@ -148,7 +238,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         }
         else
         {
-            mc = v_mc_find_if(s->peers, &tmp, _server_match_bev);
+            mc = v_mc_find_if(s->peers, (void *)_server_match_bev, bev);
             if (mc != v_mc_end(s->peers))
             {
                 mc_close(mc);
@@ -320,7 +410,8 @@ server_init(struct server *s, struct event_base *evbase)
     ite_peer = v_sockaddr_end(serv_opts.peer_addrs);
     for (;it_peer != ite_peer; it_peer = v_sockaddr_next(it_peer))
     {
-        mc_peer_connect(s, evbase, (struct sockaddr *)&it_peer->sockaddr,
+        mc_peer_connect(s, evbase,
+                        (struct sockaddr *)&it_peer->sockaddr,
                         it_peer->len);
     }
     return 0;
