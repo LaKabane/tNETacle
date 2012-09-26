@@ -259,6 +259,8 @@ server_init(struct server *s, struct event_base *evbase)
 {
     struct cfg_sockaddress *it_listen = NULL;
     struct cfg_sockaddress *ite_listen = NULL;
+    struct cfg_sockaddress *it_client = NULL;
+    struct cfg_sockaddress *ite_client = NULL;
     struct cfg_sockaddress *it_peer = NULL;
     struct cfg_sockaddress *ite_peer = NULL;
 	struct evconnlistener *evl = NULL;
@@ -325,20 +327,20 @@ server_init(struct server *s, struct event_base *evbase)
     }
 
 	// Listen enable for client in the ports registered
-    it_listen = v_sockaddr_begin(serv_opts.client_addrs);
-    ite_listen = v_sockaddr_end(serv_opts.client_addrs);
-    /* Listen on all ListenAddress */
-    for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
+    it_client = v_sockaddr_begin(serv_opts.client_addrs);
+    ite_client = v_sockaddr_end(serv_opts.client_addrs);
+    /* Listen on all ClientAddress */
+    for (; it_client != ite_client; it_client = v_sockaddr_next(it_client), ++i)
     {
-        char listenname[INET6_ADDRSTRLEN];
+        char clientname[INET6_ADDRSTRLEN];
 		evl = evconnlistener_new_bind(evbase, listen_client_callback,
 			  s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
-		  (struct sockaddr *)&it_listen->sockaddr, it_listen->len);
+		  (struct sockaddr *)&it_client->sockaddr, it_client->len);
 		if (evl == NULL) {
 			log_warnx("Failed to allocate the listener to listen to %s",
 			  address_presentation((struct sockaddr *)
-				&it_listen->sockaddr, it_listen->len, listenname,
-				sizeof listenname));
+				&it_client->sockaddr, it_client->len, clientname,
+				sizeof clientname));
 			continue;
 		}
 		evconnlistener_set_error_cb(evl, NULL);
