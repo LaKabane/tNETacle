@@ -70,11 +70,14 @@ init_options(struct options *opt) {
     opt->compression = 1;
     opt->encryption = 1;
 
-    for (i = 0; i < TNETACLE_MAX_PORTS; ++i)
+    for (i = 0; i < TNETACLE_MAX_PORTS; ++i) {
         opt->ports[i] = -1;
+        opt->cports[i] = -1;
+    }
 
     opt->addr_family = AF_UNSPEC;
     serv_opts.listen_addrs = v_sockaddr_new();
+	serv_opts.client_addrs = v_sockaddr_new();
     serv_opts.peer_addrs = v_sockaddr_new();
 
     opt->addr = NULL;
@@ -83,7 +86,7 @@ init_options(struct options *opt) {
 }
 
 static int
-add_addr_text(struct vector_sockaddr *vsp, char *bufaddr) {
+add_sockaddr(struct vector_sockaddr *vsp, char *bufaddr) {
     struct cfg_sockaddress out;
 
     (void)memset(&out, 0, sizeof out);
@@ -91,13 +94,88 @@ add_addr_text(struct vector_sockaddr *vsp, char *bufaddr) {
     /* Take the size from the sockaddr_storage*/
     out.len = sizeof(out.sockaddr);
     /* TODO: Sanity check with socklen */
-    if (evutil_parse_sockaddr_port(bufaddr, &out.sockaddr, &out.len) == -1) {
+    if (evutil_parse_sockaddr_port(bufaddr, (struct sockaddr *)&out.sockaddr,
+      &out.len) == -1) {
         (void)fprintf(stderr, "%s: not a valid IP address\n", bufaddr);
         return -1;
     }
     /* We now have a good sockaddr_storage, with the right length*/
     v_sockaddr_push(vsp, &out);
     return 0;
+}
+
+static int
+add_listen_addrs_ports(int family, int *ports) {
+    unsigned int i;
+    struct cfg_sockaddress tmp_store;
+    struct sockaddr_in *sin = (struct sockaddr_in *)&tmp_store.sockaddr;
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&tmp_store.sockaddr;
+
+    for (i = 0; i < TNETACLE_MAX_PORTS && ports[i] != -1; ++i) {
+        (void)memset(&tmp_store, 0, sizeof tmp_store);
+    
+        if (family == AF_INET || family == AF_UNSPEC) {
+            sin->sin_family = AF_INET;
+            sin->sin_port = htons(ports[i]);
+            if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
+              &sin->sin_addr.s_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin;
+            v_sockaddr_push(serv_opts.listen_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenAddr: Added %s:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV4, ports[i]);
+        }
+        if (family == AF_INET6 || family == AF_UNSPEC) {
+            sin6->sin6_family = AF_INET6;
+            sin6->sin6_port = htons(ports[i]);
+            if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
+              &sin6->sin6_addr.s6_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin6;
+            v_sockaddr_push(serv_opts.listen_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV6, ports[i]);
+        }
+    }
+}
+
+static int
+add_client_addrs_ports(int family, int *ports) {
+    unsigned int i;
+    struct cfg_sockaddress tmp_store;
+    struct sockaddr_in *sin = (struct sockaddr_in *)&tmp_store.sockaddr;
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&tmp_store.sockaddr;
+
+    for (i = 0; i < TNETACLE_MAX_PORTS && ports[i] != -1; ++i) {
+        (void)memset(&tmp_store, 0, sizeof tmp_store);
+    
+        if (family == AF_INET || family == AF_UNSPEC) {
+            sin->sin_family = AF_INET;
+            sin->sin_port = htons(ports[i]);
+            if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
+              &sin->sin_addr.s_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin;
+            v_sockaddr_push(serv_opts.client_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenAddr: Added %s:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV4, ports[i]);
+        }
+        if (family == AF_INET6 || family == AF_UNSPEC) {
+            sin6->sin6_family = AF_INET6;
+            sin6->sin6_port = htons(ports[i]);
+            if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
+              &sin6->sin6_addr.s6_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin6;
+            v_sockaddr_push(serv_opts.client_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV6, ports[i]);
+        }
+    }
 }
 
 int yajl_null(void *ctx) {
@@ -174,6 +252,12 @@ int yajl_number(void *lctx, const char *num, size_t len) {
         for (i = 0; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i)
             ;
         serv_opts.ports[i] = ret;
+    } else if (strncmp("ClientPort", ctx->map, ctx->len) == 0) {
+        unsigned int i;
+
+        for (i = 0; i < TNETACLE_MAX_PORTS && serv_opts.cports[i] != -1; ++i)
+            ;
+        serv_opts.cports[i] = ret;
     } else {
        char *s;
 
@@ -250,54 +334,21 @@ int yajl_string(void *lctx, const unsigned char *str, size_t len) {
             return -1;
         }
     } else if (strncmp("PeerAddress", ctx->map, ctx->len) == 0) {
-        char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
+        char bufaddr[INET6_ADDRSTRLEN]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
-        add_addr_text(serv_opts.peer_addrs, bufaddr);
+        add_sockaddr(serv_opts.peer_addrs, bufaddr);
     } else if (strncmp("ListenAddress", ctx->map, ctx->len) == 0) {
-        char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
+        char bufaddr[INET6_ADDRSTRLEN]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
         if (strncmp("any", str, len) == 0) {
-            unsigned int i = 0;
-            int family = serv_opts.addr_family;
-            struct cfg_sockaddress tmp_store;
-            struct sockaddr_in *sin = &tmp_store.sockaddr;
-            struct sockaddr_in6 *sin6 = &tmp_store.sockaddr;
-
-            /* Feed local addresses */
-            for (; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i) {
-                (void)memset(&tmp_store, 0, sizeof tmp_store);
-
-                if (family == AF_INET || family == AF_UNSPEC) {
-                    sin->sin_family = AF_INET;
-                    sin->sin_port = htons(serv_opts.ports[i]);
-                    if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
-                      &sin->sin_addr.s_addr) == -1)
-                        return -1;
-                    tmp_store.len = sizeof *sin;
-                    v_sockaddr_push(serv_opts.listen_addrs, &tmp_store);
-                    if (debug == 1)
-                        fprintf(stderr, "ListenAddr: Added %s:%i\n",
-                          TNETACLE_DEFAULT_LISTEN_IPV4, serv_opts.ports[i]);
-                }
-                if (family == AF_INET6 || family == AF_UNSPEC) {
-                    sin6->sin6_family = AF_INET6;
-                    sin6->sin6_port = htons(serv_opts.ports[i]);
-                    if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
-                      &sin6->sin6_addr.s6_addr) == -1)
-                        return -1;
-                    tmp_store.len = sizeof *sin6;
-                    v_sockaddr_push(serv_opts.listen_addrs, &tmp_store);
-                    if (debug == 1)
-                        fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
-                          TNETACLE_DEFAULT_LISTEN_IPV6, serv_opts.ports[i]);
-                }
-            }
+	    add_listen_addrs_ports(serv_opts.addr_family, serv_opts.ports);
+	    add_client_addrs_ports(serv_opts.addr_family, serv_opts.cports);
         } else
-            add_addr_text(serv_opts.listen_addrs, bufaddr);
+            add_sockaddr(serv_opts.listen_addrs, bufaddr);
     } else {
         char *s;
 
@@ -395,6 +446,8 @@ tnt_parse_buf(char *p, size_t size) {
     debug = serv_opts.debug;
     if (serv_opts.ports[0] == -1)
         serv_opts.ports[0] = TNETACLE_DEFAULT_PORT;
+    if (serv_opts.cports[0] == -1)
+        serv_opts.cports[0] = CLIENT_DEFAULT_PORT;
     return 0;
 }
 

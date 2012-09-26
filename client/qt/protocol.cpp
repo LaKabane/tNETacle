@@ -5,7 +5,7 @@ QString	Protocol::add(const QString& object, const QVector<QString>& v)
 {
   QString	json("");
 
-  if (v.size() < 2 || object == "")
+  if (v.size() < 3 || object == "")
     return json;
 
   json = "{";
@@ -14,13 +14,15 @@ QString	Protocol::add(const QString& object, const QVector<QString>& v)
   json += "\": {";
 
   // TODO : make it generic, work only for Contact
-  json += "\"";
+  json += "\"Name\":\"";
   json += v[0];
-  json += "\": {";
+  json += "\",";
   json += "\"Key\": \"";
   json += v[1];
+  json += "\",";
+  json += "\"Ip\": \"";
+  json += v[2];
   json += "\"";
-  json += "}";
   //!TODO
 
   json += "}";

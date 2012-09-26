@@ -19,10 +19,11 @@ public:
 
   void          addContact(const QVector<QString>&);
   const QString getKey(const QString &);
+  const QString getIp(const QString &);
   void          delContact(const QVector<QString>&);
   void          editContact(const QVector<QString>&);
-  void	print();
-  void	clear();
+  void		print();
+  void		clear();
 
   virtual void  feedData(const QString &,const QVariant&);
   virtual const QString &getObjectName() const;

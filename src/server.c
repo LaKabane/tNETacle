@@ -49,6 +49,7 @@
 #include "log.h"
 #include "hexdump.h"
 #include "wincompat.h"
+#include "client.h"
 
 #define VECTOR_TYPE struct mc
 #define VECTOR_PREFIX mc
@@ -202,11 +203,41 @@ evssl_init(void)
     return server_ctx;
 }
 
+static
+void listen_client_callback(struct evconnlistener *evl, evutil_socket_t fd,
+  struct sockaddr *sock, int len, void *ctx)
+{
+	struct server *s = (struct server *)ctx;
+    struct event_base *base = evconnlistener_get_base(evl);
+    int errcode;
+    struct mc mc;
+
+	log_debug("A client is connecting");
+    memset(&mc, 0, sizeof mc);
+    /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
+    /* Even if we are not in a SSL context, mc_init know what to do anyway*/
+    mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
+    errcode = mc_init(&mc, base, fd, sock, (socklen_t)len, s->server_ctx);
+    if (errcode != -1)
+    {
+        bufferevent_setcb(mc.bev, client_mc_read_cb, NULL,
+                          client_mc_event_cb, s);
+        log_debug("client connected");
+        //v_mc_push(&s->peers, &mc);
+    }
+    else
+    {
+        log_notice("Failed to init a meta connexion");
+    }
+}
+
 int
 server_init(struct server *s, struct event_base *evbase)
 {
     struct cfg_sockaddress *it_listen = NULL;
     struct cfg_sockaddress *ite_listen = NULL;
+    struct cfg_sockaddress *it_client = NULL;
+    struct cfg_sockaddress *ite_client = NULL;
     struct cfg_sockaddress *it_peer = NULL;
     struct cfg_sockaddress *ite_peer = NULL;
     size_t i = 0;
@@ -257,6 +288,29 @@ server_init(struct server *s, struct event_base *evbase)
 
         v_evl_push(s->srv_list, evl);
     }
+
+	// Listen enable for client in the ports registered
+    it_client = v_sockaddr_begin(serv_opts.client_addrs);
+    ite_client = v_sockaddr_end(serv_opts.client_addrs);
+    /* Listen on all ClientAddress */
+    for (; it_client != ite_client; it_client = v_sockaddr_next(it_client), ++i)
+    {
+        char clientname[INET6_ADDRSTRLEN];
+        struct evconnlistener *evl = NULL;
+		evl = evconnlistener_new_bind(evbase, listen_client_callback,
+			  s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
+		  (struct sockaddr *)&it_client->sockaddr, it_client->len);
+		if (evl == NULL) {
+			log_warnx("Failed to allocate the listener to listen to %s",
+			  address_presentation((struct sockaddr *)
+				&it_client->sockaddr, it_client->len, clientname,
+				sizeof clientname));
+			continue;
+		}
+		evconnlistener_set_error_cb(evl, NULL);
+		evconnlistener_enable(evl);
+		v_evl_push(s->srv_list, evl);
+	}
 
     /* If we don't have any PeerAddress it's finished */
     if (v_sockaddr_size(serv_opts.peer_addrs) == 0)

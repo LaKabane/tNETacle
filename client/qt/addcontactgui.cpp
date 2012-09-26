@@ -14,7 +14,7 @@ AddContactGui::AddContactGui(Controller &controller, ClientGUI &win)
   QObject::connect(selectPubKey->button(QDialogButtonBox::Open), SIGNAL(clicked()), this, SLOT(openPubKey()));
 }
 
-AddContactGui::AddContactGui(Controller &controller, ClientGUI &win, const QString &name, const QString &key)
+AddContactGui::AddContactGui(Controller& controller, ClientGUI& win, const QString& name, const QString& key, const QString& ip)
   : QWidget(0), _controller(controller),_view(win), _initialName(name)
 {
     this->setAttribute(Qt::WA_DeleteOnClose);
@@ -23,6 +23,7 @@ AddContactGui::AddContactGui(Controller &controller, ClientGUI &win, const QStri
     QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteAddContact()));
     this->name->setText(name);
     this->pubKey->setText(key);
+    this->ip->setText(ip);
 }
 
 
@@ -33,6 +34,11 @@ AddContactGui::~AddContactGui()
 QString AddContactGui::getNewContactName() const
 {
   return (this->name->text());
+}
+
+QString AddContactGui::getContactIp() const
+{
+  return (this->ip->text());
 }
 
 const QString AddContactGui::getInitialContactName() const

@@ -4,7 +4,6 @@
 cmake_minimum_required(VERSION 2.6)
 PROJECT(client)
 FIND_PACKAGE(Qt4 REQUIRED)
-FIND_PACKAGE(Tclt REQUIRED)
 
 SET(QT_USE_QTNETWORK TRUE)
 INCLUDE(${QT_USE_FILE})
@@ -47,7 +46,6 @@ SET(client_RESOURCES
     ${CMAKE_CURRENT_LIST_DIR}/../share/img/client.qrc
 )
 
-message(${TCLT_LIBRARY})
 SET(client_LIBRARIES ${QT_LIBRARIES} ${TCLT_LIBRARY})
 
 QT4_WRAP_CPP(client_HEADERS_MOC ${client_HEADERS})

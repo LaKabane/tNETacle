@@ -18,11 +18,12 @@ class AddContactGui : public QWidget, public Ui::AddContactGui
   Q_OBJECT
   public:
   QString getNewContactName() const;
+  QString getContactIp() const;
   const QString getInitialContactName() const;
   QString getNewContactKey() const;
-  explicit AddContactGui(Controller &controller, ClientGUI &view, const QString &name, const QString &key);
+  explicit AddContactGui(Controller&, ClientGUI&, const QString&, const QString&, const QString&);
 
-  explicit AddContactGui(Controller &controller, ClientGUI &view);
+  explicit AddContactGui(Controller& controller, ClientGUI& view);
   virtual ~AddContactGui();
   QDialogButtonBox* getOkOrReject() const {return okOrReject;}
 

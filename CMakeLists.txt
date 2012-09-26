@@ -24,6 +24,7 @@ find_package(ZLIB REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
 find_package(OpenSSL REQUIRED)
+find_package(Tclt REQUIRED)
 
 if(WIN32)
 	find_package(Event COMPONENTS core REQUIRED)
@@ -54,6 +55,7 @@ include_directories(${EVENT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
+include_directories(${TCLT_INCLUDE_DIR})
 if (TUNTAP_FOUND)
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
@@ -72,11 +74,13 @@ set(SOURCES_LIST
   src/mc.c
   src/hexdump.c
   src/server.c
+  src/client.c
   src/udp.c
   src/device.c
   src/frame.c
   src/coro.c
-  src/sched.c)
+  src/sched.c
+)
 
 set(HEADERS_LIST 
     include/compress.h
@@ -98,6 +102,7 @@ set(HEADERS_LIST
     include/frame.h
     include/coro.h
     include/sched.h)
+
 # OS families specific things
 # ---------------------------
 if(UNIX)
@@ -225,6 +230,7 @@ target_link_libraries(tNETacle
         ${ZLIB_LIBRARY}
         ${YAJL_LIBRARIES}
         ${OPENSSL_LIBRARIES}
+	${TCLT_LIBRARY}
 )
 
 if (TUNTAP_FOUND)
@@ -250,4 +256,5 @@ if (ClientQT)
   include(${CMAKE_SOURCE_DIR}/client/qt/CMakeLists.txt)
 endif()
 
+include(CMakeLists.txt.local OPTIONAL)
 include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.link.local OPTIONAL)

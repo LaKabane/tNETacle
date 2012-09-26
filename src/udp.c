@@ -42,6 +42,7 @@
 #include "udp.h"
 #include "frame.h"
 #include "device.h"
+#include "tntsched.h"
 
 #define VECTOR_TYPE struct udp_peer
 #define VECTOR_PREFIX udp

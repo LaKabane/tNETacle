@@ -22,6 +22,8 @@
 #include <arpa/inet.h>
 #endif /* Windows */
 
+#include "tnetacle.h"
+
 #ifndef TNT_OPTIONS_H_ 
 #define TNT_OPTIONS_H_ 
 
@@ -46,9 +48,12 @@ struct options {
     int encryption;                /* If true encryption is allowed */
 
     int ports[TNETACLE_MAX_PORTS]; /* Port number to listen on */
+    int cports[TNETACLE_MAX_PORTS];/* Port number to listen on, for clients */
     int addr_family;               /* Address family used by the server */
     /* Addresses on which the server listens */
     struct vector_sockaddr *listen_addrs;
+    /* Addresses for the client */
+    struct vector_sockaddr *client_addrs;
     /* Addresses of others tNETacle daemons */
     struct vector_sockaddr *peer_addrs;
     char *addr;                    /* Address on the VPN */
