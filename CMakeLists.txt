@@ -78,7 +78,30 @@ set(SOURCES_LIST
   src/udp.c
   src/device.c
   src/frame.c
+  src/coro.c
+  src/sched.c
 )
+
+set(HEADERS_LIST 
+    include/compress.h
+    include/hexdump.h
+    include/log.h
+    include/mc.h
+    include/options.h
+    include/pathnames.h
+    include/server.h
+    include/tnetacle.h
+    include/tntexits.h
+    include/tntsocket.h
+    include/tun.h
+    include/vector.h
+    include/imsg.h
+    include/wincompat.h
+    include/udp.h
+    include/device.h
+    include/frame.h
+    include/coro.h
+    include/sched.h)
 
 # OS families specific things
 # ---------------------------
@@ -105,27 +128,11 @@ if (Windows)
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
   	add_definitions(-DWindows)
+    add_definitions(-DCORO_WIN32)
+
 
 	# Windows source files
 	# ------------------
-	set(HEADERS_LIST 
-	    include/compress.h
-		include/hexdump.h
-		include/log.h
-		include/mc.h
-		include/options.h
-		include/pathnames.h
-		include/server.h
-		include/tnetacle.h
-		include/tntexits.h
-		include/tntsocket.h
-		include/tun.h
-		include/vector.h
-		include/imsg.h
-		include/wincompat.h
-                include/udp.h
-                include/device.h
-                include/frame.h)
 	set(SOURCES_LIST ${SOURCES_LIST} ${HEADERS_LIST}
 		sys/wnt/conf.c
 		sys/wnt/log.c
@@ -143,17 +150,21 @@ if(Linux)
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 
 	# Linux specific Options
-	# ------------------
+	# ----------------------
         option(ENABLE_BSDCOMPAT "Enable the use of the libbsd" OFF)
 
 	# Linux specific package search
-	# ------------------
+	# -----------------------------
 	if (ENABLE_BSDCOMPAT)
                 find_package(Bsd)
 	endif()
 
+        # Definition for the coroutine backend
+        # ------------------------------------
+        add_definitions(-DCORO_UCONTEXT)
+
 	# Linux specific definitions
-	# ------------------
+	# --------------------------
 	add_definitions(-D_GNU_SOURCE)
 	add_definitions(-DHAVE_SETRESXID)
         if (ENABLE_BSDCOMPAT AND BSD_FOUND)
@@ -169,6 +180,7 @@ if(Linux)
 endif()
 
 if (OpenBSD)
+        add_definitions(-DCORO_SJLJ)
         set(CMAKE_SYSTEM_INCLUDE_PATH
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 	include_directories(/usr/local/include)
@@ -177,6 +189,7 @@ if (OpenBSD)
 endif()
 
 if (NetBSD)
+        add_definitions(-DCORO_SJLJ)
         set(CMAKE_SYSTEM_INCLUDE_PATH
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/pkg/include)
 	include_directories(/usr/pkg/include)
@@ -184,6 +197,7 @@ if (NetBSD)
 endif()
 
 if (FreeBSD)
+        add_definitions(-DCORO_SJLJ)
         set(CMAKE_SYSTEM_INCLUDE_PATH
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/local/include)
 	include_directories(/usr/local/include)
@@ -192,6 +206,7 @@ if (FreeBSD)
 endif()
 
 if (Darwin)
+        add_definitions(-DCORO_SJLJ)
 	# Darwin specific include directories (macport)
 	# ------------------
         set(CMAKE_SYSTEM_INCLUDE_PATH

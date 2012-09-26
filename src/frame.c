@@ -20,6 +20,11 @@
 #include "server.h"
 #include "frame.h"
 
+#define VECTOR_TYPE struct frame
+#define VECTOR_PREFIX frame
+#define VECTOR_NON_STATIC
+#include "vector.h"
+
 void
 frame_free(struct frame const *f)
 {
@@ -27,7 +32,8 @@ frame_free(struct frame const *f)
 }
 
 int
-frame_alloc(struct frame *frame, unsigned int size)
+frame_alloc(struct frame *frame,
+            unsigned int size)
 {
     void *tmp_raw_packet = NULL;
     void *tmp_frame_ptr = NULL;

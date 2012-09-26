@@ -42,6 +42,12 @@
 #include "tnetacle.h"
 #include "options.h"
 
+#define VECTOR_TYPE struct cfg_sockaddress
+#define VECTOR_PREFIX sockaddr
+#define DEFAULT_ALLOC_SIZE 2
+#define VECTOR_NON_STATIC
+#include "vector.h"
+
 extern int debug;
 struct options serv_opts;
 

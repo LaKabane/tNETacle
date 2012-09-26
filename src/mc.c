@@ -38,8 +38,10 @@ extern struct options serv_opts;
  */
 
 char *
-address_presentation(struct sockaddr *sock, int socklen,
-                     char *name, int namelen)
+address_presentation(struct sockaddr *sock,
+                     int socklen,
+                     char *name,
+                     int namelen)
 {
     (void)socklen;
     if (sock->sa_family == AF_INET)
@@ -67,7 +69,9 @@ address_presentation(struct sockaddr *sock, int socklen,
  * Fills the char *name parameter, and return its address.
  */
 char *
-mc_presentation(struct mc *self, char *name, int len)
+mc_presentation(struct mc *self,
+                char *name,
+                int len)
 {
     struct sockaddr *sock = self->p.address;
     int socklen = self->p.len;
@@ -88,8 +92,12 @@ mc_presentation(struct mc *self, char *name, int len)
  */
 
 int
-mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
-        socklen_t len, SSL_CTX *server_ctx)
+mc_init(struct mc *self,
+        struct event_base *evb,
+        int fd,
+        struct sockaddr *s,
+        socklen_t len,
+        SSL_CTX *server_ctx)
 {
     struct sockaddr *tmp = malloc(len);
 
@@ -186,22 +194,6 @@ mc_close(struct mc *self)
 }
 
 /*
- * This function will add a frame to the output buffer of "self".
- * This function will take care to convert the size to network byte order
- * before adding it.
- * Returns -1 on error, and the frame size otherwise.
- */
-
-int
-mc_add_frame(struct mc *self, struct frame *f)
-{
-    (void)self;
-    (void)f;
-    log_warnx("mc_add_frame is deprecated");
-    return -1;
-}
-
-/*
  * This function will add raw data to the output buffer.
  * As you might guess, this function can not check anything about the input
  * data, so try not to use it to much.  The return value is -1 if the function
@@ -209,7 +201,9 @@ mc_add_frame(struct mc *self, struct frame *f)
  */
 
 int
-mc_add_raw_data(struct mc *self, void *data, size_t size)
+mc_add_raw_data(struct mc *self,
+                void *data,
+                size_t size)
 {
     struct evbuffer *output = bufferevent_get_output(self->bev);
     char name[128];
