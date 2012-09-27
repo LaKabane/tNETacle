@@ -72,14 +72,14 @@ struct imsg_data {
 };
 
 static void
-_sighdlr(int sig) {
+sig_chld_hdlr(int sig) {
     printf("%s\n", __PRETTY_FUNCTION__);
     if (sig == SIGCHLD)
 	sigchld_recv = 1;
 }
 
 static void
-sighdlr(evutil_socket_t sig, short events, void *args) {
+sig_gen_hdlr(evutil_socket_t sig, short events, void *args) {
     struct event_base *evbase = args;
     char *name = "unknow";
     (void)events;
@@ -106,7 +106,7 @@ imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
 
     if (events & EV_READ || data->is_ready_read == 1) {
 	data->is_ready_read = 1;
-	if (dispatch_imsg(data->ibuf) == -1)
+    if (dispatch_imsg(data->ibuf) == -1)
 	    data->is_ready_read = 0;
     }
 
@@ -178,16 +178,31 @@ main(int argc, char *argv[]) {
     /* The child can die while we are still in the init phase. So we need to
      * monitor for SIGCHLD by signal
      */
-    signal(SIGCHLD, _sighdlr);
+    signal(SIGCHLD, sig_chld_hdlr);
     chld_pid = tnt_fork(imsg_fds);
 
+#ifdef Darwin
+    struct event_config *evconf = event_config_new();
+    if (evconf == NULL)
+        log_err(1, "libevent");
+    if (event_config_avoid_method(evconf, "poll") == -1 ||
+      event_config_avoid_method(evconf, "epoll") == -1 ||
+      event_config_avoid_method(evconf, "devpoll") == -1 ||
+      event_config_avoid_method(evconf, "evport") == -1 ||
+      event_config_avoid_method(evconf, "win32") == -1 ||
+      event_config_avoid_method(evconf, "kqueue") == -1)
+        log_err(1, "libevent config");
+   if ((evbase = event_base_new_with_config(evconf)) == NULL)
+        log_err(1, "libevent");
+    event_config_free(evconf);
+#else
     if ((evbase = event_base_new()) == NULL) {
-	log_err(1, "libevent");
+        log_err(1, "libevent");
     }
-
-    sigint = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
-    sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
-    sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sighdlr, evbase);
+#endif /* Darwin */
+    sigint = event_new(evbase, SIGINT, EV_SIGNAL, &sig_gen_hdlr, evbase);
+    sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sig_gen_hdlr, evbase);
+    sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sig_gen_hdlr, evbase);
 
     if (close(imsg_fds[1]))
 	log_notice("close");
@@ -197,7 +212,7 @@ main(int argc, char *argv[]) {
     data.is_ready_read = 0;
     data.ibuf = &ibuf;
     imsg_init(&ibuf, imsg_fds[0]);
-    evutil_make_socket_nonblocking(imsg_fds[0]);
+//    evutil_make_socket_nonblocking(imsg_fds[0]);
     event = event_new(evbase, imsg_fds[0],
 		      EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
 		      &imsg_callback_handler, &data);
@@ -228,6 +243,7 @@ main(int argc, char *argv[]) {
     event_free(sigterm);
     event_free(sigchld);
     event_base_free(evbase);
+    tnt_ttc_close(dev);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
@@ -288,7 +304,7 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 	    (void)memset(buf, '\0', sizeof buf);
 	    (void)memcpy(buf, imsg.data, datalen);
 	    buf[datalen] = '\0';
-	    
+
 	    log_info("receive IMSG_SET_IP: %s", buf);
 	    tnt_ttc_set_ip(dev, buf);
             tnt_ttc_up(dev);
@@ -300,4 +316,3 @@ dispatch_imsg(struct imsgbuf *ibuf) {
     }
     return 0;
 }
-
