@@ -114,10 +114,11 @@ mc_init(struct mc *self,
         self->bev = bufferevent_socket_new(evb, fd, BEV_OPT_CLOSE_ON_FREE);
     }
 
-    
+
     if (tmp == NULL || self->bev == NULL)
     {
-        free(tmp); /* We should probably free self->bev too */
+        event_free(self->bev);
+        free(tmp);
         log_notice("failed to allocate the memory needed to establish a new "
                    "meta-connection");
         return -1;
