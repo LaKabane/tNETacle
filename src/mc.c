@@ -117,6 +117,7 @@ mc_init(struct mc *self,
     
     if (tmp == NULL || self->bev == NULL)
     {
+        free(tmp); /* We should probably free self->bev too */
         log_notice("failed to allocate the memory needed to establish a new "
                    "meta-connection");
         return -1;

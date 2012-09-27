@@ -48,6 +48,7 @@ tnt_compress(uchar *in, const size_t in_size, size_t *out_size)
     error = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
     if (error != Z_OK)
     {
+        free(out);
         log_warnx("zlib: error on deflateInit (%d)\n", error);
         return (NULL);
     }
