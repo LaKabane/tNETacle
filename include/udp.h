@@ -19,7 +19,7 @@
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
 #include "coro.h"
-#include "sched.h"
+#include "tntsched.h"
 
 #define TNETACLE_UDP_PORT 7676
 

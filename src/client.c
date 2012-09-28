@@ -24,11 +24,13 @@
 #endif
 
 #include <event2/bufferevent.h>
+#include <event2/buffer.h>
 
 #include "client.h"
 #include "tclt_json.h"
 #include "server.h"
 #include "options.h"
+#include "log.h"
 
 static int
 _server_match_bev(struct mc const *a, struct mc const *b)
@@ -56,14 +58,15 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
             ele = tclt_parse(buff, size);
             while (ele != NULL)
             {
-                if (ele->type == MAP_KEY)
+                if (ele->type == E_MAP_KEY)
                 {
 					if (strcmp(ele->u_value.buf, "Ip") == 0)
 					{
+						struct cfg_sockaddress out;
+
                         ele = ele->next;
 						if (ele == NULL)
 							return;
-						struct cfg_sockaddress out;
 						(void)memset(&out, 0, sizeof out);
 						/* Take the size from the sockaddr_storage*/
 						out.len = sizeof(out.sockaddr);
