@@ -30,13 +30,14 @@ public:
   const QString		getInitialContactName() const;
   QString		getNewContactName() const;
   QString		getNewContactKey() const;
+  QString		getContactIp() const;
 
   QString		getRootName() const;
   QString		getRootKey() const;
   QString		getRootIP() const;
   QString		getRootPort() const;
 
-  void			createAddContact(const QString &, const QString &);
+  void			createAddContact(const QString&, const QString&, const QString&);
   void			createRootNodeGui(const QString &, const QString &, const QString &, quint16);
 
   void			createConfigGui();
@@ -71,6 +72,9 @@ public slots:
     void		start();
 
     void		deleteConfig();
+
+    void		about();
+      void		aboutQt();
 };
 
 #endif // CLIENTGUI_H

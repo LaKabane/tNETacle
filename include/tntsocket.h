@@ -28,6 +28,8 @@
 
 #include <event2/util.h>
 
+/* The values must stay like this */
+
 enum tnt_socket_proto {
   IPv4 = AF_INET,
   IPv6 = AF_INET6,

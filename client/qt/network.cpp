@@ -1,11 +1,12 @@
 #include "network.h"
 #include "controller.h"
+#include "utils.h"
+#include "exception.h"
 #include <QBuffer>
 
 Network::Network(Controller& controller)
   : _socket(),
     _controller(controller),
-    _parser(),
     _isConnected(false)
 {
   QObject::connect(&_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
@@ -25,18 +26,25 @@ void Network::read()
   QByteArray data = _socket.peek(_socket.size());
   device.write(data);
   device.close();
-   //QVariant var = _parser.parse(&_socket, &ok);
 
-  bool ok;
-  QVariant var = _parser.parse(&device, &ok);
-  if (!ok)
-    {
-      qDebug() << "error parsing";
-      _controller.error(_parser.errorString());
-      return ;
-    }
+  QVariant* var;
+  try
+  {
+	var = Utils::getVariant(device.buffer().constData(), device.buffer().size());
+  }
+  catch (Exception* e)
+  {
+    this->_controller.printError(e->getMessage());
+    delete e;
+  }
+  if (var == 0)
+  {
+	qDebug() << device.data();
+	return ;
+  }
   _socket.read(data.size());
-  _controller.feedData(var);
+  _controller.feedData(*var);
+  //delete var;
 }
 
 void Network::write(const QString& buff)

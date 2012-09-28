@@ -30,6 +30,7 @@
 #include "server.h"
 #include "tnetacle.h"
 #include "options.h"
+#include "udp.h"
 
 extern struct options serv_opts;
 
@@ -38,8 +39,10 @@ extern struct options serv_opts;
  */
 
 char *
-address_presentation(struct sockaddr *sock, int socklen,
-                     char *name, int namelen)
+address_presentation(struct sockaddr *sock,
+                     int socklen,
+                     char *name,
+                     int namelen)
 {
     (void)socklen;
     if (sock->sa_family == AF_INET)
@@ -67,7 +70,9 @@ address_presentation(struct sockaddr *sock, int socklen,
  * Fills the char *name parameter, and return its address.
  */
 char *
-mc_presentation(struct mc *self, char *name, int len)
+mc_presentation(struct mc *self,
+                char *name,
+                int len)
 {
     struct sockaddr *sock = self->p.address;
     int socklen = self->p.len;
@@ -88,8 +93,12 @@ mc_presentation(struct mc *self, char *name, int len)
  */
 
 int
-mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
-        socklen_t len, SSL_CTX *server_ctx)
+mc_init(struct mc *self,
+        struct event_base *evb,
+        int fd,
+        struct sockaddr *s,
+        socklen_t len,
+        SSL_CTX *server_ctx)
 {
     struct sockaddr *tmp = malloc(len);
 
@@ -105,10 +114,11 @@ mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
         self->bev = bufferevent_socket_new(evb, fd, BEV_OPT_CLOSE_ON_FREE);
     }
 
-    
+
     if (tmp == NULL || self->bev == NULL)
     {
         free(tmp); /* We should probably free self->bev too */
+        free(tmp);
         log_notice("failed to allocate the memory needed to establish a new "
                    "meta-connection");
         return -1;
@@ -120,43 +130,70 @@ mc_init(struct mc *self, struct event_base *evb, int fd, struct sockaddr *s,
     return 0;
 }
 
+int
+mc_peer_connect(struct server *s,
+                struct event_base *evbase,
+                struct sockaddr *sock,
+                int socklen)
+{
+    int err;
+    struct mc tmp;
+    char peername[INET6_ADDRSTRLEN];
+
+    address_presentation(sock, socklen, peername, sizeof(peername));
+    memset(&tmp, 0, sizeof(tmp));
+    tmp.ssl_flags = BUFFEREVENT_SSL_CONNECTING;
+    err = mc_init(&tmp, evbase, -1, sock, socklen, s->server_ctx);
+    if (err == -1) {
+        log_warn("unable to allocate a socket for connecting to %s",
+                 peername);
+        return err;
+    }
+    bufferevent_setcb(tmp.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
+    err = bufferevent_socket_connect(tmp.bev, sock, socklen);
+    if (err == -1) {
+        log_warn("unable to connect to %s", peername);
+        return err;
+    }
+    v_mc_push(s->pending_peers, &tmp);
+    return 0;
+}
+
+int
+mc_peer_accept(struct server *s,
+               struct event_base *evbase,
+               struct sockaddr *sock,
+               int socklen,
+               int fd)
+{
+    int errcode;
+    struct mc mc;
+    char peername[INET6_ADDRSTRLEN];
+
+    memset(&mc, 0, sizeof mc);
+    address_presentation(sock, socklen, peername, sizeof(peername));
+    /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
+    /* Even if we are not in a SSL context, mc_init know what to do anyway*/
+    mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
+    errcode = mc_init(&mc, evbase, fd, sock, socklen, s->server_ctx);
+    if (errcode == -1)
+    {
+        log_notice("Failed to init a meta connexion with %s", peername);
+        return errcode;
+    }
+    bufferevent_setcb(mc.bev, server_mc_read_cb, NULL,
+                      server_mc_event_cb, s);
+    log_debug("Starting to peer with %s", peername);
+    v_mc_push(s->peers, &mc);
+    return 0;
+}
+
+
 void
 mc_close(struct mc *self)
 {
     free(self->p.address);
     bufferevent_free(self->bev);
-}
-
-/*
- * This function will add a frame to the output buffer of "self".
- * This function will take care to convert the size to network byte order
- * before adding it.
- * Returns -1 on error, and the frame size otherwise.
- */
-
-int
-mc_add_frame(struct mc *self, struct frame *f)
-{
-    unsigned short size_networked = htons(f->size);
-    struct evbuffer *output = bufferevent_get_output(self->bev);
-    char name[128];
-    int err;
-
-    err = evbuffer_add(output, &size_networked, sizeof(size_networked));
-    if (err == -1)
-    {
-        log_notice("error while crafting the buffer to send to %s",
-                   mc_presentation(self, name, sizeof name));
-        return -1;
-    }
-    err = evbuffer_add(output, f->frame, f->size);
-    if (err == -1)
-    {
-        log_notice("error while crafting the buffer to send to %s",
-                   mc_presentation(self, name, sizeof name));
-        return -1;
-    }
-    return f->size;
 }
 
 /*
@@ -167,7 +204,9 @@ mc_add_frame(struct mc *self, struct frame *f)
  */
 
 int
-mc_add_raw_data(struct mc *self, void *data, size_t size)
+mc_add_raw_data(struct mc *self,
+                void *data,
+                size_t size)
 {
     struct evbuffer *output = bufferevent_get_output(self->bev);
     char name[128];
@@ -180,4 +219,26 @@ mc_add_raw_data(struct mc *self, void *data, size_t size)
             size, mc_presentation(self, name, sizeof name));
     }
     return size;
+}
+
+/*
+ * This function is called when we connect to a peer.
+ * tNETacle is a polite software, using a polite protocol, so we say hello !
+ */
+int
+mc_hello(struct mc *self, struct udp *udp)
+{
+    struct evbuffer *output = bufferevent_get_output(self->bev);
+    unsigned short port = udp_get_port(udp);
+
+    evbuffer_add_printf(output, "Hello ~!\r\n");
+    evbuffer_add_printf(output, "udp_port:%d\r\n", port);
+    return 0;
+}
+
+int
+mc_establish_tunnel(struct mc *self)
+{
+    (void)self;
+    return 0;
 }

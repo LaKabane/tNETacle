@@ -17,56 +17,90 @@
 #ifndef SERVER_KW2DIKER
 #define SERVER_KW2DIKER
 
+#include "networking.h"
+
+/*
+ * We include this one after networking.h because openssl includes windows.h
+ * leading to a redifinition of most of the wsaapi symbols on Windows.
+ * Seriously, fuck you OpenSSL.
+ */
 #include <openssl/ssl.h> /* Can not forward declare SSL* types*/
-#include "mc.h"
+
+#include "udp.h"
 
 struct evconnlistener;
-struct sockaddr;
 struct bufferevent;
 struct event_base;
-
-#if defined Windows
-# define ssize_t SSIZE_T
-#endif
+struct vector_evl;
+struct vector_mc;
+struct sockaddr;
+struct frame;
+struct mc;
 
 #define VECTOR_TYPE struct mc
 #define VECTOR_PREFIX mc
-#include "vector.h"
-
-struct frame {
-  unsigned short size;
-  void *frame;
-};
-
-#define VECTOR_TYPE struct frame
-#define VECTOR_PREFIX frame
+#define VECTOR_FORWARD
 #include "vector.h"
 
 #define VECTOR_TYPE struct evconnlistener*
 #define VECTOR_PREFIX evl
 #define VECTOR_TYPE_SCALAR
+#define VECTOR_FORWARD
 #include "vector.h"
 
-struct server {
-  struct vector_evl srv_list; /*list of the listenners*/
-  struct event *udp_endpoint;
-  struct event *device;
-  struct vector_mc peers; /* The actual list of peers */
-  struct vector_mc pending_peers; /* Pending in connection peers*/
-  struct vector_frame frames_to_send;
-  SSL_CTX *server_ctx;
-  struct event_base *evbase;
+#define VECTOR_TYPE struct frame
+#define VECTOR_PREFIX frame
+#define VECTOR_FORWARD
+#include "vector.h"
+
+
 #if defined Windows
-  struct bufferevent *pipe_endpoint;
+# define ssize_t SSIZE_T
+#endif
+
+#pragma pack(push, 1)
+struct packet_hdr
+{
+    unsigned short size;
+};
+#pragma pack(pop)
+
+struct server 
+{
+  struct vector_evl     *srv_list; /*list of the listenners*/
+  struct udp            udp;
+  struct event          *device;
+  struct vector_mc      *peers; /* The actual list of peers */
+  struct vector_mc      *pending_peers; /* Pending in connection peers*/
+  struct vector_frame   *frames_to_send;
+  struct event_base     *evbase;
+  SSL_CTX               *server_ctx;
+#if defined Windows
+  struct bufferevent    *pipe_endpoint;
 #endif
 };
 
 SSL_CTX *evssl_init(void);
-int server_init(struct server *, struct event_base *);
-void server_set_device(struct server *, int fd);
+
+int server_init(struct server *,
+                struct event_base *);
+
+void server_set_device(struct server *,
+                       int fd);
 
 #if defined Windows
-void broadcast_to_peers(struct server *s);
+void broadcast_udp_to_peers(struct server *s);
+
+int frame_alloc(struct frame *,
+                unsigned int size);
 #endif
+
+/* I didn't want to do this */
+void server_mc_event_cb(struct bufferevent *bev,
+                        short events,
+                        void *ctx);
+
+void server_mc_read_cb(struct bufferevent *bev,
+                       void *ctx);
 
 #endif /* end of include guard: SERVER_KW2DIKER */

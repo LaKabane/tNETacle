@@ -2,12 +2,7 @@
 # define NETWORK_H_
 
 #include <QString>
-#include <QTcpSocket>
-#ifdef WIN32
-#include <qjson/parser>
-#else
-#include <qjson/parser.h>
-#endif
+#include <QSslSocket>
 
 class Controller;
 
@@ -33,10 +28,9 @@ private slots:
   void		disconnected();
 
 private:
-  QTcpSocket    _socket;
-  Controller&   _controller;
-  QJson::Parser _parser;
-  bool		_isConnected;
+  QSslSocket	_socket;
+  Controller&	_controller;
+  bool			_isConnected;
 };
 
 #endif /* !NETWORK_H_ */

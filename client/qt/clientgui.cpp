@@ -40,6 +40,10 @@ ClientGUI::ClientGUI(QMainWindow *parent) :
    QObject::connect(actionConnect, SIGNAL(activated()), this, SLOT(start()));
    QObject::connect(actionConnect2, SIGNAL(activated()), this, SLOT(start()));
 
+   QObject::connect(actionAbout, SIGNAL(activated()), this, SLOT(about()));
+
+   QObject::connect(actionAboutQt, SIGNAL(activated()), this, SLOT(aboutQt()));
+
    actionConnect->setVisible(true);
    actionConnect2->setVisible(true);
    actionAddContact->setVisible(false);
@@ -119,6 +123,13 @@ QString ClientGUI::getNewContactKey() const
   return this->_addContact->getNewContactKey();
 }
 
+QString ClientGUI::getContactIp() const
+{
+    if (this->_addContact == 0)
+        return *new QString("");// TODO throw a fatal exception
+    return this->_addContact->getContactIp();
+}
+
 QString ClientGUI::getRootName() const
 {
   if (!this->_rootNode)
@@ -156,10 +167,10 @@ const QMap<QString, QVariant>* ClientGUI::getChangesInConfig() const
 }
 
 
-void ClientGUI::createAddContact(const QString& name, const QString &key) {
+void ClientGUI::createAddContact(const QString& name, const QString& key, const QString& ip) {
   if (_addContact)
     return ;
-  _addContact = new AddContactGui(this->_controller, *this, name, key);
+  _addContact = new AddContactGui(this->_controller, *this, name, key, ip);
 
   QObject::connect(_addContact, SIGNAL(destroyed()), this, SLOT(addContactDeleted()));
   _addContact->show();
@@ -286,4 +297,17 @@ void ClientGUI::disconnected()
   actionDeleteContact->setVisible(false);
   actionAddAContact->setVisible(false);
   actionDeleteAContact->setVisible(false);
+}
+
+void ClientGUI::about()
+{
+   QMessageBox messageAbout;
+   QString message = tr(QString::fromUtf8("tNETacle permet de créer de façon simple des réseaux privés virtuels hautement configurables. Grâce à son interface claire il met à la portée de tous l'utilisation de ces réseaux et est intrinsèquement résistant aux pannes et respectueux de la vie privée du fait de son architecture décentralisée et de son chiffrement fort.").toStdString().c_str());
+   messageAbout.about(0, "tNETacle", message);
+}
+
+void ClientGUI::aboutQt()
+{
+   QMessageBox messageAbout;
+   messageAbout.aboutQt(0, "tNETacle");
 }

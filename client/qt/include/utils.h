@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Tristan Le Guern <leguern AT medu DOT se>
+ * Copyright (c) 2012 Florent Tribouilloy <tribou_f AT epitech DOT net>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,25 +14,30 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef TNETACLE_TUN_H_
-#define TNETACLE_TUN_H_
+#ifndef UTILS_H_
+# define UTILS_H_
 
-# if defined USE_LIBTUNTAP
-#  include <tuntap.h>
-# elif defined USE_TAPCFG
-#  include <tapcfg.h>
-#  define device tapcfg_s
-# else
-#  error "You must define USE_LIBTUNTAP or USE_TAPCFG"
-# endif
+#include <QVariant>
+#include "tclt_json.h"
 
-struct device	*tnt_ttc_open(int);
-void		 tnt_ttc_close(struct device *);
-int		 tnt_ttc_set_ip(struct device *, const char *);
-int		 tnt_ttc_up(struct device *);
-int		 tnt_ttc_down(struct device *);
-intptr_t	 tnt_ttc_get_fd(struct device *);
-int		 tnt_ttc_get_mtu(struct device *dev);
+class Utils
+{
+public:
+	static QVariant* getVariant(const char *buf, size_t len);
 
-#endif
+	static QVariant createVariantSimple(elements **e, bool &ok);
+	static QVariant createVariantArray(elements **e, bool &ok);
+	static QVariant createVariantMap(elements **e, bool &ok);
+	static QVariant createVariantWithKey(elements **e, bool &ok);
+	static QVariant* createVariant(elements *e);
+};
 
+struct s_elementType
+{
+	enum element_type type;
+	QVariant (*fun)(elements **e, bool &ok);
+};
+
+typedef struct s_elementType eType;
+
+#endif /* !UTILS_H_ */

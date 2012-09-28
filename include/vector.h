@@ -13,9 +13,6 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#ifdef Windows
-# include <WinSock2.h>
-#endif
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -37,21 +34,43 @@
 #error "You must define the macro VECTOR_PREFIX prior to include vector.h"
 #endif
 
+#if defined VECTOR_FORWARD
+
+# define specifier 
+
+#elif !defined VECTOR_NON_STATIC
+
 #ifndef TYPE_SPECIFIER
-# if __STDC_VERSION__ >= 199901L
-#  define specifier static inline
-# elif defined __GNUC__
-#  define specifier static __inline
-# else
-#  define specifier static
-# endif
+#  if __STDC_VERSION__ >= 199901L
+#   define specifier static inline
+#  elif defined __GNUC__
+#   define specifier static __inline
+#  else
+#   define specifier static
+#  endif
 #else
 #  define specifier TYPE_SPECIFIER
+#endif
+
+#else
+
+#define specifier 
+
 #endif
 
 #define _XTYPE_NAME(name, pr) name ## pr
 #define _TYPE_NAME(name, pr) _XTYPE_NAME(name, pr)
 #define vector_name _TYPE_NAME(vector_, VECTOR_PREFIX)
+
+#define NAME__(p, t, name) p ## _ ## t ## _ ## name
+#define NAME_(p, t, name) NAME__(p, t, name)
+#define vector_(name) NAME_(v, VECTOR_PREFIX, name)
+
+#ifdef VECTOR_FORWARD
+
+struct vector_name;
+
+#else
 
 struct vector_name {
   VECTOR_TYPE *vec;
@@ -59,10 +78,10 @@ struct vector_name {
   size_t alloc_size;
 };
 
-#define NAME__(p, t, name) p ## _ ## t ## _ ## name
-#define NAME_(p, t, name) NAME__(p, t, name)
-#define vector_(name) NAME_(v, VECTOR_PREFIX, name)
+#endif
 
+specifier struct vector_name *vector_(new)(void);
+specifier unsigned int vector_(size)(struct vector_name *v);
 specifier void vector_(init)(struct vector_name *v);
 specifier int vector_(resize)(struct vector_name *v, size_t);
 specifier void vector_(insert_range)(struct vector_name *, type *, type *, type *);
@@ -80,22 +99,40 @@ specifier type vector_(front)(struct vector_name *v);
 specifier type vector_(back)(struct vector_name *v);
 specifier type *vector_(frontref)(struct vector_name *v);
 specifier type *vector_(backref)(struct vector_name *v);
-specifier type *vector_(find_if)(struct vector_name *v, type *val, int (*)(type const *, type const *));
+specifier type *vector_(find_if)(struct vector_name *v,
+                                 int (*)(type const *, void *),
+                                 void *ctx);
 specifier void vector_(clean)(struct vector_name *v);
-#ifdef VECTOR_TYPE_SCALAR
+# ifdef VECTOR_TYPE_SCALAR
 
 specifier type *vector_(find)(struct vector_name *v, type *val);
 specifier void vector_(foreach)(struct vector_name *v, void (*)(type));
 specifier void vector_(foreach_ctx)(struct vector_name *v, void (*)(type, void *), void *ctx);
 specifier void vector_(push)(struct vector_name *v, type val);
 
-#else
+# else
 
 specifier void vector_(foreach)(struct vector_name *v, void (*)(type const *));
 specifier void vector_(foreach_ctx)(struct vector_name *v, void (*)(type const *, void *), void *ctx);
 specifier void vector_(push)(struct vector_name *v, type *val);
-#endif
 
+# endif
+
+#ifndef VECTOR_FORWARD
+
+specifier unsigned int vector_(size)(struct vector_name *v)
+{
+    return v->size;
+}
+
+specifier struct vector_name *vector_(new)(void)
+{
+    struct vector_name *v = NULL;
+
+    v = malloc(sizeof(struct vector_name));
+    vector_(init)(v);
+    return v;
+}
 
 specifier void vector_(init)(struct vector_name  *v)
 {
@@ -222,6 +259,7 @@ specifier void vector_(delete)(struct vector_name  *v)
   if (v->vec != NULL) {
     free(v->vec);
   }
+  free(v);
 }
 
 specifier type * vector_(begin)(struct vector_name  *v)
@@ -298,8 +336,9 @@ specifier void vector_(erase_range)(struct vector_name *v,
   }
 }
 
-specifier type *vector_(find_if)(struct vector_name *v, type *ptr,
-                                       int (*cmp)(type const *, type const *))
+specifier type *vector_(find_if)(struct vector_name *v,
+                                 int (*cmp)(type const *, void *),
+                                 void *ctx)
 {
   type* it = NULL;
   type* ite = NULL;
@@ -308,7 +347,7 @@ specifier type *vector_(find_if)(struct vector_name *v, type *ptr,
        ite = vector_(end)(v);
        it != ite;
        it = vector_(next)(it)) {
-    if (cmp(it, ptr)) {
+    if (cmp(it, ctx)) {
       return it;
     }
   }
@@ -399,12 +438,16 @@ specifier void vector_(foreach_ctx)(struct vector_name *v,
 #undef type
 #undef specifier
 
+#endif
+
 #ifndef VECTOR_DEV_MODE
-# undef vector_
+# undef vector
+# undef type
 # undef vector_name
 # undef DEFAULT_ALLOC_SIZE
 # undef default_alloc_size
 # undef VECTOR_TYPE
 # undef VECTOR_PREFIX
 # undef VECTOR_TYPE_SCALAR
+# undef VECTOR_FORWARD
 #endif
