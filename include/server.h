@@ -75,6 +75,7 @@ struct server
   struct vector_frame   *frames_to_send;
   struct event_base     *evbase;
   SSL_CTX               *server_ctx;
+  struct mc             mc_client;
 #if defined Windows
   struct bufferevent    *pipe_endpoint;
 #endif
