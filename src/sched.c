@@ -16,22 +16,116 @@
 #include <errno.h>
 #include <assert.h>
 #include <event2/event.h>
-#include "networking.h"
+//#include "networking.h"
 #include "coro.h"
-#include "log.h"
+//#include "log.h"
 #include "tntsched.h"
+
+
+void sched_dispatch(evutil_socket_t fd, short event, void *ctx);
+
+#define DEBUG fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__)
+
+struct rw_events
+{
+    struct event *r_event;
+    struct event *w_event;
+};
+
+#define MAP_KEY_TYPE evutil_socket_t
+#define MAP_VALUE_TYPE struct rw_events
+#define MAP_PREFIX fd_ev
+#include "map.h"
 
 struct fiber_args
 {
     struct fiber *fib;
-    struct coro_context *base_ctx;
-    void *userptr;
+    intptr_t userptr;
+    struct map_fd_ev *map_fe;
 };
 
 #define VECTOR_TYPE struct fiber*
 #define VECTOR_PREFIX fiber
 #define VECTOR_TYPE_SCALAR
 #include "vector.h"
+
+struct rw_events *get_events(struct fiber_args *s, int fd, short event)
+{
+    struct rw_events *t;
+
+    t = m_fd_ev_find(s->map_fe, fd);
+    if (t == NULL)
+    {
+        struct rw_events ev;
+
+        ev.w_event = NULL;
+        ev.r_event = NULL;
+        if (event == EV_READ)
+        {
+            ev.r_event = event_new(s->fib->sched_back_ref->evbase,
+                                   fd,
+                                   EV_READ,
+                                   sched_dispatch,
+                                   s->fib);
+        }
+        else if (event == EV_WRITE)
+        {
+            ev.w_event = event_new(s->fib->sched_back_ref->evbase,
+                                   fd,
+                                   EV_WRITE,
+                                   sched_dispatch,
+                                   s->fib);
+        }
+        m_fd_ev_insert(s->map_fe, fd, ev);
+        return m_fd_ev_find(s->map_fe, fd);
+    }
+    else
+    {
+        if ((event == EV_READ && t->r_event != NULL)
+            || (event == EV_WRITE && t->w_event != NULL))
+            return t;
+        else
+        {
+            if (event == EV_READ)
+            {
+                t->r_event = event_new(s->fib->sched_back_ref->evbase,
+                                       fd,
+                                       EV_READ,
+                                       sched_dispatch,
+                                       s->fib);
+            }
+            else if (event == EV_WRITE)
+            {
+                t->w_event = event_new(s->fib->sched_back_ref->evbase,
+                                       fd,
+                                       EV_WRITE,
+                                       sched_dispatch,
+                                       s->fib);
+            }
+        }
+    }
+    return NULL;
+}
+
+void sched_fiber_exit(struct fiber_args *s,
+                      int val)
+{
+    coro_context *src;
+    coro_context *dst;
+
+    src = &s->fib->fib_ctx;
+    dst = s->fib->sched_back_ref->origin_ctx;
+
+    m_fd_ev_delete(s->map_fe);
+    if (s->fib->userland_event != NULL)
+        event_free(s->fib->userland_event);
+
+    s->fib->fib_op.op_type = FREE;
+    s->fib->fib_op.arg1 = val;
+
+    free(s);
+    coro_transfer(src, dst);
+}
 
 int async_recvfrom(struct fiber_args *s,
                    int fd,
@@ -43,12 +137,17 @@ int async_recvfrom(struct fiber_args *s,
 {
     int res;
 
-    res = recvfrom(fd, buf, len, flag, sock, socklen);
+    res = recvfrom(fd, buf, len, flag, sock, (socklen_t *)socklen);
     if (res == -1)
     {
         if (EVUTIL_SOCKET_ERROR() == EAGAIN)
         /* There is no pending data, transfert the exe stream*/
         {
+            struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
+            struct rw_events *it;
+
+            it = get_events(s, fd, EV_READ);
+            event_add(it->r_event, NULL);
             s->fib->fib_op.op_type = RECVFROM;
             s->fib->fib_op.fd = fd;
             s->fib->fib_op.arg1 = (intptr_t)fd;
@@ -57,12 +156,13 @@ int async_recvfrom(struct fiber_args *s,
             s->fib->fib_op.arg4 = (intptr_t)flag;
             s->fib->fib_op.arg5 = (intptr_t)sock;
             s->fib->fib_op.arg6 = (intptr_t)socklen;
-            coro_transfer(&s->fib->fib_ctx, s->base_ctx);
+            coro_transfer(&s->fib->fib_ctx, origin);
             return s->fib->fib_op.ret;
         }
     }
     return res;
 }
+
 
 int async_accept(struct fiber_args *s,
                  int fd,
@@ -71,25 +171,163 @@ int async_accept(struct fiber_args *s,
 {
     int res_fd;
 
-    res_fd = accept(fd, sock, socklen);
+    res_fd = accept(fd, sock, (socklen_t *)socklen);
     if (res_fd == -1)
     {
         if (EVUTIL_SOCKET_ERROR() == EAGAIN)
-        /* There is no one to wait for */
         {
+            struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
+            struct rw_events *it;
+
+            it = get_events(s, fd, EV_READ);
+            event_add(it->r_event, NULL);
             s->fib->fib_op.op_type = ACCEPT;
             s->fib->fib_op.fd = (intptr_t)fd;
             s->fib->fib_op.arg1 = (intptr_t)fd;
             s->fib->fib_op.arg2 = (intptr_t)sock;
             s->fib->fib_op.arg3 = (intptr_t)socklen;
-            coro_transfer(&s->fib->fib_ctx, s->base_ctx);
+            coro_transfer(&s->fib->fib_ctx, origin);
+            evutil_make_socket_nonblocking(s->fib->fib_op.ret);
             return s->fib->fib_op.ret;
         }
     }
+    evutil_make_socket_nonblocking(res_fd);
     return res_fd;
 }
 
-void *sched_get_userptr(struct fiber_args *args)
+ssize_t async_recv(struct fiber_args *s,
+               int fd,
+               void *buf,
+               size_t len,
+               int flags)
+{
+    ssize_t ret;
+
+    ret = recv(fd, buf, len, flags);
+    if (ret == -1)
+    {
+        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        {
+            struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
+            struct rw_events *it;
+
+            it = get_events(s, fd, EV_READ);
+            event_add(it->r_event, NULL);
+            s->fib->fib_op.op_type = RECV;
+            s->fib->fib_op.fd = (intptr_t)fd;
+            s->fib->fib_op.arg1 = (intptr_t)fd;
+            s->fib->fib_op.arg2 = (intptr_t)buf;
+            s->fib->fib_op.arg3 = (intptr_t)len;
+            s->fib->fib_op.arg4 = (intptr_t)flags;
+            coro_transfer(&s->fib->fib_ctx, origin);
+            return (ssize_t)s->fib->fib_op.ret;
+        }
+    }
+    return ret;
+}
+
+ssize_t async_send(struct fiber_args *s,
+               int fd,
+               void const *buf,
+               size_t len,
+               int flags)
+{
+    ssize_t ret;
+
+    ret = send(fd, buf, len, flags);
+    if (ret == -1)
+    {
+        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        {
+            struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
+            struct rw_events *it;
+
+            it = get_events(s, fd, EV_WRITE);
+            event_add(it->r_event, NULL);
+            s->fib->fib_op.op_type = SEND;
+            s->fib->fib_op.fd = (intptr_t)fd;
+            s->fib->fib_op.arg1 = (intptr_t)fd;
+            s->fib->fib_op.arg2 = (intptr_t)buf;
+            s->fib->fib_op.arg3 = (intptr_t)len;
+            s->fib->fib_op.arg4 = (intptr_t)flags;
+            coro_transfer(&s->fib->fib_ctx, origin);
+            return (ssize_t)s->fib->fib_op.ret;
+        }
+    }
+    return ret;
+}
+
+ssize_t async_sendto(struct fiber_args *s,
+               int fd,
+               void const *buf,
+               size_t len,
+               int flags,
+               struct sockaddr const *dst,
+               int addrlen)
+{
+    ssize_t ret;
+
+    ret = sendto(fd, buf, len, flags, dst, addrlen);
+    if (ret == -1)
+    {
+        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        {
+            struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
+            struct rw_events *it;
+
+            it = get_events(s, fd, EV_WRITE);
+            event_add(it->r_event, NULL);
+            s->fib->fib_op.op_type = SEND;
+            s->fib->fib_op.fd = (intptr_t)fd;
+            s->fib->fib_op.arg1 = (intptr_t)fd;
+            s->fib->fib_op.arg2 = (intptr_t)buf;
+            s->fib->fib_op.arg3 = (intptr_t)len;
+            s->fib->fib_op.arg4 = (intptr_t)flags;
+            s->fib->fib_op.arg5 = (intptr_t)dst;
+            s->fib->fib_op.arg6 = (intptr_t)addrlen;
+            coro_transfer(&s->fib->fib_ctx, origin);
+            return (ssize_t)s->fib->fib_op.ret;
+        }
+    }
+    return ret;
+}
+
+intptr_t async_yield(struct fiber_args *s,
+                     intptr_t yielded)
+{
+    struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
+    struct fiber *parent = NULL;
+
+    parent = ((struct fiber *)s->fib->fib_op.fd);
+    s->fib->fib_op.op_type = YIELD;
+    s->fib->fib_op.arg1 = yielded;
+    if (parent != NULL)
+    {
+        event_active(((struct fiber *)s->fib->fib_op.fd)->userland_event,
+                     EV_TIMEOUT, 0);
+    }
+    coro_transfer(&s->fib->fib_ctx, origin);
+    return s->fib->fib_op.ret;
+}
+
+intptr_t async_continue(struct fiber_args *A,
+                        struct fiber *F,
+                        intptr_t data)
+{
+    struct coro_context *origin = A->fib->sched_back_ref->origin_ctx;
+
+    A->fib->fib_op.op_type = YIELD;
+    F->fib_op.fd = (intptr_t)A->fib;
+    F->fib_op.ret = data;
+    event_active(F->userland_event,
+                 EV_TIMEOUT, 0);
+    coro_transfer(&A->fib->fib_ctx, origin);
+    return F->fib_op.arg1;
+}
+
+
+
+intptr_t sched_get_userptr(struct fiber_args *args)
 {
     return args->userptr;
 }
@@ -100,7 +338,6 @@ struct sched *sched_new(struct event_base *evbase)
 
     sched = malloc(sizeof(*sched));
     memset(sched, 0, sizeof(*sched));
-    sched->fibers = v_fiber_new();
     sched->evbase = evbase;
     return sched;
 }
@@ -109,10 +346,12 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
 {
     struct fiber *fib = (struct fiber *)ctx;
     struct sched *S = fib->sched_back_ref;
+    struct coro_context cctx;
 
+    (void)fd;
+    coro_create(&cctx, NULL, NULL, NULL, 0);
     if (event & EV_READ)
     {
-        assert(fd == fib->fib_op.fd);
         switch (fib->fib_op.op_type)
         {
             case ACCEPT:
@@ -132,52 +371,76 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
                                                (socklen_t *)fib->fib_op.arg6);
                     break;
                 }
-            case READ:
-            case WRITE:
-            case NONE:
-            default:
-                    log_warnx("[sched] syscall not implemented");
-        }
-    }
-    coro_transfer(&S->base_ctx, &fib->fib_ctx);
-}
-
-void sched_launch(struct sched *S)
-{
-    unsigned int i;
-    struct event_base *evbase = S->evbase;
-
-    coro_create(&S->base_ctx, NULL, NULL, NULL, 0);
-    for (i = 0;
-         i < S->fibers->size;
-         ++i)
-    {
-        struct fiber *F = v_fiber_at(S->fibers, i);
-
-        coro_transfer(&S->base_ctx, &F->fib_ctx);
-        switch (F->fib_op.op_type)
-        {
-            case RECVFROM:
-            case ACCEPT:
-            case READ:
+            case RECV:
                 {
-                    struct event *ev;
-
-                    ev = event_new(evbase,
-                                   F->fib_op.fd,
-                                   EV_READ | EV_PERSIST,
-                                   sched_dispatch,
-                                   F);
-                    event_add(ev, NULL);
+                    fib->fib_op.ret = recv(fib->fib_op.arg1,
+                                           (void *)fib->fib_op.arg2,
+                                           (size_t)fib->fib_op.arg3,
+                                           (int)fib->fib_op.arg4);
+                    break;
                 }
             default:
-            case NONE:
-                continue;
+                    fprintf(stderr, "[sched] syscall not implemented");
         }
+    }
+    else if (event & EV_WRITE)
+    {
+        switch (fib->fib_op.op_type)
+        {
+            case SEND:
+                {
+                    fib->fib_op.ret = send(fib->fib_op.arg1,
+                                           (void *)fib->fib_op.arg2,
+                                           (size_t)fib->fib_op.arg3,
+                                           (int)fib->fib_op.arg4);
+                    break;
+                }
+            case SENDTO:
+                {
+                    fib->fib_op.ret = sendto(fib->fib_op.arg1,
+                                           (void *)fib->fib_op.arg2,
+                                           (size_t)fib->fib_op.arg3,
+                                           (int)fib->fib_op.arg4,
+                                           (struct sockaddr *)fib->fib_op.arg5,
+                                           (int)fib->fib_op.arg6);
+                    break;
+                }
+            default:
+                break;
+        }
+    }
+    S->origin_ctx = &cctx;
+    coro_transfer(&cctx, &fib->fib_ctx);
+    if (fib->fib_op.op_type == FREE)
+    {
+        free(fib->fib_stack);
     }
 }
 
-struct fiber *sched_new_fiber(struct sched *S, coro_func func, void *userptr)
+void sched_fiber_launch(struct fiber *F)
+{
+    struct sched *S = F->sched_back_ref;
+    struct coro_context ctx;
+    struct coro_context *save;
+
+    save = S->origin_ctx;
+    S->origin_ctx = &ctx;
+
+    coro_create(&ctx, NULL, NULL, NULL, 0);
+    coro_transfer(&ctx, &F->fib_ctx);
+
+    S->origin_ctx = save;
+
+    if (F->fib_op.op_type == FREE)
+    {
+        free(F->fib_stack);
+        free(F);
+    }
+}
+
+struct fiber *sched_new_fiber(struct sched *S,
+                              coro_func func,
+                              intptr_t userptr)
 {
     struct fiber_args *args;
     struct fiber *new_fiber;
@@ -191,15 +454,17 @@ struct fiber *sched_new_fiber(struct sched *S, coro_func func, void *userptr)
         && new_fiber != NULL
         && args != NULL)
     {
-        args->userptr = userptr;
         args->fib = new_fiber;
-        args->base_ctx = &S->base_ctx;
+        args->userptr = userptr;
+        args->map_fe = m_fd_ev_new();
+
         new_fiber->fib_stack_size = 1 << 16;
         new_fiber->fib_stack = stack_space;
         new_fiber->fib_op.op_type = NONE;
         new_fiber->sched_back_ref = S;
+        new_fiber->userland_event = NULL;
+
         coro_create(&new_fiber->fib_ctx, func, args, stack_space, 1 << 16);
-        v_fiber_push(S->fibers, new_fiber);
         return new_fiber;
     }
     free(stack_space);

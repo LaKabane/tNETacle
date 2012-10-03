@@ -32,7 +32,6 @@
 #include <openssl/rand.h>
 
 #include "networking.h"
-
 #include "tnetacle.h"
 #include "mc.h"
 #include "tntsocket.h"
@@ -43,11 +42,71 @@
 #include "frame.h"
 #include "device.h"
 #include "tntsched.h"
+#include "options.h"
 
 #define VECTOR_TYPE struct udp_peer
 #define VECTOR_PREFIX udp
 #define VECTOR_NON_STATIC
 #include "vector.h"
+
+extern struct options serv_opts;
+
+static void
+log_ssl_error(void)
+{
+    char errstr[150];
+    unsigned long errval;
+
+    errval = ERR_get_error();
+    ERR_error_string_n(errval, errstr, sizeof(errstr));
+    log_warnx("[DTLS] %s", errstr);
+}
+
+static SSL_CTX *
+create_udp_ctx(void)
+{
+    int err;
+    char const *key_path;
+    char const *certfile_path;
+
+    SSL_CTX *ctx = SSL_CTX_new(DTLSv1_method());
+    if (ctx == NULL)
+    {
+        log_ssl_error();
+        return NULL;
+    }
+
+    err = SSL_CTX_set_cipher_list(ctx, "HIGH:MEDIUM:aNULL");
+    if (err != 1)
+    {
+        log_warnx("[DTLS] Unable to load ciphers, exiting");
+        return NULL;
+    }
+
+    key_path = serv_opts.key_path;
+    if (key_path == NULL)
+    {
+        log_warnx("[DTLS] Unable to load private key file");
+        return NULL;
+    }
+
+    err = SSL_CTX_use_PrivateKey_file(ctx, key_path, SSL_FILETYPE_PEM);
+    if (err == -1)
+    {
+        log_ssl_error();
+        return NULL;
+    }
+
+    certfile_path = serv_opts.cert_path;
+    if (certfile_path == NULL)
+    {
+        log_warnx("[DTLS] Unable to load certificate file");
+        return NULL;
+    }
+
+    SSL_CTX_use_certificate_chain_file(ctx, certfile_path);
+    return ctx;
+}
 
 void
 forward_udp_frame_to_other_peers(struct udp *udp,
@@ -96,15 +155,53 @@ forward_udp_frame_to_other_peers(struct udp *udp,
     }
 }
 
+static int
+dtls_new_peer(SSL_CTX *ctx, struct udp_peer *p)
+{
+    int err;
+    SSL *ssl;
+
+    err = BIO_new_bio_pair(&p->bio, UDP_MTU, &p->_bio_backend, UDP_MTU);
+    if (err != 1)
+    {
+        log_ssl_error();
+        ERR_print_errors_fp(stderr);
+        return -1;
+    }
+
+    ssl = SSL_new(ctx);
+    if (ssl == NULL)
+        return -1;
+
+    if (p->ssl_flags & DTLS_CLIENT)
+        SSL_set_connect_state(ssl);
+    else
+        SSL_set_accept_state(ssl);
+
+    SSL_set_bio(ssl, p->_bio_backend, p->_bio_backend);
+    if (ssl == NULL)
+    {
+        BIO_free(p->bio);
+        BIO_free(p->_bio_backend);
+        return -1;
+    }
+    p->ssl = ssl;
+    return 0;
+}
+
 void
 udp_register_new_peer(struct udp *udp,
                       struct sockaddr *s,
-                      int socklen)
+                      int socklen,
+                      int ssl_flags)
 {
     struct udp_peer tmp_udp;
 
     memcpy(&tmp_udp.addr, s, socklen);
     tmp_udp.socklen = socklen;
+    tmp_udp.ssl_flags = ssl_flags;
+    if (ssl_flags == DTLS_ENABLE)
+        dtls_new_peer(udp->ctx, &tmp_udp);
     v_udp_push(udp->udp_peers, &tmp_udp);
 }
 
@@ -251,8 +348,9 @@ server_init_udp(struct server *s,
     udp->fd = tmp_sock;
     udp->udp_peers = v_udp_new();
     udp->udp_sched = sched_new(evbase);
-    udp->udp_fiber = sched_new_fiber(udp->udp_sched, server_udp, s);
-    sched_launch(udp->udp_sched);
+    udp->udp_fiber = sched_new_fiber(udp->udp_sched, server_udp, (intptr_t)s);
+    udp->ctx = create_udp_ctx();
+    sched_fiber_launch(udp->udp_fiber);
     return 0;
 }
 

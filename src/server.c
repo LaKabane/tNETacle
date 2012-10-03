@@ -163,7 +163,8 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
                 evbuffer_add_printf(out, "udp_port:%d\r\n", udp_get_port(&s->udp)); 
                 udp_register_new_peer(&s->udp,
                                       (struct sockaddr *)&udp_addr,
-                                      socklen);
+                                      socklen,
+                                      DTLS_ENABLE);
             }
             mc->tunel = 1;
         }
