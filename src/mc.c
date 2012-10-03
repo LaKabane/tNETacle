@@ -117,7 +117,6 @@ mc_init(struct mc *self,
 
     if (tmp == NULL || self->bev == NULL)
     {
-        event_free(self->bev);
         bufferevent_free(self->bev);
         free(tmp);
         log_notice("failed to allocate the memory needed to establish a new "
