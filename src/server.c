@@ -300,20 +300,18 @@ void listen_client_callback(struct evconnlistener *evl, evutil_socket_t fd,
 	struct server *s = (struct server *)ctx;
     struct event_base *base = evconnlistener_get_base(evl);
     int errcode;
-    struct mc mc;
 
 	log_debug("A client is connecting");
-    memset(&mc, 0, sizeof mc);
+    memset(&s->mc_client, 0, sizeof(s->mc_client));
     /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
     /* Even if we are not in a SSL context, mc_init know what to do anyway*/
-    mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
-    errcode = mc_init(&mc, base, fd, sock, (socklen_t)len, s->server_ctx);
+    s->mc_client.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
+    errcode = mc_init(&s->mc_client, base, fd, sock, (socklen_t)len, s->server_ctx);
     if (errcode != -1)
     {
-        bufferevent_setcb(mc.bev, client_mc_read_cb, NULL,
+        bufferevent_setcb(s->mc_client.bev, client_mc_read_cb, NULL,
                           client_mc_event_cb, s);
         log_debug("client connected");
-        //v_mc_push(&s->peers, &mc);
     }
     else
     {

@@ -31,6 +31,7 @@
 #include "tnetacle.h"
 #include "log.h"
 #include "options.h"
+#include "mc.h"
 #include "server.h"
 
 /* imsg specific includes */
