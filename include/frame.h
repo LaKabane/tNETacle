@@ -16,10 +16,12 @@
 #ifndef FRAME_LNIPE9IR
 #define FRAME_LNIPE9IR
 
+struct vector_frame;
+
 struct frame {
-  unsigned short size;
-  void *frame;
-  void *raw_packet;
+    unsigned short size;
+    void *frame;
+    void *raw_packet;
 };
 
 void

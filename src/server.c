@@ -71,9 +71,17 @@
 extern struct options serv_opts;
 
 static int
-_server_match_bev(struct mc const *a, struct bufferevent *bev)
+find_bev(struct mc const *a, void *ctx)
 {
+    struct bufferevent *bev = ctx;
     return a->bev == bev;
+}
+
+static int
+find_udppeer(struct udp_peer const *a, void *ctx)
+{
+    struct sockaddr *s = ctx;
+    return !evutil_sockaddr_cmp((struct sockaddr *)&a->addr, s, 0);
 }
 
 char *next_token(char *ptr, char **saveit, char const *delimit)
@@ -135,13 +143,14 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
 
         splited = split(line);
         cmd_name = v_cptr_at(splited, 0);
-        if (strcmp(cmd_name, "udp_port") == 0)
+        if (strncmp(cmd_name, "udp_port", strlen(cmd_name)) == 0)
         {
             char *s_udp_port = v_cptr_at(splited, 1);
-            struct mc *mc = v_mc_find_if(s->peers, (void *)_server_match_bev, bev);
+            struct mc *mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
             unsigned short port = atoi(s_udp_port);
             struct sockaddr_storage udp_addr;
             unsigned int socklen;
+            char *s_status = NULL;
 
             memcpy(&udp_addr, mc->p.address, mc->p.len);
             if (udp_addr.ss_family == AF_INET)
@@ -158,19 +167,32 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
                 sin6->sin6_port = htons(port);
                 socklen = sizeof *sin6;
             }
-            if (mc->tunel != 1)
+            if (splited->size > 1)
+                s_status = v_cptr_at(splited, 2);
+            if (s_status == NULL || strcmp(s_status, "ok") != 0)
             {
-                evbuffer_add_printf(out, "udp_port:%d\r\n", udp_get_port(&s->udp)); 
-                udp_register_new_peer(&s->udp,
-                                      (struct sockaddr *)&udp_addr,
-                                      socklen,
-                                      DTLS_ENABLE);
+                evbuffer_add_printf(out, "udp_port:%d ok\r\n", udp_get_port(&s->udp)); 
             }
-            mc->tunel = 1;
+            udp_register_new_peer(&s->udp,
+                                  (struct sockaddr *)&udp_addr,
+                                  socklen,
+                                  DTLS_ENABLE);
         }
         v_cptr_delete(splited);
         free(line);
     }
+}
+
+static void
+dump_flags(short events)
+{
+    log_debug("[EVENT] [%s:%s:%s:%s:%s:%s]",
+              (events & BEV_EVENT_EOF) ? "EOF" : "",
+              (events & BEV_EVENT_READING) ? "READING" : "",
+              (events & BEV_EVENT_WRITING) ? "WRITING" : "",
+              (events & BEV_EVENT_CONNECTED) ? "CONNECTED" : "",
+              (events & BEV_EVENT_TIMEOUT) ? "TIMEOUT" : "",
+              (events & BEV_EVENT_ERROR) ? "ERROR" : "");
 }
 
 void
@@ -178,6 +200,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
     struct server *s = (struct server *)ctx;
 
+    dump_flags(events);
     if (events & BEV_EVENT_CONNECTED)
     {
         struct mc *mc;
@@ -188,7 +211,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
          * s->peers.
          */
 
-        mc = v_mc_find_if(s->pending_peers, (void *)_server_match_bev, bev);
+        mc = v_mc_find_if(s->pending_peers, (void *)find_bev, bev);
         if (mc != v_mc_end(s->pending_peers))
         {
             struct mc tmp;
@@ -201,9 +224,36 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             //mc_establish_tunnel(&tmp, s->udp);
         }
     }
-    if (events & BEV_EVENT_EOF)
-        log_warnx("Event callback EOF: Je fais quoi ?");
-    if (events & BEV_EVENT_ERROR)
+    else if (events & BEV_EVENT_EOF)
+    {
+        /* Disconnected */
+        struct mc *mc;
+        struct udp_peer *up;
+
+        mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
+        if (mc != v_mc_end(s->peers))
+        {
+            char name[INET6_ADDRSTRLEN];
+            struct sockaddr *sock = mc->p.address;
+
+            up = v_udp_find_if(s->udp.udp_peers, find_udppeer, sock);
+            if (up != v_udp_end(s->udp.udp_peers))
+            {
+                v_udp_erase(s->udp.udp_peers, up);
+                log_debug("[%s] stop peering with %s",
+                          (up->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
+                          address_presentation((struct sockaddr *)&up->addr,
+                                               up->socklen,
+                                               name, sizeof(name)));
+            }
+            log_debug("[META] stop the meta-connexion with %s",
+                      mc_presentation(mc, name, sizeof(name)));
+            mc_close(mc);
+            v_mc_erase(s->peers, mc);
+        }
+
+    }
+    else if (events & BEV_EVENT_ERROR)
     {
         struct mc *mc;
         int everr;
@@ -213,12 +263,12 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 
         if (everr != 0)
         {
-            log_warnx("Unexpected shutdown of the meta-connexion: (%d) %s",
+            log_warnx("[META] unexpected shutdown of the meta-connexion: (%d) %s",
                        everr, evutil_socket_error_to_string(everr));
         }
         while ((sslerr = bufferevent_get_openssl_error(bev)) != 0)
         {
-            log_warnx("SSL error code (%d): %s in %s %s",
+            log_warnx("[META] SSL error code (%d): %s in %s %s",
                        sslerr, ERR_reason_error_string(sslerr),
                        ERR_lib_error_string(sslerr),
                        ERR_func_error_string(sslerr));
@@ -227,24 +277,24 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
          * Find if the exception come from a pending peer or a
          * regular peer and close it.
          */
-        mc = v_mc_find_if(s->pending_peers, (void *)_server_match_bev, bev);
+        mc = v_mc_find_if(s->pending_peers, (void *)find_bev, bev);
         if (mc != v_mc_end(s->pending_peers))
         {
             char name[128];
 
             mc_close(mc);
-            log_debug("%s removed from the pending list",
+            log_debug("[META] %s removed from the pending list",
                       mc_presentation(mc, name, sizeof name));
             v_mc_erase(s->pending_peers, mc);
         }
         else
         {
-            mc = v_mc_find_if(s->peers, (void *)_server_match_bev, bev);
+            mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
             if (mc != v_mc_end(s->peers))
             {
                 mc_close(mc);
                 v_mc_erase(s->peers, mc);
-                log_debug("socket removed from the peer list");
+                log_debug("[META] socket removed from the peer list");
             }
         }
     }
@@ -268,13 +318,6 @@ SSL_CTX *
 evssl_init(void)
 {
     SSL_CTX  *server_ctx;
-
-    /* Initialize the OpenSSL library */
-    SSL_load_error_strings();
-    SSL_library_init();
-    /* We MUST have entropy, or else there's no point to crypto. */
-    if (!RAND_poll())
-        return NULL;
 
     server_ctx = SSL_CTX_new(SSLv23_method());
 
@@ -312,11 +355,11 @@ void listen_client_callback(struct evconnlistener *evl, evutil_socket_t fd,
     {
         bufferevent_setcb(s->mc_client.bev, client_mc_read_cb, NULL,
                           client_mc_event_cb, s);
-        log_debug("client connected");
+        log_debug("[CLT] client connected");
     }
     else
     {
-        log_notice("Failed to init a meta connexion");
+        log_notice("[CLT] Failed to init a meta connexion");
     }
 }
 
@@ -350,7 +393,7 @@ server_init(struct server *s, struct event_base *evbase)
             s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
             (struct sockaddr *)&it_listen->sockaddr, it_listen->len);
         if (evl == NULL) {
-            log_warnx("Failed to allocate the listener to listen to %s",
+            log_warnx("[INIT] failed to allocate the listener to listen to %s",
                 address_presentation((struct sockaddr *)&it_listen->sockaddr,
                 it_listen->len, listenname, sizeof listenname));
              continue;
@@ -363,12 +406,12 @@ server_init(struct server *s, struct event_base *evbase)
         /*
          * We listen on the same address for the udp socket
          */
-        err = server_init_udp(s,
+        err = server_udp_init(s,
                               (struct sockaddr *)&it_listen->sockaddr,
                               it_listen->len);
         if (err == -1)
         {
-            log_warnx("Failed to init the udp socket on %s",
+            log_warnx("[INIT] [UDP] failed to init the udp socket on %s",
                   address_presentation((struct sockaddr *)&it_listen->sockaddr,
                                            it_listen->len, listenname,
                                            sizeof listenname));
@@ -390,7 +433,7 @@ server_init(struct server *s, struct event_base *evbase)
 			  s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
 		  (struct sockaddr *)&it_client->sockaddr, it_client->len);
 		if (evl == NULL) {
-			log_warnx("Failed to allocate the listener to listen to %s",
+			log_warnx("[INIT] [TCP] failed to allocate the listener to listen to %s",
 			  address_presentation((struct sockaddr *)
 				&it_client->sockaddr, it_client->len, clientname,
 				sizeof clientname));
@@ -414,4 +457,35 @@ server_init(struct server *s, struct event_base *evbase)
                         it_peer->len);
     }
     return 0;
+}
+
+void server_delete(struct server *s)
+{
+    /* Start by the servers */
+    v_evl_foreach(s->srv_list, evconnlistener_free);
+    server_udp_exit(&s->udp);
+
+    /* Then the tuntap device */
+    event_free(s->device);
+
+    /* Clean the vectors */
+    v_mc_foreach(s->pending_peers, (void (*)(struct mc const *))mc_close);
+    v_mc_foreach(s->peers, (void (*)(struct mc const *))mc_close);
+    v_frame_foreach(s->frames_to_send, frame_free);
+
+    /* Free the actual vector memory */
+    v_mc_delete(s->pending_peers);
+    v_mc_delete(s->peers);
+    v_frame_delete(s->frames_to_send);
+    v_evl_delete(s->srv_list);
+
+    /* Free the SSL_CTX if we allocated it */
+    if (s->server_ctx != NULL)
+        SSL_CTX_free(s->server_ctx);
+
+    /* We need a way to know if there is a client or not */
+    /*mc_close(&s->mc_client);*/
+#if defined Windows
+    bufferevent_free(s->pipe_endpoint);
+#endif
 }

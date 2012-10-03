@@ -84,8 +84,9 @@ specifier struct vector_name *vector_(new)(void);
 specifier unsigned int vector_(size)(struct vector_name *v);
 specifier void vector_(init)(struct vector_name *v);
 specifier int vector_(resize)(struct vector_name *v, size_t);
-specifier void vector_(insert_range)(struct vector_name *, type *, type *, type *);
-specifier void vector_(insert)(struct vector_name *, type *, type *);
+specifier type *vector_(insert_range)(struct vector_name *, type *, type *, type *);
+specifier type *vector_(insert_at)(struct vector_name *, type *, type *);
+specifier type *vector_(insert)(struct vector_name *, type *);
 specifier void vector_(pop)(struct vector_name *v);
 specifier void vector_(delete)(struct vector_name *v);
 specifier type *vector_(begin)(struct vector_name *v);
@@ -196,7 +197,12 @@ specifier int vector_(resize)(struct vector_name *v, size_t size)
     return -1;
 }
 
-specifier void vector_(insert)(struct vector_name *v, type *at, type *val)
+specifier type *vector_(insert)(struct vector_name *v, type *val)
+{
+    return vector_(insert_at)(v, vector_(end)(v), val);
+}
+
+specifier type *vector_(insert_at)(struct vector_name *v, type *at, type *val)
 {
   if ((at) <= (v->vec + v->size)
     && (at >= v->vec))
@@ -210,17 +216,19 @@ specifier void vector_(insert)(struct vector_name *v, type *at, type *val)
 
         err = vector_(resize)(v, default_alloc_size);
         if (err == -1)
-          return ;
+          return NULL;
         at = &v->vec[offset];
       }
       number_to_move = vector_(end)(v) - at;
       memmove(at + 1, at, number_to_move * sizeof(type));
       *at = *val;
       v->size++;
+      return at;
     }
+  return NULL;
 }
 
-specifier void vector_(insert_range)(struct vector_name *v, type *at,
+specifier type *vector_(insert_range)(struct vector_name *v, type *at,
                                            type *from, type *to)
 {
   if ((at <= (v->vec + v->size))
@@ -235,7 +243,7 @@ specifier void vector_(insert_range)(struct vector_name *v, type *at,
       size_t offset = at - v->vec;
       err = vector_(resize)(v, inserted_size + default_alloc_size);
       if (err == -1)
-        return ;
+        return NULL;
       at = &v->vec[offset];
     }
     number_to_move = vector_(end)(v) - at;
@@ -245,7 +253,9 @@ specifier void vector_(insert_range)(struct vector_name *v, type *at,
     }
     memmove(at, from, inserted_size * sizeof(type));
     v->size += inserted_size;
+    return at;
   }
+  return NULL;
 }
 
 specifier void vector_(pop)(struct vector_name *v)

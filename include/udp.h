@@ -30,6 +30,7 @@ enum udp_ssl_flags
     DTLS_DISABLE = (1 << 1),
     DTLS_CLIENT = (1 << 2),
     DTLS_SERVER = (1 << 3),
+    DTLS_CONNECTED = (1 << 4),
 };
 
 struct server;
@@ -59,17 +60,19 @@ struct udp
     int                     udp_addrlen;
     SSL_CTX                 *ctx;
     struct sched            *udp_sched;
-    struct fiber            *udp_fiber;
-    struct vector_frame     *frame_udp;
+    struct fiber            *udp_recv_fib;
+    struct fiber            *udp_brd_fib;
     struct vector_udp       *udp_peers;
     struct sockaddr_storage udp_addr;
 };
 
-int server_init_udp(struct server *s,
+int server_udp_init(struct server *s,
                     struct sockaddr *addr,
                     int len);
 
-void udp_register_new_peer(struct udp *s,
+void server_udp_exit(struct udp *);
+
+struct udp_peer *udp_register_new_peer(struct udp *s,
                            struct sockaddr *sock,
                            int socklen,
                            int ssl_flags);
@@ -89,6 +92,9 @@ int frame_recvfrom(void *ctx,
 
 void
 server_udp(void *ctx);
+
+void
+server_dtls(void *ctx);
 
 unsigned short
 udp_get_port(struct udp *);

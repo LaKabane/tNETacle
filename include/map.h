@@ -64,7 +64,7 @@ struct map_name {
 };
 
 map_specifier struct map_name *map_(new)(void);
-map_specifier void map_(insert)(struct map_name *m, key_type k, value_type v);
+map_specifier value_type *map_(insert)(struct map_name *m, key_type k, value_type v);
 map_specifier value_type const *map_(access)(struct map_name *m, key_type k);
 map_specifier value_type *map_(find)(struct map_name *m, key_type k);
 map_specifier void map_(delete)(struct map_name *m);
@@ -96,7 +96,7 @@ map_specifier int cmp_name(struct map_pair_name const *a, void *c)
     return a->key == b->key;
 }
 #endif
-map_specifier void map_(insert)(struct map_name *m, key_type k, value_type v)
+map_specifier value_type *map_(insert)(struct map_name *m, key_type k, value_type v)
 {
   struct map_pair_name *it;
   struct map_pair_name pair = {
@@ -111,6 +111,7 @@ map_specifier void map_(insert)(struct map_name *m, key_type k, value_type v)
   {
     it->value = v;
   }
+  return &it->value;
 }
 
 map_specifier void map_(remove)(struct map_name *m, key_type k)

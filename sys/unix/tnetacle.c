@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <openssl/ssl.h>
+#include <openssl/rand.h>
 
 #include "tntexits.h"
 #include "tnetacle.h"
@@ -171,6 +173,16 @@ tnt_fork(int imsg_fds[2]) {
 	return TNT_NOUSER;
     }
 
+    /* Initialize the OpenSSL library */
+    SSL_library_init();
+    SSL_load_error_strings();
+    /* We MUST have entropy, or else there's no point to crypto. */
+    if (!RAND_poll())
+    {
+        log_errx(TNT_SOFTWARE, "[INIT] failed to find an entropy source");
+        /* never returns */
+    }
+
     if (serv_opts.encryption)
         server.server_ctx = evssl_init();
     else
@@ -212,6 +224,9 @@ tnt_fork(int imsg_fds[2]) {
     /* cleanely exit */
     msgbuf_write(&ibuf.w);
     msgbuf_clear(&ibuf.w);
+
+    /* Shutdown the server */
+    server_delete(&server);
 
     /*
      * It may look like we freed this one twice,

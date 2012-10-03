@@ -26,6 +26,12 @@ struct server;
 struct frame;
 struct udp;
 
+enum tls_flags
+{
+    TLS_ENABLE = (1 << 0),
+    TLS_DISABLE = (1 << 1),
+};
+
 struct mc
 {
     struct peer {
