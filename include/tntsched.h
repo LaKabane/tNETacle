@@ -17,6 +17,7 @@
 #define SCHED_O6L1KITS
 
 #include "coro.h"
+#include "wincompat.h"
 #include <event2/util.h>
 
 struct fiber_args;

@@ -16,11 +16,10 @@
 #include <errno.h>
 #include <assert.h>
 #include <event2/event.h>
-//#include "networking.h"
 #include "coro.h"
-//#include "log.h"
+#include "networking.h"
+#include "log.h"
 #include "tntsched.h"
-
 
 void sched_dispatch(evutil_socket_t fd, short event, void *ctx);
 
@@ -380,7 +379,7 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
                     break;
                 }
             default:
-                    fprintf(stderr, "[sched] syscall not implemented");
+                    log_warnx("[sched] syscall not implemented");
         }
     }
     else if (event & EV_WRITE)

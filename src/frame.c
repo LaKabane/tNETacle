@@ -17,6 +17,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "networking.h"
 #include "mc.h"
 #include "server.h"
 #include "frame.h"

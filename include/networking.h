@@ -21,10 +21,12 @@
 # include <sys/socket.h>
 # include <netinet/in.h>
 #elif defined Windows
-# include <io.h>
 # include <WinSock2.h>
 # include <WS2tcpip.h>
+# include <io.h>
 # define EAGAIN WSAEWOULDBLOCK
+/* If we typedef socklen_t, this won't compile on Windows, so let it like this*/
+# define socklen_t size_t
 #endif
 
 
