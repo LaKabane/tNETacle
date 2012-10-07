@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Frame</class>
- <widget class="QFrame" name="Frame">
+ <class>bodyconnexion</class>
+ <widget class="QFrame" name="bodyconnexion">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -24,44 +24,8 @@
    <enum>QFrame::Raised</enum>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="3" column="1" colspan="4">
-    <widget class="QDialogButtonBox" name="buttonBox">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Ok|QDialogButtonBox::Save</set>
-     </property>
-     <property name="centerButtons">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="Name">
-     <property name="text">
-      <string>Name</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QLineEdit" name="lineEdit_2"/>
-   </item>
-   <item row="1" column="3">
-    <widget class="QLabel" name="column">
-     <property name="text">
-      <string> : </string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="1">
-    <widget class="QTextEdit" name="textEdit"/>
-   </item>
-   <item row="0" column="1" colspan="4">
-    <widget class="QLineEdit" name="lineEdit"/>
-   </item>
-   <item row="1" column="4">
-    <widget class="QLineEdit" name="lineEdit_3"/>
-   </item>
    <item row="1" column="0">
-    <widget class="QLabel" name="AdressPort">
+    <widget class="QLabel" name="labelAdressPort">
      <property name="text">
       <string>Adress : Port</string>
      </property>
@@ -84,7 +48,7 @@
     </widget>
    </item>
    <item row="2" column="2" colspan="3">
-    <widget class="QDialogButtonBox" name="buttonBox_2">
+    <widget class="QDialogButtonBox" name="selectPubKey">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
@@ -96,15 +60,51 @@
      </property>
     </widget>
    </item>
+   <item row="3" column="1" colspan="4">
+    <widget class="QDialogButtonBox" name="isOk">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Ok|QDialogButtonBox::Save</set>
+     </property>
+     <property name="centerButtons">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="labelName">
+     <property name="text">
+      <string>Name</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" colspan="4">
+    <widget class="QLineEdit" name="name"/>
+   </item>
+   <item row="1" column="4">
+    <widget class="QLineEdit" name="port"/>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="adress"/>
+   </item>
+   <item row="1" column="3">
+    <widget class="QLabel" name="column">
+     <property name="text">
+      <string> : </string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QTextEdit" name="pubKey"/>
+   </item>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>lineEdit</tabstop>
-  <tabstop>lineEdit_2</tabstop>
-  <tabstop>lineEdit_3</tabstop>
-  <tabstop>buttonBox_2</tabstop>
-  <tabstop>buttonBox</tabstop>
-  <tabstop>textEdit</tabstop>
+  <tabstop>name</tabstop>
+  <tabstop>adress</tabstop>
+  <tabstop>port</tabstop>
+  <tabstop>selectPubKey</tabstop>
+  <tabstop>isOk</tabstop>
+  <tabstop>pubKey</tabstop>
  </tabstops>
  <resources>
   <include location="../share/img/client.qrc"/>

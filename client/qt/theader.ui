@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Frame</class>
- <widget class="QFrame" name="Frame">
+ <class>THeader</class>
+ <widget class="QFrame" name="THeader">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -19,7 +19,7 @@
   <property name="frameShadow">
    <enum>QFrame::Raised</enum>
   </property>
-  <widget class="QWidget" name="widget" native="true">
+  <widget class="QWidget" name="logo" native="true">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -32,7 +32,7 @@
     <string notr="true">image: url(:/logo/logo_tNETacle.png);</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="config">
    <property name="geometry">
     <rect>
      <x>320</x>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Frame</class>
- <widget class="QFrame" name="Frame">
+ <class>bodymain</class>
+ <widget class="QFrame" name="bodymain">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -25,7 +25,7 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="2">
-    <widget class="QPushButton" name="pushButton_2">
+    <widget class="QPushButton" name="deletePeer">
      <property name="text">
       <string/>
      </property>
@@ -45,7 +45,7 @@
     </widget>
    </item>
    <item row="2" column="2">
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="groupPeers">
      <property name="text">
       <string/>
      </property>
@@ -65,7 +65,7 @@
     </widget>
    </item>
    <item row="0" column="2">
-    <widget class="QPushButton" name="pushButton_3">
+    <widget class="QPushButton" name="addPeer">
      <property name="text">
       <string/>
      </property>
@@ -85,7 +85,7 @@
     </widget>
    </item>
    <item row="0" column="0" rowspan="4">
-    <widget class="QTreeWidget" name="treeWidget">
+    <widget class="QTreeWidget" name="listContacts">
      <column>
       <property name="text">
        <string>Contacts</string>
@@ -104,7 +104,7 @@
     </widget>
    </item>
    <item row="3" column="2">
-    <widget class="QTreeWidget" name="treeWidget_2">
+    <widget class="QTreeWidget" name="listGroups">
      <column>
       <property name="text">
        <string>Groups</string>

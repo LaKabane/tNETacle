@@ -11,12 +11,9 @@ INCLUDE(${QT_USE_FILE})
 SET(client_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/config.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/clientgui.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/configgui.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/tclient.cpp
     ${CMAKE_CURRENT_LIST_DIR}/imodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/controller.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/addcontactgui.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/rootnodegui.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelcontact.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelconfig.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelrootnode.cpp
@@ -29,17 +26,15 @@ SET(client_SOURCES
 SET(client_HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/include/network.h
     ${CMAKE_CURRENT_LIST_DIR}/include/controller.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/clientgui.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/addcontactgui.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/configgui.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/rootnodegui.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/tclient.h
 )
 
 SET(client_FORMS
-    ${CMAKE_CURRENT_LIST_DIR}/client.ui
-    ${CMAKE_CURRENT_LIST_DIR}/config.ui
-    ${CMAKE_CURRENT_LIST_DIR}/addcontact.ui
-    ${CMAKE_CURRENT_LIST_DIR}/rootnode.ui
+    ${CMAKE_CURRENT_LIST_DIR}/tclient.ui
+    ${CMAKE_CURRENT_LIST_DIR}/header.ui
+    ${CMAKE_CURRENT_LIST_DIR}/bodymain.ui
+    ${CMAKE_CURRENT_LIST_DIR}/bodyaddgroup.ui
+    ${CMAKE_CURRENT_LIST_DIR}/bodyconnexion.ui
 )
 
 SET(client_RESOURCES

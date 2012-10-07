@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Frame</class>
- <widget class="QFrame" name="Frame">
+ <class>bodyaddgroup</class>
+ <widget class="QFrame" name="bodyaddgroup">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -25,7 +25,7 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0" rowspan="2">
-    <widget class="QTreeWidget" name="ListContacts">
+    <widget class="QTreeWidget" name="listContacts">
      <column>
       <property name="text">
        <string>Contacts</string>
@@ -64,10 +64,10 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QLineEdit" name="lineEdit"/>
+       <widget class="QLineEdit" name="groupName"/>
       </item>
       <item row="4" column="0" colspan="2">
-       <widget class="QDialogButtonBox" name="buttonBox">
+       <widget class="QDialogButtonBox" name="isOk">
         <property name="standardButtons">
          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
         </property>
@@ -93,7 +93,7 @@
        </widget>
       </item>
       <item row="3" column="0" colspan="2">
-       <widget class="QTreeView" name="NewContact"/>
+       <widget class="QTreeView" name="newContact"/>
       </item>
      </layout>
     </widget>
