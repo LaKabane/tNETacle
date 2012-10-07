@@ -21,17 +21,19 @@ SET(client_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/protocol.cpp
     ${CMAKE_CURRENT_LIST_DIR}/network.cpp
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/theader.cpp
 )
 
 SET(client_HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/include/network.h
     ${CMAKE_CURRENT_LIST_DIR}/include/controller.h
     ${CMAKE_CURRENT_LIST_DIR}/include/tclient.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/theader.h
 )
 
 SET(client_FORMS
     ${CMAKE_CURRENT_LIST_DIR}/tclient.ui
-    ${CMAKE_CURRENT_LIST_DIR}/header.ui
+    ${CMAKE_CURRENT_LIST_DIR}/theader.ui
     ${CMAKE_CURRENT_LIST_DIR}/bodymain.ui
     ${CMAKE_CURRENT_LIST_DIR}/bodyaddgroup.ui
     ${CMAKE_CURRENT_LIST_DIR}/bodyconnexion.ui
