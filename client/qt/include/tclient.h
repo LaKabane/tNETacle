@@ -15,7 +15,7 @@ class TClient : public QMainWindow, Ui::TClient
 
 public:
     explicit   TClient(QMainWindow* parent = 0, Controller* controller = 0);
-    virtual    ~TClient() {};
+    virtual    ~TClient();
 
 private:
     Controller*    _controller;

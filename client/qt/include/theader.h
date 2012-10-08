@@ -1,7 +1,7 @@
 #ifndef THEADER_H_
 # define THEADER_H_
 
-#include <QMainWindow>
+#include <QWidget>
 #include "ui_theader.h"
 
 namespace Ui {
@@ -14,7 +14,7 @@ class THeader : public QWidget, Ui::THeader
 
 public:
     explicit   THeader(QWidget* parent = 0);
-    virtual    ~THeader() {};
+    virtual    ~THeader();
 };
 
 #endif /* !THEADER_H_ */
