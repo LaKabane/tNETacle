@@ -142,8 +142,6 @@ server_device_cb(evutil_socket_t device_fd,
         if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
         {
             broadcast_udp_to_peers(s);
-            v_frame_foreach(s->frames_to_send, frame_free);
-            v_frame_clean(s->frames_to_send);
         }
         else if (n == -1)
             log_warn("read on the device failed:");

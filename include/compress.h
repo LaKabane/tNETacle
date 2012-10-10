@@ -40,4 +40,13 @@ uchar *tnt_compress(uchar *, const size_t, size_t *);
 
 uchar *tnt_uncompress(uchar *, const size_t, const size_t);
 
+/*
+ * Thoses functions append and read a size realtive to
+ * the uncompressed lenght of the string, and use  tnt_compress
+ * and tnt_uncompress
+ */
+
+uchar *tnt_compress_sized(uchar *, const int, size_t *);
+uchar *tnt_uncompress_sized(uchar *, const size_t, size_t *);
+
 #endif /* !COMPRESS_H */

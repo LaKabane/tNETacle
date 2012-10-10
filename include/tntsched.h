@@ -16,9 +16,11 @@
 #ifndef SCHED_O6L1KITS
 #define SCHED_O6L1KITS
 
+#include "coro.h"
 #include <event2/util.h>
 
 struct fiber_args;
+struct map_fd_evl;
 
 struct operation
 {
@@ -27,7 +29,13 @@ struct operation
         READ,
         WRITE,
         ACCEPT,
-        RECVFROM
+        RECVFROM,
+        SENDTO,
+        SEND,
+        RECV,
+        YIELD,
+        FREE,
+        EVENT,
     } op_type;
     intptr_t fd;   /* Used to store the fd if needed */
     intptr_t ret;  
@@ -42,32 +50,74 @@ struct operation
 struct fiber
 {
     struct coro_context fib_ctx;
-    void *fib_stack;
-    size_t fib_stack_size;
-    struct operation fib_op;
-    struct sched *sched_back_ref;
+    void                *fib_stack;
+    size_t              fib_stack_size;
+    struct operation    fib_op;
+    struct sched        *sched_back_ref;
+    struct event        *yield_event;
+    struct map_fd_ev    *map_fe;
 };
 
 struct sched
 {
-    struct vector_fiber *fibers;
-    struct coro_context base_ctx;
-    struct event_base *evbase;
+    struct event_base   *evbase;
+    struct coro_context *origin_ctx;
 };
 
 struct sched *sched_new(struct event_base *evbase);
 
-void sched_launch(struct sched *S);
+void sched_delete(struct sched *);
+
+void sched_fiber_launch(struct fiber *F);
 
 struct fiber *sched_new_fiber(struct sched *S,
                               coro_func func,
-                              void *userptr);
+                              intptr_t userptr);
 
-void sched_dispatch(evutil_socket_t fd,
-                    short event,
-                    void *ctx);
+void sched_fiber_delete(struct fiber *);
 
-void *sched_get_userptr(struct fiber_args *args);
+void sched_fiber_exit(struct fiber_args *args, int val);
+
+intptr_t sched_get_userptr(struct fiber_args *args);
+
+int async_event(struct fiber_args *s,
+                int fd,
+                short flag);
+
+intptr_t async_yield(struct fiber_args *S,
+                     intptr_t yielded);
+
+intptr_t async_continue(struct fiber_args *A,
+                          struct fiber *F,
+                          intptr_t data);
+
+void async_wake(struct fiber *F,
+                intptr_t data);
+
+ssize_t async_sendto(struct fiber_args *s,
+                   int fd,
+                   void const *buf,
+                   size_t len,
+                   int flag,
+                   struct sockaddr const *sock,
+                   int socklen);
+
+ssize_t async_send(struct fiber_args *s,
+                   int fd,
+                   void const *buf,
+                   size_t len,
+                   int flag);
+
+ssize_t async_recv(struct fiber_args *s,
+                   int fd,
+                   void *buf,
+                   size_t len,
+                   int flag);
+
+ssize_t async_write(struct fiber_args *s,
+                    int fd,
+                    void const *buf,
+                    size_t len);
 
 int async_recvfrom(struct fiber_args *s,
                    int fd,

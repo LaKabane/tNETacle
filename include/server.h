@@ -86,6 +86,8 @@ SSL_CTX *evssl_init(void);
 int server_init(struct server *,
                 struct event_base *);
 
+void server_delete(struct server *);
+
 void server_set_device(struct server *,
                        int fd);
 
