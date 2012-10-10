@@ -2,7 +2,7 @@
 # ========================
 
 cmake_minimum_required(VERSION 2.6)
-PROJECT(client)
+PROJECT(QtNETacle)
 FIND_PACKAGE(Qt4 REQUIRED)
 
 SET(QT_USE_QTNETWORK TRUE)
@@ -51,7 +51,7 @@ QT4_ADD_RESOURCES(client_RESOURCES_RCC ${client_RESOURCES})
 
 ADD_DEFINITIONS(${QT_DEFINITIONS})
 
-ADD_EXECUTABLE(client ${client_SOURCES} 
+ADD_EXECUTABLE(QtNETacle ${client_SOURCES} 
     ${client_HEADERS_MOC}
     ${client_FORMS_HEADERS}
     ${client_RESOURCES_RCC}
@@ -64,4 +64,4 @@ INCLUDE_DIRECTORIES(
     ${TCLT_INCLUDE_DIR}
 )
 
-TARGET_LINK_LIBRARIES(client ${client_LIBRARIES})
+TARGET_LINK_LIBRARIES(QtNETacle ${client_LIBRARIES})
