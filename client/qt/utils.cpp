@@ -24,7 +24,7 @@ eType types[] =
 	};
 
 QVariant
-Utils::createVariantSimple(elements **e, bool &ok)
+Utils::createVariantSimple(elements** e, bool&)
 {
 	QVariant qvar;
 
@@ -36,53 +36,55 @@ Utils::createVariantSimple(elements **e, bool &ok)
 }
 
 QVariant
-Utils::createVariantMap(elements **e, bool &ok)
+Utils::createVariantMap(elements** e, bool& ok)
 {
-	QMap<QString, QVariant> qmap;
-	if (e != 0)
-	{
-		while (*e != NULL && (*e)->type != E_NOTHING && (*e)->type != E_END_MAP)
-		{
-		  if ((*e)->type == 8) exit(1);
-			if (*e != 0 && (*e)->type == E_MAP_KEY)
-			{
-				QString key((*e)->u_value.buf);
-				*e = (*e)->next;
-				if ((*e)->type == E_START_ARRAY || (*e)->type == E_START_MAP)
-				{
-					for (int i=0; i < (sizeof(types) / sizeof(eType)); ++i)
-					{
-						if (types[i].type == (*e)->type)
-						{
-							*e = (*e)->next;
-							QVariant ret = types[i].fun(e, ok);
-							qmap[key] = ret;
-							break;
-						}
-					}
-				}
-				else if ((*e)->type != E_NOTHING)
-				{
-					QVariant ret = Utils::createVariantSimple(e, ok);
-					qmap[key] = ret;
-					*e = (*e)->next;
-				}
-				else if (*e != NULL)
-					*e = (*e)->next;
-			}
-		}
-		if (*e != NULL && (*e)->type == E_END_MAP)
-		{
-			*e = (*e)->next;
-			return qmap;
-		}
-	}
-	ok = false;
-	return qmap;
+    QMap<QString, QVariant> qmap;
+
+    if (e != 0)
+    {
+        while (*e != NULL && (*e)->type != E_NOTHING && (*e)->type != E_END_MAP)
+        {
+            if ((*e)->type == 8)
+                exit(1);
+	    if (*e != 0 && (*e)->type == E_MAP_KEY)
+            {
+                QString key((*e)->u_value.buf);
+                *e = (*e)->next;
+                if ((*e)->type == E_START_ARRAY || (*e)->type == E_START_MAP)
+                {
+                    for (unsigned int i=0; i < (sizeof(types) / sizeof(eType)); ++i)
+                    {
+                        if (types[i].type == (*e)->type)
+                        {
+                            *e = (*e)->next;
+                            QVariant ret = types[i].fun(e, ok);
+                            qmap[key] = ret;
+                            break;
+                        }
+                    }
+                }
+                else if ((*e)->type != E_NOTHING)
+                {
+                    QVariant ret = Utils::createVariantSimple(e, ok);
+                    qmap[key] = ret;
+                    *e = (*e)->next;
+                }
+                else if (*e != NULL)
+                    *e = (*e)->next;
+            }
+        }
+        if (*e != NULL && (*e)->type == E_END_MAP)
+        {
+            *e = (*e)->next;
+            return qmap;
+        }
+    }
+    ok = false;
+    return qmap;
 }
 
 QVariant
-Utils::createVariantArray(elements **e, bool &ok)
+Utils::createVariantArray(elements** e, bool& ok)
 {
 	QVariantList qlist;
 
@@ -92,7 +94,7 @@ Utils::createVariantArray(elements **e, bool &ok)
 		{
 			if ((*e)->type == E_START_ARRAY || (*e)->type == E_START_MAP)
 			{
-				for (int i=0; i < (sizeof(types) / sizeof(eType)); ++i)
+				for (unsigned int i=0; i < (sizeof(types) / sizeof(eType)); ++i)
 				{
 					if (types[i].type == (*e)->type)
 					{
@@ -122,7 +124,7 @@ Utils::createVariantArray(elements **e, bool &ok)
 }
 
 QVariant*
-Utils::createVariant(elements *e)
+Utils::createVariant(elements* e)
 {
 	QVariant *qvar = 0;
 	elements *tmp = e;
@@ -160,7 +162,7 @@ Utils::createVariant(elements *e)
 }
 
 QVariant*
-Utils::getVariant(const char *buf, size_t len)
+Utils::getVariant(const char* buf, size_t len)
 {
 	QVariant* qvar = 0;
 	elements* e = tclt_parse(buf, len);

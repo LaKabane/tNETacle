@@ -7,6 +7,7 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
     TClient client;
     client.show();
 
