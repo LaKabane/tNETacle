@@ -2,13 +2,13 @@
 #include <iostream>
 
 #include <QApplication>
-#include "tclient.h"
+#include "qclient.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    TClient client;
+    QClient client;
     client.show();
 
 

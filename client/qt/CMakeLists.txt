@@ -11,7 +11,7 @@ INCLUDE(${QT_USE_FILE})
 SET(client_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/config.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/tclient.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/qclient.cpp
     ${CMAKE_CURRENT_LIST_DIR}/imodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/controller.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelcontact.cpp
@@ -27,12 +27,12 @@ SET(client_SOURCES
 SET(client_HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/include/network.h
     ${CMAKE_CURRENT_LIST_DIR}/include/controller.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/tclient.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/qclient.h
     ${CMAKE_CURRENT_LIST_DIR}/include/theader.h
 )
 
 SET(client_FORMS
-    ${CMAKE_CURRENT_LIST_DIR}/tclient.ui
+    ${CMAKE_CURRENT_LIST_DIR}/qclient.ui
     ${CMAKE_CURRENT_LIST_DIR}/theader.ui
     ${CMAKE_CURRENT_LIST_DIR}/bodymain.ui
     ${CMAKE_CURRENT_LIST_DIR}/bodyaddgroup.ui
