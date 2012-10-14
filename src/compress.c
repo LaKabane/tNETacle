@@ -142,9 +142,10 @@ uchar *tnt_compress_sized(uchar *uncompressed_data, const int size,
     }
     log_debug("Compressed from %d to %d + int size.",
       size, *compressed_size);
-    if ((compressed_data = reallocf(compressed_data,
+    if ((compressed_data = realloc(compressed_data,
           *compressed_size + sizeof(size))) == NULL)
     {
+        free(compressed_data);
         log_warn("reallocf failed. Sending uncompressed data");
         return NULL;
     }
