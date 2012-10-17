@@ -108,6 +108,11 @@ ssize_t async_send(struct fiber_args *s,
                    size_t len,
                    int flag);
 
+ssize_t async_read(struct fiber_args *s,
+                   int fd,
+                   void *buf,
+                   size_t len);
+
 ssize_t async_recv(struct fiber_args *s,
                    int fd,
                    void *buf,

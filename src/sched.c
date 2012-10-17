@@ -140,6 +140,7 @@ int async_event(struct fiber_args *s,
             it = get_events(s, fd, EV_WRITE);
             event_add(it->w_event, NULL);
     }
+    s->fib->fib_op.op_type = EVENT;
     s->fib->fib_op.ret = 0;
     coro_transfer(&s->fib->fib_ctx, origin);
     return s->fib->fib_op.ret;
@@ -469,9 +470,10 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
             case EVENT:
                 {
                     fib->fib_op.ret |= EV_READ;
+                    break;
                 }
             default:
-                    fprintf(stderr, "[sched] syscall not implemented");
+                    log_warnx("[sched] syscall not implemented");
         }
     }
     else if (event & EV_WRITE)
@@ -506,6 +508,7 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
             case EVENT:
                 {
                     fib->fib_op.ret |= EV_WRITE;
+                    break;
                 }
             default:
                 break;
