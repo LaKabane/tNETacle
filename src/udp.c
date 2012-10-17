@@ -250,9 +250,12 @@ server_udp(void *ctx)
 void
 udp_peer_free(struct udp_peer const *u)
 {
-    BIO_free(u->_bio_backend);
-    BIO_free(u->bio);
-    SSL_free(u->ssl);
+    if (u->_bio_backend != NULL)
+        BIO_free(u->_bio_backend);
+    if (u->bio != NULL)
+        BIO_free(u->bio);
+    if (u->ssl != NULL)
+        SSL_free(u->ssl);
 }
 
 void

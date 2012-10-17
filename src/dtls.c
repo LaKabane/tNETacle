@@ -128,6 +128,8 @@ dtls_new_peer(SSL_CTX *ctx, struct udp_peer *p)
     }
 
     SSL_set_bio(ssl, p->bio, p->bio);
+
+    ssl = SSL_new(ctx);
     if (ssl == NULL)
     {
         BIO_free(p->bio);
