@@ -20,7 +20,7 @@
 #include <iostream>
 
 THeader::THeader(QWidget* parent) :
-  QWidget(parent)
+  QFrame(parent)
 {
   this->setupUi(this);
 }

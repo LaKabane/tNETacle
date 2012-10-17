@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>bodyaddgroup</class>
- <widget class="QWidget" name="bodyaddgroup">
+ <widget class="QFrame" name="bodyaddgroup">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -16,6 +16,9 @@
   <property name="windowIcon">
    <iconset resource="../share/img/client.qrc">
     <normaloff>:/tools/root_notconnected.png</normaloff>:/tools/root_notconnected.png</iconset>
+  </property>
+  <property name="frameShape">
+   <enum>QFrame::Box</enum>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0" rowspan="2">

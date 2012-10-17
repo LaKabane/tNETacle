@@ -17,7 +17,7 @@
 #include "bodyconnexion.h"
 
 BodyConnexion::BodyConnexion(QWidget* parent) :
-    QWidget(parent)
+    QFrame(parent)
 {
     this->setupUi(this);
 }

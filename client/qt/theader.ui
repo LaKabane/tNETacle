@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>THeader</class>
- <widget class="QWidget" name="THeader">
+ <widget class="QFrame" name="THeader">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -10,8 +10,17 @@
     <height>90</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>445</width>
+    <height>90</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>Widget</string>
+  </property>
+  <property name="frameShape">
+   <enum>QFrame::Box</enum>
   </property>
   <widget class="QWidget" name="logo" native="true">
    <property name="geometry">

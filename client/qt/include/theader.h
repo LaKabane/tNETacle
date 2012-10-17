@@ -24,7 +24,7 @@ namespace Ui {
     class THeader;
 }
 
-class THeader : public QWidget, public Ui::THeader
+class THeader : public QFrame, public Ui::THeader
 {
     Q_OBJECT
 

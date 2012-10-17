@@ -24,7 +24,7 @@ namespace Ui {
     class BodyConnexion;
 }
 
-class BodyConnexion : public QWidget, public Ui::BodyConnexion
+class BodyConnexion : public QFrame, public Ui::BodyConnexion
 {
 public:
     explicit BodyConnexion(QWidget* parent = 0);
