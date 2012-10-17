@@ -16,6 +16,9 @@
 
 #include "qclient.h"
 #include "theader.h"
+#include "bodyconnexion.h"
+
+#include <iostream>
 
 QClient::QClient(QMainWindow* parent, Controller* controller) :
   QMainWindow(parent),
@@ -24,8 +27,13 @@ QClient::QClient(QMainWindow* parent, Controller* controller) :
   _body(0)
 {
     setupUi(this);
-    _header = new THeader(this);
-    // _body = new bodyconnexion(this);
+    _header = new THeader;
+    _header->setObjectName(QString::fromUtf8("header"));
+    _layout->addWidget(_header);
+
+    _body = new BodyConnexion;
+    _body->setObjectName(QString::fromUtf8("bodyConnexion"));
+    _layout->addWidget(_body);
 }
 
 QClient::~QClient()

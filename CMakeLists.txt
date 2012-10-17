@@ -118,7 +118,7 @@ if(UNIX)
 
 	# Unix specific source files
 	# ------------------
-	set(SOURCES_LIST ${SOURCES_LIST} sys/unix/log.c
+    set(SOURCES_LIST ${SOURCES_LIST} ${HEADERS_LIST} sys/unix/log.c
 		sys/unix/imsg.c sys/unix/imsg-buffer.c
 		sys/unix/tnetacle.c sys/unix/tnetacled.c
 		sys/unix/util.c sys/unix/conf.c

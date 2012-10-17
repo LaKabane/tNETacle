@@ -1,23 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>THeader</class>
- <widget class="QFrame" name="THeader">
+ <widget class="QWidget" name="THeader">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>439</width>
+    <width>445</width>
     <height>90</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Frame</string>
-  </property>
-  <property name="frameShape">
-   <enum>QFrame::StyledPanel</enum>
-  </property>
-  <property name="frameShadow">
-   <enum>QFrame::Raised</enum>
+   <string>Widget</string>
   </property>
   <widget class="QWidget" name="logo" native="true">
    <property name="geometry">
@@ -49,8 +43,6 @@
    </property>
   </widget>
  </widget>
- <resources>
-  <include location="../share/img/client.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

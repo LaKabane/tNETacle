@@ -16,12 +16,14 @@ SET(client_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/controller.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelcontact.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelconfig.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/modelconnexion.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modelrootnode.cpp
     ${CMAKE_CURRENT_LIST_DIR}/modellog.cpp
     ${CMAKE_CURRENT_LIST_DIR}/protocol.cpp
     ${CMAKE_CURRENT_LIST_DIR}/network.cpp
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/theader.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/bodyconnexion.cpp
 )
 
 SET(client_HEADERS
@@ -29,6 +31,17 @@ SET(client_HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/include/controller.h
     ${CMAKE_CURRENT_LIST_DIR}/include/qclient.h
     ${CMAKE_CURRENT_LIST_DIR}/include/theader.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/bodyconnexion.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/imodel.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/controller.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modelcontact.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modelconfig.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modelconnexion.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modelrootnode.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/modellog.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/protocol.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/network.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/utils.h
 )
 
 SET(client_FORMS
@@ -51,7 +64,8 @@ QT4_ADD_RESOURCES(client_RESOURCES_RCC ${client_RESOURCES})
 
 ADD_DEFINITIONS(${QT_DEFINITIONS})
 
-ADD_EXECUTABLE(QtNETacle ${client_SOURCES} 
+ADD_EXECUTABLE(QtNETacle ${client_SOURCES}
+    ${client_HEADERS}
     ${client_HEADERS_MOC}
     ${client_FORMS_HEADERS}
     ${client_RESOURCES_RCC}

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>324</width>
-    <height>415</height>
+    <width>445</width>
+    <height>487</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,189 +18,13 @@
 </string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout"/>
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <layout class="QVBoxLayout" name="_layout"/>
+    </item>
+   </layout>
   </widget>
-  <action name="actionExit">
-   <property name="text">
-    <string>Quit</string>
-   </property>
-  </action>
-  <action name="actionShutdown">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/shutdown2.png</normaloff>:/tools/shutdown2.png</iconset>
-   </property>
-   <property name="text">
-    <string>Shutdown</string>
-   </property>
-   <property name="toolTip">
-    <string>Shutdown the core</string>
-   </property>
-  </action>
-  <action name="actionRestart">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/restart.png</normaloff>:/tools/restart.png</iconset>
-   </property>
-   <property name="text">
-    <string>Restart</string>
-   </property>
-   <property name="toolTip">
-    <string>Restart the core</string>
-   </property>
-  </action>
-  <action name="actionAbout">
-   <property name="text">
-    <string>About</string>
-   </property>
-  </action>
-  <action name="actionAddContact">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/addcontact.png</normaloff>:/tools/addcontact.png</iconset>
-   </property>
-   <property name="text">
-    <string>AddContact</string>
-   </property>
-   <property name="toolTip">
-    <string>Add a contact to the list</string>
-   </property>
-  </action>
-  <action name="actionDeleteContact">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/deletecontact.png</normaloff>:/tools/deletecontact.png</iconset>
-   </property>
-   <property name="text">
-    <string>deleteContact</string>
-   </property>
-   <property name="toolTip">
-    <string>Delete the selected contact from the list</string>
-   </property>
-  </action>
-  <action name="actionChangeRoot">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/root_notconnected.png</normaloff>:/tools/root_notconnected.png</iconset>
-   </property>
-   <property name="text">
-    <string>changeRoot</string>
-   </property>
-   <property name="toolTip">
-    <string>Change the root node</string>
-   </property>
-  </action>
-  <action name="actionCore">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/root_notconnected.png</normaloff>:/tools/root_notconnected.png</iconset>
-   </property>
-   <property name="text">
-    <string>Core</string>
-   </property>
-   <property name="toolTip">
-    <string>Change the root node</string>
-   </property>
-  </action>
-  <action name="actionAddAContact">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/addcontact.png</normaloff>:/tools/addcontact.png</iconset>
-   </property>
-   <property name="text">
-    <string>Add a contact</string>
-   </property>
-   <property name="toolTip">
-    <string>Add a contact</string>
-   </property>
-  </action>
-  <action name="actionDeleteAContact">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/deletecontact.png</normaloff>:/tools/deletecontact.png</iconset>
-   </property>
-   <property name="text">
-    <string>Delete a contact</string>
-   </property>
-   <property name="toolTip">
-    <string>Delete a contact</string>
-   </property>
-  </action>
-  <action name="actionLog">
-   <property name="text">
-    <string>Log</string>
-   </property>
-  </action>
-  <action name="actionConfiguration">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/config.png</normaloff>:/tools/config.png</iconset>
-   </property>
-   <property name="text">
-    <string>Settings</string>
-   </property>
-  </action>
-  <action name="actionConfig">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/config.png</normaloff>:/tools/config.png</iconset>
-   </property>
-   <property name="text">
-    <string>config</string>
-   </property>
-   <property name="toolTip">
-    <string>Open window for the configuration</string>
-   </property>
-  </action>
-  <action name="actionConnect">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/connect.png</normaloff>:/tools/connect.png</iconset>
-   </property>
-   <property name="text">
-    <string>Connect</string>
-   </property>
-   <property name="toolTip">
-    <string>Connect to the core</string>
-   </property>
-   <property name="visible">
-    <bool>false</bool>
-   </property>
-  </action>
-  <action name="actionConnect2">
-   <property name="icon">
-    <iconset resource="../share/img/client.qrc">
-     <normaloff>:/tools/connect.png</normaloff>:/tools/connect.png</iconset>
-   </property>
-   <property name="text">
-    <string>Connect</string>
-   </property>
-  </action>
-  <action name="actionAboutQt">
-   <property name="text">
-    <string>About Qt</string>
-   </property>
-  </action>
  </widget>
- <resources>
-  <include location="../share/img/client.qrc"/>
- </resources>
- <connections>
-  <connection>
-   <sender>actionExit</sender>
-   <signal>activated()</signal>
-   <receiver>QClient</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>122</x>
-     <y>207</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <resources/>
+ <connections/>
 </ui>

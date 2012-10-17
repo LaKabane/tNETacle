@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>bodyconnexion</class>
- <widget class="QFrame" name="bodyconnexion">
+ <class>BodyConnexion</class>
+ <widget class="QWidget" name="BodyConnexion">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,17 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Frame</string>
+   <string>Widget</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../share/img/client.qrc">
     <normaloff>:/tools/root_notconnected.png</normaloff>:/tools/root_notconnected.png</iconset>
-  </property>
-  <property name="frameShape">
-   <enum>QFrame::StyledPanel</enum>
-  </property>
-  <property name="frameShadow">
-   <enum>QFrame::Raised</enum>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">
