@@ -66,9 +66,16 @@ struct udp
     struct sockaddr_storage udp_addr;
 };
 
+struct udp *server_udp_new(struct server *s,
+                           struct sockaddr *addr,
+                           int len);
+
 int server_udp_init(struct server *s,
+                    struct udp *u,
                     struct sockaddr *addr,
                     int len);
+
+void server_udp_launch(struct udp *u);
 
 void server_udp_exit(struct udp *);
 

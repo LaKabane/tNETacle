@@ -34,6 +34,7 @@ struct event_base;
 struct vector_evl;
 struct vector_mc;
 struct sockaddr;
+struct fiber;
 struct frame;
 struct mc;
 
@@ -68,13 +69,14 @@ struct packet_hdr
 struct server 
 {
   struct vector_evl     *srv_list; /*list of the listenners*/
-  struct udp            udp;
-  struct event          *device;
+  struct udp            *udp;
   struct vector_mc      *peers; /* The actual list of peers */
   struct vector_mc      *pending_peers; /* Pending in connection peers*/
   struct vector_frame   *frames_to_send;
   struct event_base     *evbase;
+  struct fiber          *device_fib;
   SSL_CTX               *server_ctx;
+  struct sched          *ev_sched;
   struct mc             mc_client;
 #if defined Windows
   struct bufferevent    *pipe_endpoint;

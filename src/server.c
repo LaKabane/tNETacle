@@ -173,7 +173,7 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
             {
                 evbuffer_add_printf(out, "udp_port:%d ok\r\n", udp_get_port(&s->udp)); 
             }
-            udp_register_new_peer(&s->udp,
+            udp_register_new_peer(s->udp,
                                   (struct sockaddr *)&udp_addr,
                                   socklen,
                                   DTLS_ENABLE);
@@ -220,7 +220,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             memcpy(&tmp, mc, sizeof(tmp));
             v_mc_erase(s->pending_peers, mc);
             v_mc_push(s->peers, &tmp);
-            mc_hello(&tmp, &s->udp);
+            mc_hello(&tmp, s->udp);
             //mc_establish_tunnel(&tmp, s->udp);
         }
     }
@@ -236,10 +236,10 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             char name[INET6_ADDRSTRLEN];
             struct sockaddr *sock = mc->p.address;
 
-            up = v_udp_find_if(s->udp.udp_peers, find_udppeer, sock);
-            if (up != v_udp_end(s->udp.udp_peers))
+            up = v_udp_find_if(s->udp->udp_peers, find_udppeer, sock);
+            if (up != v_udp_end(s->udp->udp_peers))
             {
-                v_udp_erase(s->udp.udp_peers, up);
+                v_udp_erase(s->udp->udp_peers, up);
                 log_debug("[%s] stop peering with %s",
                           (up->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
                           address_presentation((struct sockaddr *)&up->addr,
@@ -382,12 +382,13 @@ server_init(struct server *s, struct event_base *evbase)
 
     it_listen = v_sockaddr_begin(serv_opts.listen_addrs);
     ite_listen = v_sockaddr_end(serv_opts.listen_addrs);
+    s->ev_sched = sched_new(evbase);
+
     /* Listen on all ListenAddress */
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
     {
         struct evconnlistener *evl = NULL;
         char listenname[INET6_ADDRSTRLEN];
-        int err;
 
         evl = evconnlistener_new_bind(evbase, listen_callback,
             s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
@@ -406,10 +407,9 @@ server_init(struct server *s, struct event_base *evbase)
         /*
          * We listen on the same address for the udp socket
          */
-        err = server_udp_init(s,
-                              (struct sockaddr *)&it_listen->sockaddr,
+        s->udp = server_udp_new(s, (struct sockaddr *)&it_listen->sockaddr,
                               it_listen->len);
-        if (err == -1)
+        if (s->udp == NULL)
         {
             log_warnx("[INIT] [UDP] failed to init the udp socket on %s",
                   address_presentation((struct sockaddr *)&it_listen->sockaddr,
@@ -463,10 +463,7 @@ void server_delete(struct server *s)
 {
     /* Start by the servers */
     v_evl_foreach(s->srv_list, evconnlistener_free);
-    server_udp_exit(&s->udp);
-
-    /* Then the tuntap device */
-    event_free(s->device);
+    server_udp_exit(s->udp);
 
     /* Clean the vectors */
     v_mc_foreach(s->pending_peers, (void (*)(struct mc const *))mc_close);

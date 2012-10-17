@@ -128,7 +128,7 @@ _broadcast_udp_to_peers(struct server *s, void *async_ctx)
 {
     struct frame *fit = v_frame_begin(s->frames_to_send);
     struct frame *fite = v_frame_end(s->frames_to_send);
-    struct udp   *udp = &s->udp;
+    struct udp   *udp = s->udp;
     char name[INET6_ADDRSTRLEN];
 
     /* For all the frames*/
@@ -198,7 +198,7 @@ broadcast_udp(void *ctx)
 void
 broadcast_udp_to_peers(struct server *s)
 {
-    struct fiber *F = s->udp.udp_brd_fib;
+    struct fiber *F = s->udp->udp_brd_fib;
 
     async_wake(F, /*unused*/0);
 }
@@ -211,9 +211,11 @@ server_udp(void *ctx)
     struct sockaddr_storage sockaddr;
     unsigned int socklen = sizeof sockaddr;
     evutil_socket_t udp_fd;
+    evutil_socket_t tap_fd;
     int err;
 
-    udp_fd = s->udp.fd;
+    udp_fd = s->udp->fd;
+    tap_fd = s->tap_fd;
     memset(&current_frame, 0, sizeof current_frame);
     while((err = frame_recvfrom(ctx,
                                 udp_fd,
@@ -226,7 +228,7 @@ server_udp(void *ctx)
                   current_frame.size);*/
 
         /* And forward it to anyone else but except current peer*/
-        forward_udp_frame_to_other_peers(&s->udp,
+        forward_udp_frame_to_other_peers(s->udp,
                                          &current_frame,
                                          (struct sockaddr *)&sockaddr,
                                          socklen);
@@ -265,20 +267,18 @@ server_udp_exit(struct udp *udp)
     SSL_CTX_free(udp->ctx);
     v_udp_foreach(udp->udp_peers, udp_peer_free);
     v_udp_delete(udp->udp_peers);
-    sched_delete(udp->udp_sched);
     sched_fiber_delete(udp->udp_brd_fib);
-    //sched_fiber_delete(udp->udp_recv_fib);
+    sched_fiber_delete(udp->udp_recv_fib);
 }
 
 int
 server_udp_init(struct server *s,
+                struct udp *udp,
                 struct sockaddr *addr,
                 int len)
 {
     int err;
     char name[INET6_ADDRSTRLEN];
-    struct event_base *evbase = s->evbase;
-    struct udp *udp = &s->udp;
     struct sockaddr_storage udp_addr;
     evutil_socket_t tmp_sock = 0;
 
@@ -318,13 +318,38 @@ server_udp_init(struct server *s,
     udp->udp_addrlen = len;
     udp->fd = tmp_sock;
     udp->udp_peers = v_udp_new();
-    udp->udp_sched = sched_new(evbase);
-    udp->udp_recv_fib = sched_new_fiber(udp->udp_sched, server_udp, (intptr_t)s);
-    udp->udp_brd_fib = sched_new_fiber(udp->udp_sched, broadcast_udp, (intptr_t)s);
+    udp->udp_recv_fib = sched_new_fiber(s->ev_sched, server_udp, (intptr_t)s);
+    udp->udp_brd_fib = sched_new_fiber(s->ev_sched, broadcast_udp, (intptr_t)s);
     udp->ctx = create_udp_ctx();
-    sched_fiber_launch(udp->udp_recv_fib);
-    sched_fiber_launch(udp->udp_brd_fib);
     return 0;
+}
+
+void
+server_udp_launch(struct udp *u)
+{
+    sched_fiber_launch(u->udp_recv_fib);
+    sched_fiber_launch(u->udp_brd_fib);
+}
+
+struct udp *
+server_udp_new(struct server *s,
+               struct sockaddr *addr,
+               int len)
+{
+    int err;
+    struct udp *udp;
+    
+    udp = (struct udp *)malloc(sizeof(*udp));
+    if (udp == NULL)
+    {
+        return NULL;
+    }
+    err = server_udp_init(s, udp, addr, len);
+    if (err == -1)
+    {
+        return NULL;
+    }
+    return udp;
 }
 
 int
