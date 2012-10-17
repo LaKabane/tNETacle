@@ -59,7 +59,6 @@ struct udp
     int                     fd;
     int                     udp_addrlen;
     SSL_CTX                 *ctx;
-    struct sched            *udp_sched;
     struct fiber            *udp_recv_fib;
     struct fiber            *udp_brd_fib;
     struct vector_udp       *udp_peers;

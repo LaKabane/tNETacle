@@ -18,6 +18,8 @@
 
 #include "networking.h"
 
+#define FRAME_DYN_SIZE 1600
+
 #if defined Windows
 
 void
@@ -27,9 +29,7 @@ send_buffer_to_device_thread(struct server *s,
 #endif
 
 void
-server_device_cb(evutil_socket_t device_fd,
-                 short events,
-                 void *ctx);
+server_device(void *ctx);
 
 void
 server_set_device(struct server *s,

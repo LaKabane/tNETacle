@@ -87,22 +87,12 @@ server_set_device(struct server *s,
 {
     struct evconnlistener **it = NULL;
     struct evconnlistener **ite = NULL;
-    struct event_base *evbase = s->evbase;
-    struct event *ev = event_new(evbase, fd, EV_READ | EV_PERSIST,
-                                 server_device_cb, s);
     int err;
 
     err = evutil_make_socket_nonblocking(fd);
     if (err == -1)
         log_debug("fuck !");
 
-    if (ev == NULL)
-    {
-        log_warn("failed to allocate the event handler for the device:");
-        return;
-    }
-    s->device = ev;
-    event_add(s->device, NULL);
     log_info("event handler for the device sucessfully configured");
 
     it = v_evl_begin(s->srv_list);
@@ -112,43 +102,57 @@ server_set_device(struct server *s,
     {
         evconnlistener_enable(*it);
     }
+    s->tap_fd = fd;
+    s->device_fib = sched_new_fiber(s->ev_sched, server_device, (intptr_t)s);
+    server_udp_launch(s->udp);
+    sched_fiber_launch(s->device_fib);
     log_info("listener started");
 }
 
 void
-server_device_cb(evutil_socket_t device_fd,
-                 short events,
-                 void *ctx)
+server_device(void *async_ctx)
 {
-    struct server *s = (struct server *)ctx;
+    struct server *s = (struct server *)sched_get_userptr(async_ctx);
+    evutil_socket_t tap_fd = s->tap_fd;
+    ssize_t n;
+    struct frame tmp;
 
-    if (events & EV_READ)
+    /* I know it sucks. I'm waiting for libtuntap to handle*/
+    /* a FIONREAD-like api.*/
+
+    do
     {
-        ssize_t n;
-        struct frame tmp;
+        /* 
+         * Alloc the memory for a new frame
+         *
+         * Now, we pre-alloc FRAME_DYN_SIZE, waiting for a portable way to do
+         * a sort of fioread
+         */
 
-        /* I know it sucks. I'm waiting for libtuntap to handle*/
-        /* a FIONREAD-like api.*/
-#define FRAME_DYN_SIZE 1600
         frame_alloc(&tmp, FRAME_DYN_SIZE);
-        while ((n = read(device_fd, tmp.frame, FRAME_DYN_SIZE)) > 0)
+        n = async_event(async_ctx, tap_fd, EV_READ);
+        while ((n = read(tap_fd, tmp.frame, FRAME_DYN_SIZE)) != -1)
         {
-            /* We cannot read more than a ushort, can we ? */
+            if (n == -1)
+            {
+                log_warn("[TAP] read on the device failed");
+                break;
+            }
+            /* Can we read more than a ushort ? */
             tmp.size = (unsigned short)n;
             v_frame_push(s->frames_to_send, &tmp);
             frame_alloc(&tmp, FRAME_DYN_SIZE);
         }
-#undef FRAME_DYN_SIZE
-        if (n == 0 || EVUTIL_SOCKET_ERROR() == EAGAIN) /* no errors occurs*/
-        {
+
+        if (v_frame_size(s->frames_to_send) > 0)
             broadcast_udp_to_peers(s);
-        }
-        else if (n == -1)
-            log_warn("read on the device failed:");
-        /* Don't forget to free the last allocated frame */
-        /* As we are out of the loop, the last call to frame alloc is useless */
-        frame_free(&tmp);
-    }
+
+    } while(1);
+
+    /* Don't forget to free the last allocated frame */
+    /* As we are out of the loop, the last call to frame alloc is useless */
+    frame_free(&tmp);
+    sched_fiber_exit(async_ctx, -1);
 }
 
 #endif

@@ -78,6 +78,7 @@ struct server
   SSL_CTX               *server_ctx;
   struct sched          *ev_sched;
   struct mc             mc_client;
+  evutil_socket_t       tap_fd;
 #if defined Windows
   struct bufferevent    *pipe_endpoint;
 #endif

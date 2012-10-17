@@ -241,7 +241,7 @@ server_udp(void *ctx)
 #else
         /* Write the current frame on the device and clean the evbuffer*/
         async_write(ctx,
-                    event_get_fd(s->device),
+                    tap_fd,
                     current_frame.frame,
                     current_frame.size);
 #endif
