@@ -17,10 +17,6 @@
 #include <string.h>
 #include <errno.h>
 
-#if defined Windows
-# define ssize_t SSIZE_T
-#endif
-
 #if defined Unix
 # include <unistd.h>
 #endif
@@ -32,7 +28,6 @@
 #include <openssl/rand.h>
 
 #include "networking.h"
-
 #include "tnetacle.h"
 #include "mc.h"
 #include "tntsocket.h"
@@ -43,6 +38,7 @@
 #include "frame.h"
 #include "device.h"
 #include "tntsched.h"
+#include "dtls.h"
 
 #define VECTOR_TYPE struct udp_peer
 #define VECTOR_PREFIX udp
@@ -80,7 +76,8 @@ forward_udp_frame_to_other_peers(struct udp *udp,
                      it->socklen);
         if (err == -1)
         {
-            log_notice("error while sending to %s",
+            log_notice("[%s] error while sending to %s",
+                       (it->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
                        address_presentation((struct sockaddr *)&it->addr,
                                             it->socklen,
                                             name,
@@ -96,20 +93,38 @@ forward_udp_frame_to_other_peers(struct udp *udp,
     }
 }
 
-void
+struct udp_peer *
 udp_register_new_peer(struct udp *udp,
                       struct sockaddr *s,
-                      int socklen)
+                      int socklen,
+                      int ssl_flags)
 {
     struct udp_peer tmp_udp;
 
     memcpy(&tmp_udp.addr, s, socklen);
     tmp_udp.socklen = socklen;
-    v_udp_push(udp->udp_peers, &tmp_udp);
+    tmp_udp.ssl_flags = ssl_flags;
+    if (ssl_flags == DTLS_ENABLE)
+    {
+        int err = dtls_new_peer(udp->ctx, &tmp_udp);
+        if (err == -1)
+            log_warnx("[DTLS] failed to create ssl state for this peer");
+        if (ssl_flags & DTLS_CLIENT)
+        {
+            SSL_connect(tmp_udp.ssl);
+        }
+        else if (ssl_flags & DTLS_SERVER)
+        {
+            SSL_accept(tmp_udp.ssl);
+        }
+    }
+    log_info("[%s] register new peer",
+             (ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP");
+    return v_udp_insert(udp->udp_peers, &tmp_udp);
 }
 
-void
-broadcast_udp_to_peers(struct server *s)
+static void
+_broadcast_udp_to_peers(struct server *s, void *async_ctx)
 {
     struct frame *fit = v_frame_begin(s->frames_to_send);
     struct frame *fite = v_frame_end(s->frames_to_send);
@@ -138,15 +153,19 @@ broadcast_udp_to_peers(struct server *s)
             /* Copy the header to the packet */
             /* Enought place have been allocated for header and the frame */
             memcpy(fit->raw_packet, &hdr, sizeof(hdr));
-            err = sendto(udp->fd,
-                         fit->raw_packet,
-                         fit->size + sizeof(struct packet_hdr), 0,
-                         (struct sockaddr const *)&it->addr,
-                         it->socklen);
+            err = async_sendto(async_ctx,
+                               udp->fd,
+                               fit->raw_packet,
+                               fit->size + sizeof(struct packet_hdr),
+                               0,
+                               (struct sockaddr const *)&it->addr,
+                               it->socklen);
+
             if (err == -1)
             {
-                log_notice("error while sending to %s",
-                           address_presentation((struct sockaddr *)&it->addr,
+                log_warn("[%s] error while sending to %s",
+                         (it->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
+                         address_presentation((struct sockaddr *)&it->addr,
                                                 it->socklen,
                                                 name,
                                                 sizeof name));
@@ -160,6 +179,28 @@ broadcast_udp_to_peers(struct server *s)
                                      sizeof name));
         }
     }
+    v_frame_foreach(s->frames_to_send, frame_free);
+    v_frame_clean(s->frames_to_send);
+}
+
+void
+broadcast_udp(void *ctx)
+{
+    struct server *s = (struct server *)sched_get_userptr(ctx);
+
+    while (1)
+    {
+        async_yield(ctx, /*unused*/0);
+        _broadcast_udp_to_peers(s, ctx);
+    }
+}
+
+void
+broadcast_udp_to_peers(struct server *s)
+{
+    struct fiber *F = s->udp.udp_brd_fib;
+
+    async_wake(F, /*unused*/0);
 }
 
 void
@@ -180,9 +221,9 @@ server_udp(void *ctx)
                                 (struct sockaddr *)&sockaddr,
                                 &socklen)) != -1)
     {
-        log_debug("udp recv packet size=%d(%-#2x)",
+        /*log_debug("udp recv packet size=%d(%-#2x)",
                   current_frame.size,
-                  current_frame.size);
+                  current_frame.size);*/
 
         /* And forward it to anyone else but except current peer*/
         forward_udp_frame_to_other_peers(&s->udp,
@@ -197,14 +238,37 @@ server_udp(void *ctx)
         send_buffer_to_device_thread(s, &current_frame);
 #else
         /* Write the current frame on the device and clean the evbuffer*/
-        write(event_get_fd(s->device), current_frame.frame, current_frame.size);
+        async_write(ctx,
+                    event_get_fd(s->device),
+                    current_frame.frame,
+                    current_frame.size);
 #endif
+        frame_free(&current_frame);
     }
 }
 
+void
+udp_peer_free(struct udp_peer const *u)
+{
+    BIO_free(u->_bio_backend);
+    BIO_free(u->bio);
+    SSL_free(u->ssl);
+}
+
+void
+server_udp_exit(struct udp *udp)
+{
+    close(udp->fd);
+    SSL_CTX_free(udp->ctx);
+    v_udp_foreach(udp->udp_peers, udp_peer_free);
+    v_udp_delete(udp->udp_peers);
+    sched_delete(udp->udp_sched);
+    sched_fiber_delete(udp->udp_brd_fib);
+    //sched_fiber_delete(udp->udp_recv_fib);
+}
 
 int
-server_init_udp(struct server *s,
+server_udp_init(struct server *s,
                 struct sockaddr *addr,
                 int len)
 {
@@ -237,10 +301,11 @@ server_init_udp(struct server *s,
         return -1;
     }
     getsockname(tmp_sock, (struct sockaddr *)&udp_addr, &len);
-    log_debug("%s", address_presentation((struct sockaddr *)&udp_addr,
-                                         len,
-                                         name,
-                                         sizeof name));
+    log_debug("[INIT] [UDP] udp listen on %s",
+              address_presentation((struct sockaddr *)&udp_addr,
+                                   len,
+                                   name,
+                                   sizeof name));
     err = evutil_make_socket_nonblocking(tmp_sock);
     if (err == -1)
     {
@@ -251,8 +316,11 @@ server_init_udp(struct server *s,
     udp->fd = tmp_sock;
     udp->udp_peers = v_udp_new();
     udp->udp_sched = sched_new(evbase);
-    udp->udp_fiber = sched_new_fiber(udp->udp_sched, server_udp, s);
-    sched_launch(udp->udp_sched);
+    udp->udp_recv_fib = sched_new_fiber(udp->udp_sched, server_udp, (intptr_t)s);
+    udp->udp_brd_fib = sched_new_fiber(udp->udp_sched, broadcast_udp, (intptr_t)s);
+    udp->ctx = create_udp_ctx();
+    sched_fiber_launch(udp->udp_recv_fib);
+    sched_fiber_launch(udp->udp_brd_fib);
     return 0;
 }
 
@@ -297,8 +365,11 @@ frame_recvfrom(void *ctx,
     }
     local_size = ntohs(hdr.size);
     frame_alloc(frame, local_size);
-    err = recv(fd, (char *)frame->raw_packet,
-        frame->size + sizeof(struct packet_hdr), 0);
+    err = async_recv(ctx,
+                     fd,
+                     (char *)frame->raw_packet,
+                     frame->size + sizeof(struct packet_hdr),
+                     0);
     return err;
 }
 

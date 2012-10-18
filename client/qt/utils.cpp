@@ -19,8 +19,8 @@
 
 eType types[] =
 	{
-		{START_MAP, &Utils::createVariantMap},
-		{START_ARRAY, &Utils::createVariantArray},
+		{E_START_MAP, &Utils::createVariantMap},
+		{E_START_ARRAY, &Utils::createVariantArray},
 	};
 
 QVariant
@@ -41,14 +41,14 @@ Utils::createVariantMap(elements **e, bool &ok)
 	QMap<QString, QVariant> qmap;
 	if (e != 0)
 	{
-		while (*e != NULL && (*e)->type != NOTHING && (*e)->type != END_MAP)
+		while (*e != NULL && (*e)->type != E_NOTHING && (*e)->type != E_END_MAP)
 		{
 		  if ((*e)->type == 8) exit(1);
-			if (*e != 0 && (*e)->type == MAP_KEY)
+			if (*e != 0 && (*e)->type == E_MAP_KEY)
 			{
 				QString key((*e)->u_value.buf);
 				*e = (*e)->next;
-				if ((*e)->type == START_ARRAY || (*e)->type == START_MAP)
+				if ((*e)->type == E_START_ARRAY || (*e)->type == E_START_MAP)
 				{
 					for (int i=0; i < (sizeof(types) / sizeof(eType)); ++i)
 					{
@@ -61,7 +61,7 @@ Utils::createVariantMap(elements **e, bool &ok)
 						}
 					}
 				}
-				else if ((*e)->type != NOTHING)
+				else if ((*e)->type != E_NOTHING)
 				{
 					QVariant ret = Utils::createVariantSimple(e, ok);
 					qmap[key] = ret;
@@ -71,7 +71,7 @@ Utils::createVariantMap(elements **e, bool &ok)
 					*e = (*e)->next;
 			}
 		}
-		if (*e != NULL && (*e)->type == END_MAP)
+		if (*e != NULL && (*e)->type == E_END_MAP)
 		{
 			*e = (*e)->next;
 			return qmap;
@@ -88,9 +88,9 @@ Utils::createVariantArray(elements **e, bool &ok)
 
 	if (e != 0)
 	{
-		while (*e != NULL && (*e)->type != NOTHING && (*e)->type != END_ARRAY)
+		while (*e != NULL && (*e)->type != E_NOTHING && (*e)->type != E_END_ARRAY)
 		{
-			if ((*e)->type == START_ARRAY || (*e)->type == START_MAP)
+			if ((*e)->type == E_START_ARRAY || (*e)->type == E_START_MAP)
 			{
 				for (int i=0; i < (sizeof(types) / sizeof(eType)); ++i)
 				{
@@ -111,7 +111,7 @@ Utils::createVariantArray(elements **e, bool &ok)
 				*e = (*e)->next;
 			}
 		}
-		if ((*e) != NULL && (*e)->type == END_ARRAY)
+		if ((*e) != NULL && (*e)->type == E_END_ARRAY)
 		{
 			*e = (*e)->next;
 			return qlist;
@@ -127,9 +127,9 @@ Utils::createVariant(elements *e)
 	QVariant *qvar = 0;
 	elements *tmp = e;
 
-	if (tmp != NULL && tmp->type != NOTHING)
+	if (tmp != NULL && tmp->type != E_NOTHING)
 	{
-		if (tmp->type == START_ARRAY || tmp->type == START_MAP)
+		if (tmp->type == E_START_ARRAY || tmp->type == E_START_MAP)
 		{
 			for (unsigned int i=0; i < sizeof(types) / sizeof(eType); ++i)
 			{
@@ -152,7 +152,7 @@ Utils::createVariant(elements *e)
 			}
 		}
 	}
-	if (tmp != NULL && tmp->type != NOTHING)
+	if (tmp != NULL && tmp->type != E_NOTHING)
 	{
 		throw new QString("Error, buffer received not at the end");
 	}

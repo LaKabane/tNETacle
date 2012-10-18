@@ -30,12 +30,6 @@
 #include "server.h"
 #include "options.h"
 
-static int
-_server_match_bev(struct mc const *a, struct mc const *b)
-{
-    return a->bev == b->bev;
-}
-
 void
 client_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
@@ -56,7 +50,7 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
             ele = tclt_parse(buff, size);
             while (ele != NULL)
             {
-                if (ele->type == MAP_KEY)
+                if (ele->type == E_MAP_KEY)
                 {
 					if (strcmp(ele->u_value.buf, "Ip") == 0)
 					{
@@ -89,36 +83,11 @@ client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
     struct server *s = (struct server *)ctx;
 
-    if (events & BEV_EVENT_CONNECTED)
-    {
-        struct mc *mc;
-        struct mc tmp;
-
-        /*
-         * If we received the notification that the connection is established,
-         * then we move the corresponding struct mc from s->pending_peers to
-         * s->peers.
-         */
-
-        tmp.bev = bev;
-        mc = v_mc_find_if(s->pending_peers, &tmp, _server_match_bev);
-        if (mc != v_mc_end(s->pending_peers))
-        {
-            log_info("connexion established.");
-            memcpy(&tmp, mc, sizeof(tmp));
-            v_mc_erase(s->pending_peers, mc);
-            v_mc_push(s->peers, &tmp);
-        }
-		//send peers to the client
-    }
     if (events & BEV_EVENT_ERROR)
     {
-        struct mc *mc;
-        struct mc tmp;
         int everr;
         int sslerr;
 
-        tmp.bev = bev;
         everr = EVUTIL_SOCKET_ERROR();
 
         if (everr != 0)
@@ -133,22 +102,10 @@ client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
                        ERR_lib_error_string(sslerr),
                        ERR_func_error_string(sslerr));
         }
-        mc = v_mc_find_if(s->pending_peers, &tmp, _server_match_bev);
-        if (mc != v_mc_end(s->pending_peers))
-        {
-            mc_close(mc);
-            v_mc_erase(s->pending_peers, mc);
-            log_debug("socket removed from the pending list");
-        }
-        else
-        {
-            mc = v_mc_find_if(s->peers, &tmp, _server_match_bev);
-            if (mc != v_mc_end(s->peers))
-            {
-                mc_close(mc);
-                v_mc_erase(s->peers, mc);
-                log_debug("socket removed from the peer list");
-            }
-        }
+    }
+    else if (events & BEV_EVENT_EOF)
+    {
+        //BEV_EVENT_ERROR_EOF == end of connection
+		log_warnx("Client shutdown... WOOOOOOTTTT!!!");
     }
 }

@@ -108,17 +108,19 @@ mc_init(struct mc *self,
         self->bev = bufferevent_openssl_socket_new(evb, fd, client_ctx,
                                                    self->ssl_flags,
                                                    BEV_OPT_CLOSE_ON_FREE);
+        self->ssl_flags = TLS_ENABLE;
     }
     else
     {
+        self->ssl_flags = TLS_DISABLE;
         self->bev = bufferevent_socket_new(evb, fd, BEV_OPT_CLOSE_ON_FREE);
     }
 
 
     if (tmp == NULL || self->bev == NULL)
     {
-        free(tmp); /* We should probably free self->bev too */
         free(tmp);
+        bufferevent_free(self->bev);
         log_notice("failed to allocate the memory needed to establish a new "
                    "meta-connection");
         return -1;
@@ -178,12 +180,15 @@ mc_peer_accept(struct server *s,
     errcode = mc_init(&mc, evbase, fd, sock, socklen, s->server_ctx);
     if (errcode == -1)
     {
-        log_notice("Failed to init a meta connexion with %s", peername);
+        log_notice("[META] failed to open a meta connexion with %s", peername);
         return errcode;
     }
-    bufferevent_setcb(mc.bev, server_mc_read_cb, NULL,
-                      server_mc_event_cb, s);
-    log_debug("Starting to peer with %s", peername);
+    bufferevent_setcb(mc.bev,
+                      server_mc_read_cb,
+                      NULL,
+                      server_mc_event_cb,
+                      s);
+    log_debug("[META] opening a meta-connexion with %s", peername);
     v_mc_push(s->peers, &mc);
     return 0;
 }
@@ -192,6 +197,13 @@ mc_peer_accept(struct server *s,
 void
 mc_close(struct mc *self)
 {
+    if (self->ssl_flags & TLS_ENABLE)
+    {
+        SSL *ssl = bufferevent_openssl_get_ssl(self->bev);
+
+        SSL_set_shutdown(ssl, SSL_RECEIVED_SHUTDOWN);
+        SSL_shutdown(ssl);
+    }
     free(self->p.address);
     bufferevent_free(self->bev);
 }

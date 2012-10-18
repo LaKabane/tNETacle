@@ -44,6 +44,8 @@ struct passwd;
 # define __func__ __FUNCTIONW__
 #endif
 
+#define DEBUG fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__)
+
 /*
  * Definition of types for our imsg.
  */

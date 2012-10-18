@@ -80,6 +80,7 @@ set(SOURCES_LIST
   src/frame.c
   src/coro.c
   src/sched.c
+  src/dtls.c
 )
 
 set(HEADERS_LIST 
@@ -101,7 +102,8 @@ set(HEADERS_LIST
     include/device.h
     include/frame.h
     include/coro.h
-    include/sched.h)
+    include/tntsched.h
+    include/dtls.h)
 
 # OS families specific things
 # ---------------------------
@@ -230,7 +232,7 @@ target_link_libraries(tNETacle
         ${ZLIB_LIBRARY}
         ${YAJL_LIBRARIES}
         ${OPENSSL_LIBRARIES}
-	${TCLT_LIBRARY}
+        ${TCLT_LIBRARY}
 )
 
 if (TUNTAP_FOUND)

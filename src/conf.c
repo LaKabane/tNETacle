@@ -150,7 +150,7 @@ add_client_addrs_ports(int family, int *ports) {
 
     for (i = 0; i < TNETACLE_MAX_PORTS && ports[i] != -1; ++i) {
         (void)memset(&tmp_store, 0, sizeof tmp_store);
-    
+
         if (family == AF_INET || family == AF_UNSPEC) {
             sin->sin_family = AF_INET;
             sin->sin_port = htons(ports[i]);
@@ -160,7 +160,7 @@ add_client_addrs_ports(int family, int *ports) {
             tmp_store.len = sizeof *sin;
             v_sockaddr_push(serv_opts.client_addrs, &tmp_store);
             if (debug == 1)
-                fprintf(stderr, "ListenAddr: Added %s:%i\n",
+                fprintf(stderr, "ListenClient: Added %s:%i\n",
                   TNETACLE_DEFAULT_LISTEN_IPV4, ports[i]);
         }
         if (family == AF_INET6 || family == AF_UNSPEC) {
@@ -172,7 +172,7 @@ add_client_addrs_ports(int family, int *ports) {
             tmp_store.len = sizeof *sin6;
             v_sockaddr_push(serv_opts.client_addrs, &tmp_store);
             if (debug == 1)
-                fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
+                fprintf(stderr, "ListenClient: Added [%s]:%i\n",
                   TNETACLE_DEFAULT_LISTEN_IPV6, ports[i]);
         }
     }
@@ -346,9 +346,9 @@ int yajl_string(void *lctx, const unsigned char *str, size_t len) {
 
         if (strncmp("any", str, len) == 0) {
 	    add_listen_addrs_ports(serv_opts.addr_family, serv_opts.ports);
-	    add_client_addrs_ports(serv_opts.addr_family, serv_opts.cports);
         } else
             add_sockaddr(serv_opts.listen_addrs, bufaddr);
+        add_client_addrs_ports(serv_opts.addr_family, serv_opts.cports);
     } else {
         char *s;
 
