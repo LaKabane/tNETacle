@@ -40,20 +40,20 @@ const QMap<QString, QVariant>* ModelLog::getData() const
 
 void  ModelLog::feedData(const QString &command, const QVariant& data)
 {
-  if (command == "AddLog")
+    if (command == "AddLog")
     {
-      QMap<QString, QVariant> logs = data.toMap();
-      QString log("");
-      if (logs.contains("Log") == true)
-	log += logs["Log"].toString();
-      if (log != "")
-      addLog(log);
+        QMap<QString, QVariant> logs = data.toMap();
+        QString log("");
+        if (logs.contains("Log") == true)
+            log += logs["Log"].toString();
+        if (log != "")
+            addLog(log);
     }
-  else
-    throw new Exception("Error: command does not exist!");
+    else
+        throw new Exception("Error: command does not exist!");
 }
 
 void	ModelLog::addLog(const QString& log)
 {
-  _controller.appendLog(log);
+    _controller.appendLog(log);
 }

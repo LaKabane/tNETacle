@@ -19,14 +19,18 @@
 
 #include <QApplication>
 #include "qclient.h"
+#include "controller.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    QClient client;
-    client.show();
+    Controller*    controller = new Controller;
+    QClient client(controller);
+    controller->setGui(&client);
+    controller->initWindow();
 
+    client.show();
 
     return app.exec();
 }

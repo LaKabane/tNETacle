@@ -20,22 +20,34 @@
 
 #include <iostream>
 
-QClient::QClient(QMainWindow* parent, Controller* controller) :
-  QMainWindow(parent),
+QClient::QClient(Controller* controller) :
+  QMainWindow(0),
   _controller(controller),
   _header(0),
   _body(0)
 {
     setupUi(this);
-    _header = new THeader;
+    _header = new THeader(this, controller);
     _header->setObjectName(QString::fromUtf8("header"));
     _layout->addWidget(_header);
 
-    _body = new BodyConnexion;
+    _body = new BodyConnexion(this, controller);
     _body->setObjectName(QString::fromUtf8("bodyConnexion"));
     _layout->addWidget(_body);
 }
 
 QClient::~QClient()
 {
+}
+
+QWidget*
+QClient::getHeader() const
+{
+    return _header;
+}
+
+QWidget*
+QClient::getBody() const
+{
+    return _body;
 }

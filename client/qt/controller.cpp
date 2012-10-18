@@ -21,23 +21,26 @@
 #include "protocol.h"
 #include "exception.h"
 #include "imodel.h"
+#include "bodyconnexion.h"
 
 QMap<QString, QString> Controller::_correspondence = QMap<QString, QString>();
 
-Controller::Controller(IClientGUI*  gui) :
-  _view(gui),
+Controller::Controller() :
+  _view(0),
   _network(*this),
   _models()
 {
-    _modelContacts = new ModelContact(*this, gui);
+    _modelContacts = new ModelContact(*this);
     _modelNode = new ModelRootNode(*this);
     _modelLog = new ModelLog(*this);
     _modelConfig = new ModelConfig(*this);
+    _modelConnexion = new ModelConnexion(this);
 
     _models[_modelContacts->getObjectName()] = _modelContacts;
     _models[_modelNode->getObjectName()] = _modelNode;
     _models[_modelLog->getObjectName()] = _modelLog;
     _models[_modelConfig->getObjectName()] = _modelConfig;
+    _models[_modelConnexion->getObjectName()] = _modelConnexion;
 
     _correspondence["AddContact"] = "Contact";
     _correspondence["DeleteContact"] = "Contact";
@@ -71,7 +74,7 @@ void Controller::feedData(const QVariant& data)
             }
             catch (Exception *e)
             {
-                this->_view->printError(e->getMessage());
+                error(e->getMessage());
                 delete e;
             }
         }
@@ -80,19 +83,19 @@ void Controller::feedData(const QVariant& data)
 
 void Controller::appendLog(const QString& s)
 {
-    this->_view->appendLog(s);
+    //this->_view->appendLog(s);
 }
 
 void Controller::editContact(QListWidgetItem* item)
 {
     try {
-        this->_view->createAddContact(item->text(),
+        /*this->_view->createAddContact(item->text(),
                                       dynamic_cast<ModelContact*>(_modelContacts)->getKey(item->text()),
-                                      dynamic_cast<ModelContact*>(_modelContacts)->getIp(item->text()));
+                                      dynamic_cast<ModelContact*>(_modelContacts)->getIp(item->text()));*/
     }
     catch (Exception *e)
     {
-        this->_view->printError(e->getMessage());
+        //this->_view->printError(e->getMessage());
         delete e;
     }
 }
@@ -109,7 +112,7 @@ quint16 Controller::getPort() const
 
 void Controller::error(const QString &s)
 {
-    this->_view->printError(s);
+    //this->_view->printError(s);
 }
 
 void Controller::deleteContact()
@@ -117,36 +120,36 @@ void Controller::deleteContact()
     try
     {
         QVector<QString> v;
-        v.append(_view->getSelected());
+        //v.append(_view->getSelected());
         dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
         this->writeToSocket(Protocol::delet(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
     }
     catch (Exception *e)
     {
-        this->_view->printError(e->getMessage());
+        error(e->getMessage());
 	delete e;
     }
 }
 
 bool Controller::addContact()
 {
-    QString pubkey = this->_view->getNewContactKey();
+    /*QString pubkey = this->_view->getNewContactKey();
     QString name = this->_view->getNewContactName();
-    QString ip = this->_view->getContactIp();
+    QString ip = this->_view->getContactIp();*/
 
-    if (name == "" || pubkey == "" || ip == "")
+    /*if (name == "" || pubkey == "" || ip == "")
     {
-        this->_view->printError("One of the mandatory fields is missing");
+        error("One of the mandatory fields is missing");
         return false;
     }
     if (checkName(name) == false)
     {
-        this->_view->printError("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
+        error("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
         return false;
     }
     // if (checkIP(ip) == false)
     // {
-    //     this->_view->printError("the IP is not correctly formated");
+    //     error("the IP is not correctly formated");
     //     return false;
     // }
 
@@ -163,73 +166,72 @@ bool Controller::addContact()
     }
     catch (Exception *e)
     {
-        this->_view->printError(e->getMessage());
+        error(e->getMessage());
         delete e;
         return false;
     }
-    this->_view->deleteAddContact();
+    //this->_view->deleteAddContact();*/
 
     return true;
-    // new Contact (this->e_view->getNewContactName(),
-    //              this->_view->getNewContactKey());
-    //TODO integrate Contact in to model, validate DATA
 }
 
 void Controller::editRootNode()
 {
     ModelRootNode* root = dynamic_cast<ModelRootNode*>(_modelNode);
     bool ok;
-    this->_view->createRootNodeGui(root->getName(),  root->getKey(), root->getIP(), root->getPort().toUShort(&ok));
+    //this->_view->createRootNodeGui(root->getName(),  root->getKey(), root->getIP(), root->getPort().toUShort(&ok));
 }
 
 void Controller::editConfig()
 {
     //ModelConfig* conf = dynamic_cast<ModelConfig*>(_modelConfig);
-    this->_view->createConfigGui();
+    //this->_view->createConfigGui();
 }
 
 bool	Controller::changeRootNode()
 {
+    BodyConnexion* body = dynamic_cast<BodyConnexion*>(_view->getBody());
+
     bool ok;
-    quint16 port =  _view->getRootPort().toUShort(&ok);
-    QString ip = this->_view->getRootIP();
-    QString pubkey = this->_view->getRootKey();
-    QString name = this->_view->getRootName();
+    QString name = body->getName();
+    QString ip = body->getAdress();
+    quint16 port =  body->getPort().toUShort(&ok);
+    QString pubkey = body->getKey();
 
     if (ok == false)
     {
-        this->_view->printError("Error: Port is not a number");
+        error("Error: Port is not a number");
         return false;
     }
     if (ip == "" || name == "" || pubkey == "")
     {
-        this->_view->printError("one of the mandatory fields is missing");
+        error("one of the mandatory fields is missing");
         return false;
     }
     if (checkName(name) == false)
     {
-        this->_view->printError("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
+        error("the name is not correctly formated (only alpha-numeric and '_' characters are allowed)");
         return false;
     }
     if (checkIP(ip) == false)
     {
-        this->_view->printError("the IP is not correctly formated");
+        error("the IP is not correctly formated");
         return false;
     }
 
     try
     {
-        dynamic_cast<ModelRootNode*>(this->_modelNode)->changeRootNode(name, pubkey, ip, _view->getRootPort());
+        dynamic_cast<ModelConnexion*>(this->_modelConnexion)->changeConnexionInfo(name, pubkey, ip, body->getPort());
         if (this->_network.isConnected() == false)
             this->_network.setConnection(ip, port);
     }
     catch (Exception* e)
     {
-        this->_view->printError(e->getMessage());
+        error(e->getMessage());
         delete e;
         return false;
     }
-    this->_view->deleteRootNode();
+    //this->_view->changeBody();
     return true;
 }
 
@@ -249,7 +251,7 @@ void		Controller::restart()
     }
     catch (Exception* e)
     {
-        this->_view->printError(e->getMessage());
+        error(e->getMessage());
         delete e;
     }
 }
@@ -269,7 +271,26 @@ void Controller::changeConfig()
   //        write change in modelConfig
   //   }
   // }
-    this->_view->deleteConfig();
+  //  this->_view->deleteConfig();
+}
+
+void    Controller::setConnexionParam()
+{
+    BodyConnexion* body = dynamic_cast<BodyConnexion*>(_view->getBody());
+    const QMap<QString, QVariant>* info = dynamic_cast<ModelConnexion*>(_modelConnexion)->getData();
+    QVariant v = info->operator []("Name");
+    body->setName(v.toString());
+    v = info->operator[]("Adress");
+    body->setAdress(v.toString());
+    v = info->operator[]("Port");
+    body->setPort(v.toString());
+    v = info->operator[]("Key");
+    body->setKey(v.toString());
+}
+
+void    Controller::initWindow()
+{
+    setConnexionParam();
 }
 
 bool    Controller::checkIPv4(QString& str) const
@@ -344,12 +365,12 @@ QString	Controller::openPubKey()
 
 void Controller::connected()
 {
-    this->_view->connected();
+    //this->_view->connected();
 }
 
 void Controller::disconnected()
 {
-    this->_view->disconnected();
+    //this->_view->disconnected();
     dynamic_cast<ModelContact*>(this->_modelContacts)->clear();
 }
 
@@ -360,5 +381,5 @@ void Controller::writeToSocket(const QString& buff)
 
 void Controller::printError(const QString& message)
 {
-    this->_view->printError(message);
+    error(message);
 }

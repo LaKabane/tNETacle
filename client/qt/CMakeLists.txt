@@ -33,6 +33,7 @@ SET(client_HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/include/theader.h
     ${CMAKE_CURRENT_LIST_DIR}/include/bodyconnexion.h
     ${CMAKE_CURRENT_LIST_DIR}/include/imodel.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/iclientgui.h
     ${CMAKE_CURRENT_LIST_DIR}/include/controller.h
     ${CMAKE_CURRENT_LIST_DIR}/include/modelcontact.h
     ${CMAKE_CURRENT_LIST_DIR}/include/modelconfig.h

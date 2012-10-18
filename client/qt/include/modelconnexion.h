@@ -18,19 +18,24 @@
 #define MODELCONNEXION_H
 
 #include "imodel.h"
+#include "controller.h"
 #include <QString>
 #include <QMap>
 
 class ModelConnexion : public IModel
 {
 public:
-    ModelConnexion();
+    ModelConnexion(Controller*);
     virtual const QString &getObjectName() const;
     virtual void  feedData(const QString &, const QVariant&);
     virtual const QMap<QString, QVariant>* getData() const;
 
+    void    changeConnexionInfo(const QString&, const QString&, const QString&, const QString&);
+
 private:
-    static const QString    _name;
+    QMap<QString, QVariant>*    _infos;
+    static const QString        _name;
+    Controller*                 _controller;
 };
 
 #endif // MODELCONNEXION_H

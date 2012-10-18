@@ -19,6 +19,7 @@
 
 #include <QWidget>
 #include "ui_theader.h"
+#include "controller.h"
 
 namespace Ui {
     class THeader;
@@ -29,8 +30,11 @@ class THeader : public QFrame, public Ui::THeader
     Q_OBJECT
 
 public:
-    explicit   THeader(QWidget* parent = 0);
+    explicit   THeader(QWidget* parent = 0, Controller* controller = 0);
     virtual    ~THeader();
+
+private:
+    Controller*    _controller;
 };
 
 #endif /* !THEADER_H_ */

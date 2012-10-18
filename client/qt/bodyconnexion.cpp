@@ -16,10 +16,12 @@
 
 #include "bodyconnexion.h"
 
-BodyConnexion::BodyConnexion(QWidget* parent) :
-    QFrame(parent)
+BodyConnexion::BodyConnexion(QWidget* parent, Controller* controller) :
+    QFrame(parent), _controller(controller)
 {
     this->setupUi(this);
+
+    QObject::connect(_isOk, SIGNAL(accepted()), controller, SLOT(changeRootNode()));
 }
 
 BodyConnexion::~BodyConnexion()

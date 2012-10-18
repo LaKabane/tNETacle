@@ -19,9 +19,18 @@
 
 const QString ModelConnexion::_name = "Connexion";
 
-ModelConnexion::ModelConnexion()
+ModelConnexion::ModelConnexion(Controller* controller) :
+    _controller(controller)
 {
+    _infos = new QMap<QString, QVariant>();
+
+    _infos->insert("Name", "Default");
+    _infos->insert("Adress", "127.0.0.1");
+    _infos->insert("Port", "4243");
+    _infos->insert("Key", "key");
+
 }
+
 const QString &
 ModelConnexion::getObjectName() const
 {
@@ -37,6 +46,14 @@ ModelConnexion::feedData(const QString& command, const QVariant&)
 const QMap<QString, QVariant>*
 ModelConnexion::getData() const
 {
-    qDebug() << "asking for void data in model log";
-    return 0;
+    return _infos;
+}
+
+void
+ModelConnexion::changeConnexionInfo(const QString& name, const QString& pubkey, const QString& ip, const QString& port)
+{
+  _infos->operator[]("Name") = name;
+  _infos->operator []("Key") = pubkey;
+  _infos->operator []("Adress") = ip;
+  _infos->operator []("Port") = port;
 }

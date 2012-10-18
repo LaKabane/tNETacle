@@ -18,7 +18,7 @@
     <normaloff>:/tools/root_notconnected.png</normaloff>:/tools/root_notconnected.png</iconset>
   </property>
   <property name="frameShape">
-   <enum>QFrame::Box</enum>
+   <enum>QFrame::StyledPanel</enum>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0" rowspan="2">

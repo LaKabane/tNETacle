@@ -20,7 +20,6 @@
 #include <QMap>
 #include <QString>
 #include "imodel.h"
-#include "iclientgui.h"
 
 class Controller;
 
@@ -30,7 +29,7 @@ class ModelContact : public IModel
   typedef QMap<QString, fun> mapfun;
 
 public:
-  ModelContact(Controller &, IClientGUI*);
+  ModelContact(Controller &);
   virtual       ~ModelContact(){}
 
   void          addContact(const QVector<QString>&);
@@ -49,7 +48,6 @@ private:
   Controller    &_controller;
   static const QString _name;
   static mapfun	_commands;
-  IClientGUI*	_view;
 
 protected: // from IModel
   virtual const QMap<QString, QVariant>* getData() const;

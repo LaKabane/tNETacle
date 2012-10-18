@@ -18,7 +18,7 @@
     <normaloff>:/tools/root_notconnected.png</normaloff>:/tools/root_notconnected.png</iconset>
   </property>
   <property name="frameShape">
-   <enum>QFrame::Box</enum>
+   <enum>QFrame::StyledPanel</enum>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">
@@ -58,7 +58,7 @@
     </widget>
    </item>
    <item row="3" column="1" colspan="4">
-    <widget class="QDialogButtonBox" name="isOk">
+    <widget class="QDialogButtonBox" name="_isOk">
      <property name="standardButtons">
       <set>QDialogButtonBox::Ok|QDialogButtonBox::Save</set>
      </property>
@@ -75,13 +75,13 @@
     </widget>
    </item>
    <item row="0" column="1" colspan="4">
-    <widget class="QLineEdit" name="name"/>
+    <widget class="QLineEdit" name="_name"/>
    </item>
    <item row="1" column="4">
-    <widget class="QLineEdit" name="port"/>
+    <widget class="QLineEdit" name="_port"/>
    </item>
    <item row="1" column="1">
-    <widget class="QLineEdit" name="adress"/>
+    <widget class="QLineEdit" name="_adress"/>
    </item>
    <item row="1" column="3">
     <widget class="QLabel" name="column">
@@ -91,7 +91,7 @@
     </widget>
    </item>
    <item row="2" column="1">
-    <widget class="QTextEdit" name="pubKey"/>
+    <widget class="QTextEdit" name="_pubKey"/>
    </item>
   </layout>
  </widget>

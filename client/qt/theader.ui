@@ -20,7 +20,7 @@
    <string>Widget</string>
   </property>
   <property name="frameShape">
-   <enum>QFrame::Box</enum>
+   <enum>QFrame::StyledPanel</enum>
   </property>
   <widget class="QWidget" name="logo" native="true">
    <property name="geometry">

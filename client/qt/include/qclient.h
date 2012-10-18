@@ -19,19 +19,22 @@
 
 #include <QMainWindow>
 #include "controller.h"
+#include "iclientgui.h"
 #include "ui_qclient.h"
 
 namespace Ui {
     class QClient;
 }
 
-class QClient : public QMainWindow, Ui::QClient
+class QClient : public QMainWindow, public Ui::QClient, public IClientGUI
 {
     Q_OBJECT
 
 public:
-    explicit   QClient(QMainWindow* parent = 0, Controller* controller = 0);
+    explicit   QClient(Controller* controller = 0);
     virtual    ~QClient();
+    QWidget*    getHeader() const;
+    QWidget*    getBody() const;
 
 private:
     Controller*    _controller;

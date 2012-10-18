@@ -26,6 +26,7 @@
 #include "modelconfig.h"
 #include "modellog.h"
 #include "modelrootnode.h"
+#include "modelconnexion.h"
 #include "network.h"
 
 class IClientGUI;
@@ -34,7 +35,7 @@ class Controller : public QObject
 {
   Q_OBJECT
 public:
-  Controller(IClientGUI*);
+  Controller();
   virtual ~Controller() {}
 
   const QString		getIp() const;
@@ -53,6 +54,10 @@ public:
   const QMap<QString, QVariant>* getConfigMenu() const;
 
   void			printError(const QString&);
+  void          setGui(IClientGUI* gui) {_view = gui;}
+  void          setConnexionParam();
+
+  void          initWindow();
 
 public slots:
   bool			addContact();
@@ -73,12 +78,13 @@ private:
   bool			checkIPv6(QString&) const;
   bool			checkHostNameFormat(QString& str) const;
 
-  IClientGUI*		_view;
-  bool			editing;
+  IClientGUI*    _view;
+  bool          editing;
   IModel*		_modelContacts;
   IModel*		_modelNode;
   IModel*		_modelLog;
   IModel*		_modelConfig;
+  IModel*       _modelConnexion;
 
   // // TODO : put the root node here with a correct type
   // REMOVED: in _network.

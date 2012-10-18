@@ -19,8 +19,8 @@
 #include <QWidget>
 #include <iostream>
 
-THeader::THeader(QWidget* parent) :
-  QFrame(parent)
+THeader::THeader(QWidget* parent, Controller* controller) :
+    QFrame(parent), _controller(controller)
 {
   this->setupUi(this);
 }

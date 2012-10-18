@@ -21,10 +21,9 @@
 const QString ModelContact::_name = "Contact";
 ModelContact::mapfun ModelContact::_commands = mapfun();
 
-ModelContact::ModelContact(Controller& controller, IClientGUI* gui):
+ModelContact::ModelContact(Controller& controller):
   _contacts(),
-  _controller(controller),
-  _view(gui)
+  _controller(controller)
 {
   _commands["AddContact"] = &ModelContact::addContact;
   _commands["DeleteContact"] = &ModelContact::delContact;
@@ -83,7 +82,7 @@ void ModelContact::addContact(const QVector<QString>& param)
     tmp.insert("Key", QVariant(key));
     tmp.insert("Ip", QVariant(ip));
     _contacts[name] = QVariant(tmp);
-    _view->addContact(name);
+    /*_view->addContact(name);*/
 }
 
 const QString ModelContact::getKey(const QString &name)
@@ -107,7 +106,7 @@ void ModelContact::delContact(const QVector<QString>& param)
     const QString& name = param[0];
     if (_contacts.remove(name) != 1)
       throw new Exception("Error: Name (" + name + ") does not exist");
-    this->_view->deleteNamed(name);
+    //this->_view->deleteNamed(name);
 }
 
 void  ModelContact::editContact(const QVector<QString>& param)
