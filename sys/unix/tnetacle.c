@@ -135,7 +135,7 @@ init_pipe_endpoint(int imsg_fds[2], struct imsg_data *data) {
     data->is_ready_write = 0;
     data->is_ready_read = 0;
     imsg_init(data->ibuf, imsg_fds[1]);
-//    evutil_make_socket_nonblocking(imsg_fds[1]);
+    evutil_make_socket_nonblocking(imsg_fds[1]);
     event = event_new(data->evbase, imsg_fds[1],
 		      EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
 		      &tnt_imsg_callback, data);
