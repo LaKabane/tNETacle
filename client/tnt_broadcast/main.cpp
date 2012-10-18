@@ -79,7 +79,7 @@ broadcast(std::string ip,
 }
 
 int
-main(int argc, const char *argv[])
+main(int argc, char *argv[])
 {
     po::options_description desc("Allowed options");
     po::variables_map vm;
