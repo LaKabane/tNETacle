@@ -171,7 +171,7 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
                 s_status = v_cptr_at(splited, 2);
             if (s_status == NULL || strcmp(s_status, "ok") != 0)
             {
-                evbuffer_add_printf(out, "udp_port:%d ok\r\n", udp_get_port(&s->udp)); 
+                evbuffer_add_printf(out, "udp_port:%d ok\r\n", udp_get_port(s->udp));
             }
             udp_register_new_peer(s->udp,
                                   (struct sockaddr *)&udp_addr,
