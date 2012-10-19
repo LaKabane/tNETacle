@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>bodyaddgroup</class>
- <widget class="QFrame" name="bodyaddgroup">
+ <class>BodyAddGroup</class>
+ <widget class="QFrame" name="BodyAddGroup">
   <property name="geometry">
    <rect>
     <x>0</x>

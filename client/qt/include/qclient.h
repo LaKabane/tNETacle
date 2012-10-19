@@ -30,16 +30,32 @@ class QClient : public QMainWindow, public Ui::QClient, public IClientGUI
 {
     Q_OBJECT
 
+    enum state
+    {
+        CONNEXION,
+        MAIN,
+        ADDGROUP
+    };
+
 public:
     explicit   QClient(Controller* controller = 0);
     virtual    ~QClient();
     QWidget*    getHeader() const;
     QWidget*    getBody() const;
+    void        changeNextBody();
+    void        changePrevBody();
+    void        connected();
+    void        disconnected();
 
 private:
     Controller*    _controller;
     QWidget*    _header;
     QWidget*    _body;
+    state       _state;
+
+    QWidget*    _bodyConnexion;
+    QWidget*    _bodyMain;
+    QWidget*    _bodyAddGroup;
 };
 
 #endif /* !QCLIENT_H_ */

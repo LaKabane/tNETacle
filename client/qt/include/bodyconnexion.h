@@ -27,6 +27,7 @@ namespace Ui {
 
 class BodyConnexion : public QFrame, public Ui::BodyConnexion
 {
+    Q_OBJECT
 public:
     explicit BodyConnexion(QWidget* parent = 0, Controller* controller = 0);
     ~BodyConnexion();

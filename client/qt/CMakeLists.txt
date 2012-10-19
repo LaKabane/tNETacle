@@ -24,6 +24,8 @@ SET(client_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/theader.cpp
     ${CMAKE_CURRENT_LIST_DIR}/bodyconnexion.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/bodymain.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/bodyaddgroup.cpp
 )
 
 SET(client_HEADERS
@@ -32,6 +34,8 @@ SET(client_HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/include/qclient.h
     ${CMAKE_CURRENT_LIST_DIR}/include/theader.h
     ${CMAKE_CURRENT_LIST_DIR}/include/bodyconnexion.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/bodymain.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/bodyaddgroup.h
     ${CMAKE_CURRENT_LIST_DIR}/include/imodel.h
     ${CMAKE_CURRENT_LIST_DIR}/include/iclientgui.h
     ${CMAKE_CURRENT_LIST_DIR}/include/controller.h

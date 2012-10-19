@@ -231,7 +231,6 @@ bool	Controller::changeRootNode()
         delete e;
         return false;
     }
-    //this->_view->changeBody();
     return true;
 }
 
@@ -365,12 +364,12 @@ QString	Controller::openPubKey()
 
 void Controller::connected()
 {
-    //this->_view->connected();
+    this->_view->connected();
 }
 
 void Controller::disconnected()
 {
-    //this->_view->disconnected();
+    this->_view->disconnected();
     dynamic_cast<ModelContact*>(this->_modelContacts)->clear();
 }
 
