@@ -58,7 +58,7 @@ class broadcaster
         broadcast.set_option(asio::socket_base::reuse_address(true));
 
         std::cout << "local endpoint: " << local_endpoint << std::endl;
-        std::cout << "tnetalce endpoint: " << tnetacle_endpoint << std::endl;
+        std::cout << "tnetacle endpoint: " << tnetacle_endpoint << std::endl;
         
         broadcast.bind(local_endpoint);
     }
@@ -75,15 +75,15 @@ class broadcaster
 
             if (data.find(tnetacle_pres) == std::string::npos)
             {
-                std::stringstream data;
+                std::stringstream ssdata;
 
                 this->request.put("AddContact.Ip", data);
                 this->request.put("AddContact.Name", "bite");
                 this->request.put("AddContact.Key", "bitebitebite");
-                pt::json_parser::write_json(data, this->request);
-                this->tnetacle << data.str();
+                pt::json_parser::write_json(ssdata, this->request);
+                this->tnetacle << ssdata.str();
                 std::cerr << "send to [" << this->tnetacle_endpoint << "]: "
-                    << data.str();
+                    << ssdata.str();
             }
         }
         this->broadcast.async_receive_from(asio::buffer(this->buffer),
