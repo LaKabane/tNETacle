@@ -6,6 +6,8 @@ PROJECT(tnt_broadcast)
 
 find_package(Boost REQUIRED COMPONENTS system program_options)
 
+SET(CMAKE_CXX_FLAGS "-std=c++11")
+
 SET(tnt_broadcast_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/main.cpp
 )
