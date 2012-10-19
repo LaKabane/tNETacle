@@ -22,7 +22,7 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="2">
-    <widget class="QPushButton" name="deletePeer">
+    <widget class="QPushButton" name="_deletePeer">
      <property name="text">
       <string/>
      </property>
@@ -42,7 +42,7 @@
     </widget>
    </item>
    <item row="2" column="2">
-    <widget class="QPushButton" name="groupPeers">
+    <widget class="QPushButton" name="_groupPeers">
      <property name="text">
       <string/>
      </property>
@@ -62,7 +62,7 @@
     </widget>
    </item>
    <item row="0" column="2">
-    <widget class="QPushButton" name="addPeer">
+    <widget class="QPushButton" name="_addPeer">
      <property name="text">
       <string/>
      </property>
@@ -82,7 +82,7 @@
     </widget>
    </item>
    <item row="0" column="0" rowspan="4">
-    <widget class="QTreeWidget" name="listContacts">
+    <widget class="QTreeWidget" name="_listContacts">
      <column>
       <property name="text">
        <string>Contacts</string>
@@ -101,7 +101,7 @@
     </widget>
    </item>
    <item row="3" column="2">
-    <widget class="QTreeWidget" name="listGroups">
+    <widget class="QTreeWidget" name="_listGroups">
      <column>
       <property name="text">
        <string>Groups</string>

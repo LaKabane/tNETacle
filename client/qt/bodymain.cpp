@@ -20,4 +20,6 @@ BodyMain::BodyMain(QWidget *parent, Controller* controller) :
     QFrame(parent)
 {
     this->setupUi(this);
+    _listContacts->clear();
+    _listGroups->clear();
 }
