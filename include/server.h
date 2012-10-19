@@ -40,20 +40,12 @@ struct mc;
 
 #define VECTOR_TYPE struct mc
 #define VECTOR_PREFIX mc
-#define VECTOR_FORWARD
 #include "vector.h"
 
 #define VECTOR_TYPE struct evconnlistener*
 #define VECTOR_PREFIX evl
 #define VECTOR_TYPE_SCALAR
-#define VECTOR_FORWARD
 #include "vector.h"
-
-#define VECTOR_TYPE struct frame
-#define VECTOR_PREFIX frame
-#define VECTOR_FORWARD
-#include "vector.h"
-
 
 #if defined Windows
 # define ssize_t SSIZE_T

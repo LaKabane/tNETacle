@@ -40,11 +40,6 @@
 #include "tntsched.h"
 #include "dtls.h"
 
-#define VECTOR_TYPE struct udp_peer
-#define VECTOR_PREFIX udp
-#define VECTOR_NON_STATIC
-#include "vector.h"
-
 void
 forward_udp_frame_to_other_peers(struct udp *udp,
                                  struct frame *current_frame,

@@ -51,17 +51,6 @@
 #include "wincompat.h"
 #include "client.h"
 
-#define VECTOR_TYPE struct mc
-#define VECTOR_PREFIX mc
-#define VECTOR_NON_STATIC
-#include "vector.h"
-
-#define VECTOR_TYPE struct evconnlistener*
-#define VECTOR_PREFIX evl
-#define VECTOR_TYPE_SCALAR
-#define VECTOR_NON_STATIC
-#include "vector.h"
-
 #define VECTOR_TYPE char*
 #define VECTOR_PREFIX cptr
 #define DEFAULT_ALLOC_SIZE 4

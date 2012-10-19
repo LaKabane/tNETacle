@@ -101,20 +101,26 @@ specifier type vector_(back)(struct vector_name *v);
 specifier type *vector_(frontref)(struct vector_name *v);
 specifier type *vector_(backref)(struct vector_name *v);
 specifier type *vector_(find_if)(struct vector_name *v,
-                                 int (*)(type const *, void *),
+                                 int (* const)(type const *, void *),
                                  void *ctx);
 specifier void vector_(clean)(struct vector_name *v);
 # ifdef VECTOR_TYPE_SCALAR
 
 specifier type *vector_(find)(struct vector_name *v, type *val);
-specifier void vector_(foreach)(struct vector_name *v, void (*)(type));
-specifier void vector_(foreach_ctx)(struct vector_name *v, void (*)(type, void *), void *ctx);
+specifier void vector_(foreach)(struct vector_name *v,
+                                void (* const)(type));
+specifier void vector_(foreach_ctx)(struct vector_name *v,
+                                    void (* const)(type, void *),
+                                    void *ctx);
 specifier void vector_(push)(struct vector_name *v, type val);
 
 # else
 
-specifier void vector_(foreach)(struct vector_name *v, void (*)(type const *));
-specifier void vector_(foreach_ctx)(struct vector_name *v, void (*)(type const *, void *), void *ctx);
+specifier void vector_(foreach)(struct vector_name *v,
+                                void (* const)(type const *));
+specifier void vector_(foreach_ctx)(struct vector_name *v,
+                                    void (* const)(type const *, void *),
+                                    void *ctx);
 specifier void vector_(push)(struct vector_name *v, type *val);
 
 # endif
@@ -347,7 +353,7 @@ specifier void vector_(erase_range)(struct vector_name *v,
 }
 
 specifier type *vector_(find_if)(struct vector_name *v,
-                                 int (*cmp)(type const *, void *),
+                                 int (*const cmp)(type const *, void *),
                                  void *ctx)
 {
   type* it = NULL;
@@ -388,7 +394,7 @@ specifier type * vector_(find)(struct vector_name *v, type *ptr)
 }
 
 specifier void vector_(foreach)(struct vector_name *v,
-                                      void (*each)(type))
+                                      void (* const each)(type))
 {
     type *it = NULL;
     type *ite = NULL;
@@ -417,7 +423,8 @@ specifier void vector_(foreach_ctx)(struct vector_name *v,
 
 #else
 
-specifier void vector_(foreach)(struct vector_name *v, void (*each)(type const *))
+specifier void vector_(foreach)(struct vector_name *v,
+                                void (*const each)(type const *))
 {
     type *it = NULL;
     type *ite = NULL;

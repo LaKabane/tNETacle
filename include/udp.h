@@ -51,7 +51,6 @@ struct udp_peer
 
 #define VECTOR_TYPE struct udp_peer
 #define VECTOR_PREFIX udp
-#define VECTOR_FORWARD
 #include "vector.h"
 
 struct udp

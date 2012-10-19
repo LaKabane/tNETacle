@@ -21,11 +21,6 @@
 #include "server.h"
 #include "frame.h"
 
-#define VECTOR_TYPE struct frame
-#define VECTOR_PREFIX frame
-#define VECTOR_NON_STATIC
-#include "vector.h"
-
 void
 frame_free(struct frame const *f)
 {
