@@ -59,16 +59,24 @@ int mc_add_raw_data(struct mc *,
 int mc_hello(struct mc *,
              struct udp *);
 
-int mc_peer_accept(struct server *s,
-               struct event_base *evbase,
-               struct sockaddr *sock,
-               int socklen,
-               int fd);
+struct mc *mc_peer_accept(struct server *s,
+                          struct event_base *evbase,
+                          struct sockaddr *sock,
+                          int socklen,
+                          int fd);
 
-int mc_peer_connect(struct server *s,
-                struct event_base *evbase,
-                struct sockaddr *sock,
-                int socklen);
+struct mc *mc_peer_connect(struct server *s,
+                           struct event_base *evbase,
+                           struct sockaddr *sock,
+                           int socklen);
+
+int mc_established(struct server *s,
+                   struct sockaddr *,
+                   int socklen);
+
+int mc_pending(struct server *s,
+                   struct sockaddr *,
+                   int socklen);
 
 /* used for debug, and print a mc */
 char *mc_presentation(struct mc*,

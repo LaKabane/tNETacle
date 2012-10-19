@@ -132,7 +132,7 @@ mc_init(struct mc *self,
     return 0;
 }
 
-int
+struct mc *
 mc_peer_connect(struct server *s,
                 struct event_base *evbase,
                 struct sockaddr *sock,
@@ -145,23 +145,27 @@ mc_peer_connect(struct server *s,
     address_presentation(sock, socklen, peername, sizeof(peername));
     memset(&tmp, 0, sizeof(tmp));
     tmp.ssl_flags = BUFFEREVENT_SSL_CONNECTING;
+    if (mc_established(s, sock, socklen) != 0)
+    {
+        log_notice("[META] [CONNECT] connexion already established with %s", peername);
+        return NULL;
+    }
     err = mc_init(&tmp, evbase, -1, sock, socklen, s->server_ctx);
     if (err == -1) {
-        log_warn("unable to allocate a socket for connecting to %s",
+        log_warn("[META] [CONNECT] unable to allocate a socket for connecting to %s",
                  peername);
-        return err;
+        return NULL;
     }
     bufferevent_setcb(tmp.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
     err = bufferevent_socket_connect(tmp.bev, sock, socklen);
     if (err == -1) {
         log_warn("unable to connect to %s", peername);
-        return err;
+        return NULL;
     }
-    v_mc_push(s->pending_peers, &tmp);
-    return 0;
+    return v_mc_insert(s->pending_peers, &tmp);
 }
 
-int
+struct mc *
 mc_peer_accept(struct server *s,
                struct event_base *evbase,
                struct sockaddr *sock,
@@ -177,11 +181,17 @@ mc_peer_accept(struct server *s,
     /* Notifiy the mc_init that we are in an SSL_ACCEPTING state*/
     /* Even if we are not in a SSL context, mc_init know what to do anyway*/
     mc.ssl_flags = BUFFEREVENT_SSL_ACCEPTING;
+    if (mc_established(s, sock, socklen) != 0)
+    {
+        log_notice("[META] [ACCEPT] connexion already established with %s", peername);
+        close(fd);
+        return NULL;
+    }
     errcode = mc_init(&mc, evbase, fd, sock, socklen, s->server_ctx);
     if (errcode == -1)
     {
-        log_notice("[META] failed to open a meta connexion with %s", peername);
-        return errcode;
+        log_notice("[META] [ACCEPT] failed to open a meta connexion with %s", peername);
+        return NULL;
     }
     bufferevent_setcb(mc.bev,
                       server_mc_read_cb,
@@ -189,8 +199,7 @@ mc_peer_accept(struct server *s,
                       server_mc_event_cb,
                       s);
     log_debug("[META] opening a meta-connexion with %s", peername);
-    v_mc_push(s->peers, &mc);
-    return 0;
+    return v_mc_insert(s->peers, &mc);
 }
 
 
@@ -253,4 +262,32 @@ mc_establish_tunnel(struct mc *self)
 {
     (void)self;
     return 0;
+}
+
+static int
+find_established(struct mc const *mc, void *ctx)
+{
+    struct sockaddr *test = (struct sockaddr *)ctx;
+   
+    return evutil_sockaddr_cmp(mc->p.address, test, 0) == 0;
+}
+
+int
+mc_established(struct server *s, struct sockaddr *sck, int socklen)
+{
+    struct mc * it;
+
+    (void)socklen;
+    it = v_mc_find_if(s->peers, find_established, sck);
+    return !(it == v_mc_end(s->peers));
+}
+
+int
+mc_pending(struct server *s, struct sockaddr *sck, int socklen)
+{
+    struct mc * it;
+
+    (void)socklen;
+    it = v_mc_find_if(s->pending_peers, find_established, sck);
+    return !(it == v_mc_end(s->pending_peers));
 }
