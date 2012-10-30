@@ -81,6 +81,7 @@ set(SOURCES_LIST
   src/coro.c
   src/sched.c
   src/dtls.c
+  src/subset.c
 )
 
 set(HEADERS_LIST 
@@ -103,7 +104,9 @@ set(HEADERS_LIST
     include/frame.h
     include/coro.h
     include/tntsched.h
-    include/dtls.h)
+    include/dtls.h
+    include/subset.h
+)
 
 # OS families specific things
 # ---------------------------
