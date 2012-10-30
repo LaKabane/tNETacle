@@ -99,6 +99,7 @@ struct rw_events *get_events(struct fiber_args *s, int fd, short event)
                                        s->fib);
             }
         }
+        return t;
     }
     return NULL;
 }
@@ -361,7 +362,6 @@ ssize_t async_sendto(struct fiber_args *s,
             struct rw_events *it;
 
             it = get_events(s, fd, EV_WRITE);
-            /* XXX SIGSEGV */
             event_add(it->w_event, NULL);
             s->fib->fib_op.op_type = SEND;
             s->fib->fib_op.fd = (intptr_t)fd;
