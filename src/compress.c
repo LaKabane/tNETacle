@@ -160,7 +160,7 @@ uchar *tnt_uncompress_sized(uchar *compressed_data, const size_t size,
   size_t *uncompressed_size)
 {
     int index = size - sizeof(int);
-    printf("\n%d - %d = %d\n",size, sizeof(int), index);
+    printf("\n%d - %d = %d\n", (int)size, (int)sizeof(int), index);
     int net_size = *((int *)(compressed_data + (index)));
     int host_size = ntohl(net_size);
     /* i = memcpy(&i, compressed_data + (size - sizeof(int)), sizeof(int)); */

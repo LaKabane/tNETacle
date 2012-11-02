@@ -303,7 +303,7 @@ server_udp_init(struct server *s,
     {
         return -1;
     }
-    getsockname(tmp_sock, (struct sockaddr *)&udp_addr, &len);
+    getsockname(tmp_sock, (struct sockaddr *)&udp_addr, (socklen_t *)&len);
     log_debug("[INIT] [UDP] udp listen on %s",
               address_presentation((struct sockaddr *)&udp_addr,
                                    len,
@@ -369,7 +369,7 @@ frame_recvfrom(void *ctx,
                          sizeof(struct packet_hdr),
                          MSG_PEEK,
                          saddr,
-                         socklen);
+                         (int *)socklen);
     /*
     ** Sometimes, on some OS, recvfrom return EMSGSIZE when the size of the
     ** peeked buffer is not enough to read the entire datagram.

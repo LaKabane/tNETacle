@@ -239,7 +239,7 @@ dtls_recvfrom(int sockfd,
 
     nread = async_recvfrom(async_ctx,
                          sockfd,
-                         tbuf,
+                         (char *)tbuf,
                          sizeof(tbuf),
                          flags,
                          addr,

@@ -24,7 +24,12 @@
 #endif
 
 #include <event2/bufferevent.h>
+#include <event2/buffer.h>
+#include <event2/bufferevent_ssl.h>
 
+#include <openssl/err.h>
+
+#include "log.h"
 #include "client.h"
 #include "tclt_json.h"
 #include "server.h"
@@ -38,7 +43,6 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
     struct evbuffer *buf = NULL;
     char buff[4096];
     elements *ele;
-    int i;
 
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
@@ -81,8 +85,6 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
 void
 client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
-    struct server *s = (struct server *)ctx;
-
     if (events & BEV_EVENT_ERROR)
     {
         int everr;
