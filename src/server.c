@@ -135,7 +135,6 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
     char *line;
 
     /* Get rid of every input */
-    (void)s;
     while ((line = evbuffer_readln(in, &len, EVBUFFER_EOL_CRLF)) != NULL)
     {
         struct vector_cptr *splited;

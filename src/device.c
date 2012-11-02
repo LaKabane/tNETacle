@@ -130,7 +130,7 @@ server_device(void *async_ctx)
          */
 
         frame_alloc(&tmp, FRAME_DYN_SIZE);
-        n = async_event(async_ctx, tap_fd, EV_READ);
+        async_event(async_ctx, tap_fd, EV_READ);
         while ((n = read(tap_fd, tmp.frame, FRAME_DYN_SIZE)) != -1)
         {
             if (n == -1)

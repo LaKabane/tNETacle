@@ -347,6 +347,7 @@ server_udp_new(struct server *s,
     err = server_udp_init(s, udp, addr, len);
     if (err == -1)
     {
+        free(udp);
         return NULL;
     }
     return udp;
@@ -417,6 +418,11 @@ udp_get_port(struct udp *udp)
         struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp->udp_addr;
 
         port = ntohs(sin6->sin6_port);
+    }
+    else
+    {
+        log_warnx("We do not support ipv8");
+        return 0;
     }
     return port;
 }

@@ -158,8 +158,8 @@ main(int argc, char *argv[]) {
             usage();
         }
     }
-    argc -= optind;
-    argv += optind;
+    (void)argc;
+    (void)optind;
 
     log_init();
     log_set_prefix("pre-fork");
