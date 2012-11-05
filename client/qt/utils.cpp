@@ -16,7 +16,7 @@
 
 #include "utils.h"
 #include "exception.h"
-
+/*
 eType types[] =
 	{
 		{E_START_MAP, &Utils::createVariantMap},
@@ -118,8 +118,8 @@ Utils::createVariantArray(elements** e, bool& ok)
 			*e = (*e)->next;
 			return qlist;
 		}
-	}
-	ok = false;
+    }
+    ok = false;
 	return qlist;
 }
 
@@ -157,19 +157,19 @@ Utils::createVariant(elements* e)
 	if (tmp != NULL && tmp->type != E_NOTHING)
 	{
 		throw new QString("Error, buffer received not at the end");
-	}
+    }
 	return qvar;
 }
-
+*/
 QVariant*
 Utils::getVariant(const char* buf, size_t len)
 {
 	QVariant* qvar = 0;
-	elements* e = tclt_parse(buf, len);
+    /*elements* e = tclt_parse(buf, len);
 
 	if (e == 0)
 		return 0;
 
-	qvar = Utils::createVariant(e);
+    qvar = Utils::createVariant(e);*/
 	return qvar;
 }
