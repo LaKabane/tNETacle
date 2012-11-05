@@ -96,6 +96,7 @@ set(HEADERS_LIST
     include/tntsocket.h
     include/tun.h
     include/vector.h
+    include/client.h
     include/imsg.h
     include/wincompat.h
     include/udp.h
