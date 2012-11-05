@@ -29,5 +29,6 @@ struct bufferevent;
 
 void client_mc_read_cb(struct bufferevent *bev, void *ctx);
 void client_mc_event_cb(struct bufferevent *bev, short events, void *ctx);
+void client_init_callback(void);
 
 #endif /* CLIENT_CORE */
