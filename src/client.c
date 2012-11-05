@@ -34,7 +34,9 @@
 
 #include "log.h"
 #include "client.h"
-#include "tclt_json.h"
+#include "tclt.h"
+#include "tclt_parse.h"
+#include "tclt_command.h"
 #include "server.h"
 #include "options.h"
 
@@ -45,7 +47,7 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
     size_t size;
     struct evbuffer *buf = NULL;
     char buff[4096];
-    elements *ele;
+    /*elements *ele;*/
 
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
@@ -54,34 +56,7 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
         if (size != 0)
         {
             buff[size] = '\0';
-            ele = tclt_parse(buff, size);
-            while (ele != NULL)
-            {
-                if (ele->type == E_MAP_KEY)
-                {
-                    if (strcmp(ele->u_value.buf, "Ip") == 0)
-                    {
-                        ele = ele->next;
-                        if (ele == NULL)
-                            return;
-                        struct cfg_sockaddress out;
-                        (void)memset(&out, 0, sizeof out);
-                        /* Take the size from the sockaddr_storage*/
-                        out.len = sizeof(out.sockaddr);
-                        /* TODO: Sanity check with socklen */
-                        if (evutil_parse_sockaddr_port(ele->u_value.buf,
-                                                       (struct sockaddr *)&out.sockaddr,
-                                                       &out.len) == -1)
-                        {
-                            (void)fprintf(stderr, "%s: not a valid IP address\n", ele->u_value.buf);
-                            return ;
-                        }
-                        mc_peer_connect(s, bufferevent_get_base(bev), (struct sockaddr *)&out.sockaddr, out.len);
-                        log_debug("%s\n", ele->u_value.buf);
-                    }
-                }
-                ele = ele->next;
-            }
+            tclt_dispatch_command(buff);
         }
     }
 }
@@ -115,4 +90,19 @@ client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         //BEV_EVENT_ERROR_EOF == end of connection
 		log_warnx("Client shutdown... WOOOOOOTTTT!!!");
     }
+}
+
+static int
+add_peer(void *f)
+{
+    peer *p = (peer*)f;
+
+    printf("add a new peer : %s  %s %s\n", p->name, p->ip, p->key);
+    return 0;
+}
+
+void
+client_init_callback(void)
+{
+    tclt_set_callback_command(ADD_PEER_CMD, add_peer);
 }
