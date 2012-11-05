@@ -18,20 +18,20 @@
 # define UTILS_H_
 
 #include <QVariant>
-#include "tclt_json.h"
+//#include "tclt_json.h"
 
 class Utils
 {
 public:
-	static QVariant* getVariant(const char *buf, size_t len);
+    static QVariant* getVariant(const char *buf, size_t len);
 
-	static QVariant createVariantSimple(elements **e, bool &ok);
+/*	static QVariant createVariantSimple(elements **e, bool &ok);
 	static QVariant createVariantArray(elements **e, bool &ok);
 	static QVariant createVariantMap(elements **e, bool &ok);
 	static QVariant createVariantWithKey(elements **e, bool &ok);
-	static QVariant* createVariant(elements *e);
+    static QVariant* createVariant(elements *e);*/
 };
-
+/*
 struct s_elementType
 {
 	enum element_type type;
@@ -39,5 +39,5 @@ struct s_elementType
 };
 
 typedef struct s_elementType eType;
-
+*/
 #endif /* !UTILS_H_ */
