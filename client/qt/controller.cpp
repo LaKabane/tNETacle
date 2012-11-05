@@ -22,8 +22,9 @@
 #include "exception.h"
 #include "imodel.h"
 #include "bodyconnexion.h"
-
-QMap<QString, QString> Controller::_correspondence = QMap<QString, QString>();
+#include "tclt.h"
+#include "tclt_command.h"
+#include <iostream>
 
 Controller::Controller() :
   _view(0),
@@ -42,43 +43,54 @@ Controller::Controller() :
     _models[_modelConfig->getObjectName()] = _modelConfig;
     _models[_modelConnexion->getObjectName()] = _modelConnexion;
 
-    _correspondence["AddContact"] = "Contact";
-    _correspondence["DeleteContact"] = "Contact";
-    _correspondence["EditContact"] = "Contact";
-
-    _correspondence["AddLog"] = "Log";
+    this->init_callback();
 }
 
 void Controller::feedData(const QVariant& data)
 {
-    if (data.canConvert(QVariant::List))
-    {
-        QList<QVariant> list = data.toList();
-	QList<QVariant>::const_iterator it(list.begin());      
-	const QList<QVariant>::const_iterator it_end = list.end();
-        for (; it != it_end; ++it)
-            feedData(*it);
-    }
-    else if (data.canConvert(QVariant::Map))
-    {
-        QMap<QString, QVariant> map = data.toMap();
-        QMap<QString, QVariant>::const_iterator it(map.begin());
-        const QMap<QString, QVariant>::const_iterator it_end = map.end();
-        for (; it != it_end; ++it)
-	{
-            QString commande = it.key();
-            try {
-                if (_correspondence.contains(commande) == false)
-                    throw new Exception("Error: Received an invalid command");
-                _models[_correspondence[commande]]->feedData(commande, it.value());
-            }
-            catch (Exception *e)
-            {
-                error(e->getMessage());
-                delete e;
-            }
-        }
-    }
+}
+
+int
+Controller::add_peer_controll(void *f)
+{
+    peer *p = static_cast<peer*>(f);
+
+    std::cout << "add peer :" << p->name << " " << p->ip << " " << p->key << std::endl;
+    return 0;
+}
+
+int
+Controller::add_log_controll(void *f)
+{
+    char *str = static_cast<char*>(f);
+
+    std::cout << "add log :" << str << std::endl;
+    return 0;
+}
+
+int
+Controller::delete_peer_controll(void *f)
+{
+    char *str = static_cast<char*>(f);
+
+    std::cout << "delete peer :" << str << std::endl;
+    return 0;
+}
+
+int
+Controller::edit_peer_controll(void *f)
+{
+    std::cout << "edit peer" << std::endl;
+    return 0;
+}
+
+void
+Controller::init_callback()
+{
+    tclt_set_callback_command(ADD_PEER_CMD, add_peer_controll);
+    tclt_set_callback_command(ADD_LOG_CMD, add_log_controll);
+    tclt_set_callback_command(DELETE_PEER_CMD, delete_peer_controll);
+    tclt_set_callback_command(EDIT_PEER_CMD, edit_peer_controll);
 }
 
 void Controller::appendLog(const QString& s)

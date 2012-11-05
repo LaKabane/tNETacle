@@ -77,6 +77,11 @@ private:
   bool			checkIPv4(QString&) const;
   bool			checkIPv6(QString&) const;
   bool			checkHostNameFormat(QString& str) const;
+  void          init_callback();
+  static int           add_peer_controll(void *f);
+  static int           delete_peer_controll(void *f);
+  static int           edit_peer_controll(void *f);
+  static int           add_log_controll(void *f);
 
   IClientGUI*    _view;
   bool          editing;
@@ -92,8 +97,6 @@ private:
 
   QMap<QString, IModel*>	_models;
 
-
-  static QMap<QString, QString> _correspondence;
 };
 
 
