@@ -16,6 +16,7 @@
 
 #include "network.h"
 #include "controller.h"
+#include "tclt_parse.h"
 #include "utils.h"
 #include "exception.h"
 #include <QBuffer>
@@ -34,33 +35,27 @@ Network::Network(Controller& controller)
 
 void Network::read()
 {
-  if (_isConnected == false)
-    return ;
+    if (_isConnected == false)
+        return ;
 
-  QBuffer device;
-  device.open(QIODevice::ReadWrite);
-  QByteArray data = _socket.peek(_socket.size());
-  device.write(data);
-  device.close();
+    QBuffer device;
+    device.open(QIODevice::ReadWrite);
+    QByteArray data = _socket.peek(_socket.size());
+    device.write(data);
+    device.close();
 
-  QVariant* var;
-  try
-  {
-	var = Utils::getVariant(device.buffer().constData(), device.buffer().size());
-  }
-  catch (Exception* e)
-  {
-    this->_controller.printError(e->getMessage());
-    delete e;
-  }
-  if (var == 0)
-  {
-	qDebug() << device.data();
-	return ;
-  }
-  _socket.read(data.size());
-  _controller.feedData(*var);
-  //delete var;
+    try
+    {
+        if (tclt_dispatch_command(device.buffer().constData()))
+            throw new Exception("Error : command not found\n");
+//        var = Utils::getVariant(device.buffer().constData(), device.buffer().size());
+        _socket.read(data.size());
+    }
+    catch (Exception* e)
+    {
+        this->_controller.printError(e->getMessage());
+        delete e;
+    }
 }
 
 void Network::write(const QString& buff)
