@@ -58,6 +58,7 @@ public:
   void          setConnexionParam();
 
   void          initWindow();
+  void          setView(IClientGUI* view);
 
 public slots:
   bool			addContact();

@@ -22,6 +22,8 @@
 
 #include <iostream>
 
+IClientGUI* QClient::_instance = 0;
+
 QClient::QClient(Controller* controller) :
   QMainWindow(0),
   _controller(controller),
@@ -50,6 +52,7 @@ QClient::QClient(Controller* controller) :
     _layout->addWidget(_bodyConnexion);
     _layout->addWidget(_bodyMain);
     _layout->addWidget(_bodyAddGroup);
+    _controller->setGui(this);
 }
 
 QClient::~QClient()
@@ -126,4 +129,12 @@ QClient::disconnected()
     _body->hide();
     _body = _bodyConnexion;
     _body->show();
+}
+
+IClientGUI*
+QClient::get(Controller* c)
+{
+    if (QClient::_instance == 0)
+        QClient::_instance = new QClient(c);
+    return QClient::_instance;
 }

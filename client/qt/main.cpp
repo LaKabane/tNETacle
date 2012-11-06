@@ -26,11 +26,11 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     Controller*    controller = new Controller;
-    QClient client(controller);
-    controller->setGui(&client);
+    QClient* client = static_cast<QClient*>(QClient::get(controller));
+    controller->setView(client);
     controller->initWindow();
 
-    client.show();
+    client->show();
 
     return app.exec();
 }

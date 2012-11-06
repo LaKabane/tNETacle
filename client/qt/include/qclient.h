@@ -38,14 +38,14 @@ class QClient : public QMainWindow, public Ui::QClient, public IClientGUI
     };
 
 public:
-    explicit   QClient(Controller* controller = 0);
-    virtual    ~QClient();
-    QWidget*    getHeader() const;
-    QWidget*    getBody() const;
-    void        changeNextBody();
-    void        changePrevBody();
-    void        connected();
-    void        disconnected();
+    virtual              ~QClient();
+    QWidget*             getHeader() const;
+    QWidget*             getBody() const;
+    void                 changeNextBody();
+    void                 changePrevBody();
+    void                 connected();
+    void                 disconnected();
+    static IClientGUI    *get(Controller* controller = 0);
 
 private:
     Controller*    _controller;
@@ -56,6 +56,9 @@ private:
     QWidget*    _bodyConnexion;
     QWidget*    _bodyMain;
     QWidget*    _bodyAddGroup;
+
+    static IClientGUI* _instance;
+    explicit             QClient(Controller* controller = 0);
 };
 
 #endif /* !QCLIENT_H_ */

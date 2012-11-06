@@ -23,3 +23,10 @@ BodyMain::BodyMain(QWidget *parent, Controller* controller) :
     _listContacts->clear();
     _listGroups->clear();
 }
+
+void
+BodyMain::addNewPeer(const QString& str)
+{
+    QTreeWidgetItem* newGuiPeer = new QTreeWidgetItem(_listContacts);
+    newGuiPeer->setText(0, str);
+}

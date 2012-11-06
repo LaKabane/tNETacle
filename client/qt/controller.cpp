@@ -21,7 +21,9 @@
 #include "protocol.h"
 #include "exception.h"
 #include "imodel.h"
+#include "qclient.h"
 #include "bodyconnexion.h"
+#include "bodymain.h"
 #include "tclt.h"
 #include "tclt_command.h"
 #include <iostream>
@@ -55,7 +57,12 @@ Controller::add_peer_controll(void *f)
 {
     peer *p = static_cast<peer*>(f);
 
-    std::cout << "add peer :" << p->name << " " << p->ip << " " << p->key << std::endl;
+    IClientGUI* view = QClient::get(0);
+    if(view != 0)
+    {
+        BodyMain* mainView = dynamic_cast<BodyMain*>(view->getBody());
+        mainView->addNewPeer(p->name);
+    }
     return 0;
 }
 
@@ -73,7 +80,6 @@ Controller::delete_peer_controll(void *f)
 {
     char *str = static_cast<char*>(f);
 
-    std::cout << "delete peer :" << str << std::endl;
     return 0;
 }
 
@@ -91,6 +97,11 @@ Controller::init_callback()
     tclt_set_callback_command(ADD_LOG_CMD, add_log_controll);
     tclt_set_callback_command(DELETE_PEER_CMD, delete_peer_controll);
     tclt_set_callback_command(EDIT_PEER_CMD, edit_peer_controll);
+}
+
+void Controller::setView(IClientGUI* view)
+{
+    _view = view;
 }
 
 void Controller::appendLog(const QString& s)
