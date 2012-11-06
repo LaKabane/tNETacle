@@ -28,7 +28,7 @@ sub create_listener {
 	    my $send = "{\"AddLog\": \"Add peers Racoon and Bob\"}";
 	    send_request($new_sock, $send);
 	    sleep 1;
-	    $send = "[{\"AddContact\": {\"Name\":\"Racoon\", \"Key\": \"Public Key 4\"}}, {\"AddContact\":{\"Name\":\"Bob\", \"Key\": \"Public Key 1\"}}]\n";
+	    $send = "[{\"AddContact\": {\"Name\":\"Racoon\", \"Key\": \"Public Key 4\", \"Ip\":\"192.168.1.4\"}}, {\"AddContact\":{\"Name\":\"Bob\", \"Key\": \"Public Key 1\", \"Ip\":\"192.168.1.1\"}}]\n";
 	    send_request($new_sock, $send);
 	    sleep 1;
 	    my $send = "{\"AddLog\": \"Delete the peer Bob\"}";
