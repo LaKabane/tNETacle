@@ -20,6 +20,7 @@
 #include <openssl/bio.h>
 #include "coro.h"
 #include "tntsched.h"
+#include "endpoint.h"
 
 #define TNETACLE_UDP_PORT   7676
 #define UDP_MTU             1500

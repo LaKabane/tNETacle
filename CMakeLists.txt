@@ -82,6 +82,7 @@ set(SOURCES_LIST
   src/sched.c
   src/dtls.c
   src/subset.c
+  src/endpoint.c
 )
 
 set(HEADERS_LIST 
@@ -106,6 +107,7 @@ set(HEADERS_LIST
     include/tntsched.h
     include/dtls.h
     include/subset.h
+    include/endpoint.h
 )
 
 # OS families specific things
