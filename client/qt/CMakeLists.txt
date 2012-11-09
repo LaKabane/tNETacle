@@ -26,6 +26,7 @@ SET(client_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/bodyconnexion.cpp
     ${CMAKE_CURRENT_LIST_DIR}/bodymain.cpp
     ${CMAKE_CURRENT_LIST_DIR}/bodyaddgroup.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/bodyaddcontact.cpp
 )
 
 SET(client_HEADERS
@@ -36,8 +37,9 @@ SET(client_HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/include/bodyconnexion.h
     ${CMAKE_CURRENT_LIST_DIR}/include/bodymain.h
     ${CMAKE_CURRENT_LIST_DIR}/include/bodyaddgroup.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/bodyaddcontact.h
     ${CMAKE_CURRENT_LIST_DIR}/include/imodel.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/iclientgui.h
+    ${CMAKE_CURRENT_LIST_DIR}/include/iclient.h
     ${CMAKE_CURRENT_LIST_DIR}/include/controller.h
     ${CMAKE_CURRENT_LIST_DIR}/include/modelcontact.h
     ${CMAKE_CURRENT_LIST_DIR}/include/modelconfig.h
@@ -54,6 +56,7 @@ SET(client_FORMS
     ${CMAKE_CURRENT_LIST_DIR}/theader.ui
     ${CMAKE_CURRENT_LIST_DIR}/bodymain.ui
     ${CMAKE_CURRENT_LIST_DIR}/bodyaddgroup.ui
+    ${CMAKE_CURRENT_LIST_DIR}/bodyaddcontact.ui
     ${CMAKE_CURRENT_LIST_DIR}/bodyconnexion.ui
 )
 
