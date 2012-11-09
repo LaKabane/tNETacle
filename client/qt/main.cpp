@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
     Controller*    controller = new Controller;
     QClient* client = static_cast<QClient*>(QClient::get(controller));
-    controller->setView(client);
+    controller->setGui(client);
     controller->initWindow();
 
     client->show();

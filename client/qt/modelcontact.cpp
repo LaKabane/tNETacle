@@ -19,15 +19,11 @@
 #include "modelcontact.h"
 
 const QString ModelContact::_name = "Contact";
-ModelContact::mapfun ModelContact::_commands = mapfun();
 
 ModelContact::ModelContact(Controller& controller):
   _contacts(),
   _controller(controller)
 {
-  _commands["AddContact"] = &ModelContact::addContact;
-  _commands["DeleteContact"] = &ModelContact::delContact;
-  _commands["EditContact"] = &ModelContact::editContact;
 }
 
 void  ModelContact::print()
@@ -36,24 +32,6 @@ void  ModelContact::print()
 
 void  ModelContact::feedData(const QString& command, const QVariant& data)
 {
-    if (_commands.contains(command) == true)
-    {
-        QMap<QString, QVariant> person = data.toMap();
-        QString key = "";
-        QVector<QString> v;
-
-        if (person.contains("Name") == true)
-            v.append(person["Name"].toString());
-        if (person.contains("Key") == true)
-	    v.append(person["Key"].toString());
-        if (person.contains("Ip") == true)
-            v.append(person["Ip"].toString());
-        if (person.contains("Old") == true)
-            v.append(person["Old"].toString());
-        (this->*_commands[command])(v);
-    }
-    else
-        throw new Exception("Error: command does not exist!");
 }
 
 const QString& ModelContact::getObjectName() const
@@ -66,13 +44,16 @@ const QMap<QString, QVariant>* ModelContact::getData() const
     return &_contacts;
 }
 
-void ModelContact::addContact(const QVector<QString>& param)
+void ModelContact::addContact(peer* p)
 {
-    if (param.size() < 3)
-        throw new Exception("Error: missing parameters to add contact");
-    const QString &name = param[0];
-    const QString &key = param[1];
-    const QString &ip = param[2];
+    if (p == 0)
+        throw new Exception("addContact: peer is not defined");
+    QString name;
+    QString key;
+    QString ip;
+    name.append(p->name);
+    ip.append(p->ip);
+    key.append(p->key);
 
     if (name.length() == 0)
         throw new Exception("Error: No name");
@@ -82,7 +63,6 @@ void ModelContact::addContact(const QVector<QString>& param)
     tmp.insert("Key", QVariant(key));
     tmp.insert("Ip", QVariant(ip));
     _contacts[name] = QVariant(tmp);
-    /*_view->addContact(name);*/
 }
 
 const QString ModelContact::getKey(const QString &name)
@@ -125,7 +105,7 @@ void  ModelContact::editContact(const QVector<QString>& param)
     v.append(name);
     v.append(key);
     v.append(ip);
-    this->addContact(v);
+    //this->addContact(v);
 }
 
 void ModelContact::clear()

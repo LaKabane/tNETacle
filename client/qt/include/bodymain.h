@@ -36,6 +36,9 @@ class BodyMain : public QFrame, public Ui::BodyMain
 public:
     explicit BodyMain(QWidget *parent = 0, Controller* controller = 0);
     void    addNewPeer(const QString& str);
+
+private:
+    Controller*    _controller;
 };
 
 #endif // BODYMAIN_H

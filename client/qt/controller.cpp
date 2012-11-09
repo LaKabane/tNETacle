@@ -16,7 +16,7 @@
 
 #include <QDebug>
 #include <QRegExp>
-#include "iclientgui.h"
+#include "iclient.h"
 #include "controller.h"
 #include "protocol.h"
 #include "exception.h"
@@ -24,6 +24,7 @@
 #include "qclient.h"
 #include "bodyconnexion.h"
 #include "bodymain.h"
+#include "bodyaddcontact.h"
 #include "tclt.h"
 #include "tclt_command.h"
 #include <iostream>
@@ -57,7 +58,7 @@ Controller::add_peer_controll(void *f)
 {
     peer *p = static_cast<peer*>(f);
 
-    IClientGUI* view = QClient::get(0);
+    IClient* view = QClient::get(0);
     if(view != 0)
     {
         BodyMain* mainView = dynamic_cast<BodyMain*>(view->getBody());
@@ -97,11 +98,6 @@ Controller::init_callback()
     tclt_set_callback_command(ADD_LOG_CMD, add_log_controll);
     tclt_set_callback_command(DELETE_PEER_CMD, delete_peer_controll);
     tclt_set_callback_command(EDIT_PEER_CMD, edit_peer_controll);
-}
-
-void Controller::setView(IClientGUI* view)
-{
-    _view = view;
 }
 
 void Controller::appendLog(const QString& s)
@@ -156,11 +152,15 @@ void Controller::deleteContact()
 
 bool Controller::addContact()
 {
-    /*QString pubkey = this->_view->getNewContactKey();
-    QString name = this->_view->getNewContactName();
-    QString ip = this->_view->getContactIp();*/
+    BodyAddContact* view = dynamic_cast<BodyAddContact*>(_view->getBody());
+    if (view == 0)
+        return false;
 
-    /*if (name == "" || pubkey == "" || ip == "")
+    const QString& pubkey = view->getNewContactKey();
+    const QString& name = view->getNewContactName();
+    const QString& ip = view->getContactIp();
+
+    if (name == "" || pubkey == "" || ip == "")
     {
         error("One of the mandatory fields is missing");
         return false;
@@ -176,16 +176,19 @@ bool Controller::addContact()
     //     return false;
     // }
 
+    /*
     if (!_view->getInitialContactName().isEmpty()) // TODO if user select a different row after editing
-        this->deleteContact();
+        this->deleteContact();*/
     try
     {
-        QVector<QString> v;
-        v.append(name);
-        v.append(pubkey);
-        v.append(ip);
-        dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(v);
-        this->writeToSocket(Protocol::add(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
+        peer p;
+        p.name = strdup(name.toStdString().c_str());
+        p.ip = strdup(ip.toStdString().c_str());
+        p.key = strdup(pubkey.toStdString().c_str());
+        if (p.name == 0 || p.ip == 0 || p.key == 0)
+            throw new Exception("Impossible to duplicate elements");
+        dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(&p);
+        this->writeToSocket(tclt_add_peers(&p, 1));
     }
     catch (Exception *e)
     {
@@ -193,7 +196,10 @@ bool Controller::addContact()
         delete e;
         return false;
     }
-    //this->_view->deleteAddContact();*/
+    QClient* client = dynamic_cast<QClient*>(_view);
+    if (client == 0)
+        return false;
+    client->changePrevBody();
 
     return true;
 }
@@ -315,7 +321,7 @@ void    Controller::initWindow()
     setConnexionParam();
 }
 
-bool    Controller::checkIPv4(QString& str) const
+bool    Controller::checkIPv4(const QString& str) const
 {
     QStringList elements = str.split(".");
 
@@ -331,7 +337,7 @@ bool    Controller::checkIPv4(QString& str) const
     return true;
 }
 
-bool    Controller::checkIPv6(QString& str) const
+bool    Controller::checkIPv6(const QString& str) const
 {
     QStringList elements = str.split(":");
 
@@ -345,7 +351,7 @@ bool    Controller::checkIPv6(QString& str) const
     return true;
 }
 
-bool    Controller::checkIP(QString& str) const
+bool    Controller::checkIP(const QString &str) const
 {
     if (checkIPv4(str))
         return true;
@@ -356,13 +362,13 @@ bool    Controller::checkIP(QString& str) const
     return false;
 }
 
-bool    Controller::checkName(QString& str) const
+bool    Controller::checkName(const QString& str) const
 {
     QRegExp rx("^[a-zA-Z0-9_]+$");
     return str.contains(rx);
 }
 
-bool    Controller::checkHostNameFormat(QString& str) const
+bool    Controller::checkHostNameFormat(const QString &str) const
 {
     QRegExp rx("^[a-zA-Z][a-zA-Z\\-\\.0-9]*[a-zA-Z]$");
     return str.contains(rx);
@@ -404,4 +410,20 @@ void Controller::writeToSocket(const QString& buff)
 void Controller::printError(const QString& message)
 {
     error(message);
+}
+
+void Controller::viewAddContact()
+{
+    QClient* client = dynamic_cast<QClient*>(_view);
+    if (client == 0)
+        return ;
+    client->changeNextBody(QClient::ADDCONTACT);
+}
+
+void Controller::unuseAddContact()
+{
+    QClient* client = dynamic_cast<QClient*>(_view);
+    if (client == 0)
+        return ;
+    client->changePrevBody();
 }

@@ -20,19 +20,17 @@
 #include <QMap>
 #include <QString>
 #include "imodel.h"
+#include "tclt.h"
 
 class Controller;
 
 class ModelContact : public IModel
 {
-  typedef void (ModelContact::*fun)(const QVector<QString>&);
-  typedef QMap<QString, fun> mapfun;
-
 public:
   ModelContact(Controller &);
   virtual       ~ModelContact(){}
 
-  void          addContact(const QVector<QString>&);
+  void          addContact(peer *p);
   const QString getKey(const QString &);
   const QString getIp(const QString &);
   void          delContact(const QVector<QString>&);
@@ -47,7 +45,6 @@ private:
   QMap<QString, QVariant> _contacts;
   Controller    &_controller;
   static const QString _name;
-  static mapfun	_commands;
 
 protected: // from IModel
   virtual const QMap<QString, QVariant>* getData() const;

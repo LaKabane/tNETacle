@@ -21,7 +21,7 @@ BodyConnexion::BodyConnexion(QWidget* parent, Controller* controller) :
 {
     this->setupUi(this);
 
-    QObject::connect(_isOk, SIGNAL(accepted()), controller, SLOT(changeRootNode()));
+    QObject::connect(_isOk, SIGNAL(accepted()), _controller, SLOT(changeRootNode()));
 }
 
 BodyConnexion::~BodyConnexion()

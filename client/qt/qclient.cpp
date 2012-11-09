@@ -18,11 +18,12 @@
 #include "theader.h"
 #include "bodyconnexion.h"
 #include "bodyaddgroup.h"
+#include "bodyaddcontact.h"
 #include "bodymain.h"
 
 #include <iostream>
 
-IClientGUI* QClient::_instance = 0;
+IClient* QClient::_instance = 0;
 
 QClient::QClient(Controller* controller) :
   QMainWindow(0),
@@ -48,10 +49,15 @@ QClient::QClient(Controller* controller) :
     _bodyAddGroup->setObjectName(QString::fromUtf8("bodyAddGroup"));
     _bodyAddGroup->hide();
 
+    _bodyAddContact = new BodyAddContact(this, controller);
+    _bodyAddContact->setObjectName(QString::fromUtf8("bodyAddContact"));
+    _bodyAddContact->hide();
+
     _body = _bodyConnexion;
     _layout->addWidget(_bodyConnexion);
     _layout->addWidget(_bodyMain);
     _layout->addWidget(_bodyAddGroup);
+    _layout->addWidget(_bodyAddContact);
     _controller->setGui(this);
 }
 
@@ -72,7 +78,7 @@ QClient::getBody() const
 }
 
 void
-QClient::changeNextBody()
+QClient::changeNextBody(QClient::state newState)
 {
     if (_state == QClient::CONNEXION)
     {
@@ -83,12 +89,27 @@ QClient::changeNextBody()
     }
     else if (_state == QClient::MAIN)
     {
-        _state = QClient::ADDGROUP;
         _body->hide();
-        _body = _bodyAddGroup;
+        if (newState == QClient::ADDCONTACT)
+        {
+            _state = QClient::ADDCONTACT;
+            _body = _bodyAddContact;
+        }
+        else if (newState == QClient::ADDGROUP)
+        {
+            _state = QClient::ADDGROUP;
+            _body = _bodyAddGroup;
+        }
         _body->show();
     }
     else if (_state == QClient::ADDGROUP)
+    {
+        _state = QClient::MAIN;
+        _body->hide();
+        _body = _bodyMain;
+        _body->show();
+    }
+    else if (_state == QClient::ADDCONTACT)
     {
         _state = QClient::MAIN;
         _body->hide();
@@ -114,6 +135,13 @@ QClient::changePrevBody()
         _body = _bodyMain;
         _body->show();
     }
+    else if (_state == QClient::ADDCONTACT)
+    {
+        _state = QClient::MAIN;
+        _body->hide();
+        _body = _bodyMain;
+        _body->show();
+    }
 }
 
 void
@@ -131,7 +159,7 @@ QClient::disconnected()
     _body->show();
 }
 
-IClientGUI*
+IClient*
 QClient::get(Controller* c)
 {
     if (QClient::_instance == 0)

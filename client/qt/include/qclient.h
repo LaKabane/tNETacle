@@ -19,33 +19,35 @@
 
 #include <QMainWindow>
 #include "controller.h"
-#include "iclientgui.h"
+#include "iclient.h"
 #include "ui_qclient.h"
 
 namespace Ui {
     class QClient;
 }
 
-class QClient : public QMainWindow, public Ui::QClient, public IClientGUI
+class QClient : public QMainWindow, public Ui::QClient, public IClient
 {
     Q_OBJECT
+
+public:
 
     enum state
     {
         CONNEXION,
         MAIN,
-        ADDGROUP
+        ADDGROUP,
+        ADDCONTACT
     };
 
-public:
     virtual              ~QClient();
     QWidget*             getHeader() const;
     QWidget*             getBody() const;
-    void                 changeNextBody();
+    void                 changeNextBody(state = MAIN);
     void                 changePrevBody();
     void                 connected();
     void                 disconnected();
-    static IClientGUI    *get(Controller* controller = 0);
+    static IClient    *get(Controller* controller = 0);
 
 private:
     Controller*    _controller;
@@ -56,8 +58,9 @@ private:
     QWidget*    _bodyConnexion;
     QWidget*    _bodyMain;
     QWidget*    _bodyAddGroup;
+    QWidget*    _bodyAddContact;
 
-    static IClientGUI* _instance;
+    static IClient* _instance;
     explicit             QClient(Controller* controller = 0);
 };
 

@@ -29,7 +29,7 @@
 #include "modelconnexion.h"
 #include "network.h"
 
-class IClientGUI;
+class IClient;
 
 class Controller : public QObject
 {
@@ -54,11 +54,10 @@ public:
   const QMap<QString, QVariant>* getConfigMenu() const;
 
   void			printError(const QString&);
-  void          setGui(IClientGUI* gui) {_view = gui;}
+  void          setGui(IClient* gui) {_view = gui;}
   void          setConnexionParam();
 
   void          initWindow();
-  void          setView(IClientGUI* view);
 
 public slots:
   bool			addContact();
@@ -71,20 +70,22 @@ public slots:
 
   void			changeConfig();
 
-  bool			checkIP(QString&) const;
-  bool			checkName(QString&) const;
+  bool			checkIP(const QString&) const;
+  bool			checkName(const QString&) const;
+  void          viewAddContact();
+  void          unuseAddContact();
 
 private:
-  bool			checkIPv4(QString&) const;
-  bool			checkIPv6(QString&) const;
-  bool			checkHostNameFormat(QString& str) const;
+  bool			checkIPv4(const QString &) const;
+  bool			checkIPv6(const QString&) const;
+  bool			checkHostNameFormat(const QString& str) const;
   void          init_callback();
   static int           add_peer_controll(void *f);
   static int           delete_peer_controll(void *f);
   static int           edit_peer_controll(void *f);
   static int           add_log_controll(void *f);
 
-  IClientGUI*    _view;
+  IClient*    _view;
   bool          editing;
   IModel*		_modelContacts;
   IModel*		_modelNode;
