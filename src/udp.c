@@ -38,6 +38,7 @@
 #include "frame.h"
 #include "device.h"
 #include "tntsched.h"
+#include "subset.h"
 #include "dtls.h"
 
 void
@@ -272,45 +273,39 @@ server_udp_init(struct server *s,
                 struct sockaddr *addr,
                 int len)
 {
-    int err;
-    char name[INET6_ADDRSTRLEN];
-    struct sockaddr_storage udp_addr;
+    int             err;
+    struct endpoint tmp_endpoint;
     evutil_socket_t tmp_sock = 0;
 
-    memcpy(&udp_addr, addr, len);
+    endpoint_init(&tmp_endpoint, addr, len);
     tmp_sock = tnt_udp_socket(addr->sa_family);
+
     if (tmp_sock == -1)
+    {
+        log_warn("[INIT] [UDP] socket creation failed:");
         return -1;
-    if (udp_addr.ss_family == AF_INET)
-    {
-        struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
-
-        sin->sin_port = 0; /* 0 means random */
     }
-    else if (udp_addr.ss_family == AF_INET6)
-    {
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
+    endpoint_set_port(&tmp_endpoint, 0); /* Means random port */
+    err = bind(tmp_sock,
+               endpoint_addr(&tmp_endpoint),
+               tmp_endpoint.addrlen);
 
-        sin6->sin6_port = 0; /* 0 means random */
-    }
-    err = bind(tmp_sock, (struct sockaddr *)&udp_addr, len);
     if (err == -1)
     {
+        log_warn("[INIT] [UDP] binding: ");
         return -1;
     }
-    getsockname(tmp_sock, (struct sockaddr *)&udp_addr, (socklen_t *)&len);
+
+    endpoint_assign_sockname(tmp_sock, &tmp_endpoint);
     log_debug("[INIT] [UDP] udp listen on %s",
-              address_presentation((struct sockaddr *)&udp_addr,
-                                   len,
-                                   name,
-                                   sizeof name));
+              endpoint_presentation(&tmp_endpoint));
+
     err = evutil_make_socket_nonblocking(tmp_sock);
     if (err == -1)
     {
         return -1;
     }
-    memcpy(&udp->udp_addr, &udp_addr, len);
-    udp->udp_addrlen = len;
+    endpoint_copy(&udp->udp_endpoint, &tmp_endpoint);
     udp->fd = tmp_sock;
     udp->udp_peers = v_udp_new();
     udp->udp_recv_fib = sched_new_fiber(s->ev_sched, server_udp, (intptr_t)s);
@@ -322,8 +317,10 @@ server_udp_init(struct server *s,
 void
 server_udp_launch(struct udp *u)
 {
-    sched_fiber_launch(u->udp_recv_fib);
-    sched_fiber_launch(u->udp_brd_fib);
+    if (u->udp_brd_fib != NULL)
+        sched_fiber_launch(u->udp_brd_fib);
+    if (u->udp_recv_fib != NULL)
+        sched_fiber_launch(u->udp_recv_fib);
 }
 
 struct udp *
@@ -334,7 +331,7 @@ server_udp_new(struct server *s,
     int err;
     struct udp *udp;
     
-    udp = (struct udp *)malloc(sizeof(*udp));
+    udp = tnt_new(struct udp);
     if (udp == NULL)
     {
         return NULL;
@@ -400,25 +397,6 @@ frame_recvfrom(void *ctx,
 unsigned short
 udp_get_port(struct udp *udp)
 {
-    unsigned short port;
-
-    if (udp->udp_addr.ss_family == AF_INET)
-    {
-        struct sockaddr_in *sin = (struct sockaddr_in *)&udp->udp_addr;
-
-        port = ntohs(sin->sin_port);
-    }
-    else if (udp->udp_addr.ss_family == AF_INET6)
-    {
-        struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp->udp_addr;
-
-        port = ntohs(sin6->sin6_port);
-    }
-    else
-    {
-        log_warnx("We do not support ipv8");
-        return 0;
-    }
-    return port;
+    return endpoint_port(&udp->udp_endpoint);
 }
 

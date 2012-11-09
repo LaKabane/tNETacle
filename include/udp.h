@@ -57,12 +57,11 @@ struct udp_peer
 struct udp
 {
     int                     fd;
-    int                     udp_addrlen;
     SSL_CTX                 *ctx;
     struct fiber            *udp_recv_fib;
     struct fiber            *udp_brd_fib;
     struct vector_udp       *udp_peers;
-    struct sockaddr_storage udp_addr;
+    struct endpoint         udp_endpoint;
 };
 
 struct udp *server_udp_new(struct server *s,
