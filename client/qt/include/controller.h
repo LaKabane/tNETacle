@@ -80,10 +80,10 @@ private:
   bool			checkIPv6(const QString&) const;
   bool			checkHostNameFormat(const QString& str) const;
   void          init_callback();
-  static int           add_peer_controll(void *f);
-  static int           delete_peer_controll(void *f);
-  static int           edit_peer_controll(void *f);
-  static int           add_log_controll(void *f);
+  static int           add_peer_controll(void *f, void *internal);
+  static int           delete_peer_controll(void *f, void *internal);
+  static int           edit_peer_controll(void *f, void *internal);
+  static int           add_log_controll(void *f, void *internal);
 
   IClient*    _view;
   bool          editing;

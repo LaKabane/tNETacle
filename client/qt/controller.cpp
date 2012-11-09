@@ -54,7 +54,7 @@ void Controller::feedData(const QVariant& data)
 }
 
 int
-Controller::add_peer_controll(void *f)
+Controller::add_peer_controll(void *f, void *internal)
 {
     peer *p = static_cast<peer*>(f);
 
@@ -68,7 +68,7 @@ Controller::add_peer_controll(void *f)
 }
 
 int
-Controller::add_log_controll(void *f)
+Controller::add_log_controll(void *f, void *internal)
 {
     char *str = static_cast<char*>(f);
 
@@ -77,7 +77,7 @@ Controller::add_log_controll(void *f)
 }
 
 int
-Controller::delete_peer_controll(void *f)
+Controller::delete_peer_controll(void *f, void *internal)
 {
     char *str = static_cast<char*>(f);
 
@@ -85,7 +85,7 @@ Controller::delete_peer_controll(void *f)
 }
 
 int
-Controller::edit_peer_controll(void *f)
+Controller::edit_peer_controll(void *f, void*internal)
 {
     std::cout << "edit peer" << std::endl;
     return 0;
@@ -189,6 +189,9 @@ bool Controller::addContact()
             throw new Exception("Impossible to duplicate elements");
         dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(&p);
         this->writeToSocket(tclt_add_peers(&p, 1));
+        free(p.name);
+        free(p.ip);
+        free(p.key);
     }
     catch (Exception *e)
     {

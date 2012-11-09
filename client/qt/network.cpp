@@ -47,7 +47,7 @@ void Network::read()
     try
     {
         device.buffer().append('\0');
-        if (tclt_dispatch_command(device.buffer().constData()))
+        if (tclt_dispatch_command(device.buffer().constData(), 0))
             throw new Exception("Error : command not found\n");
         _socket.read(data.size());
     }

@@ -47,8 +47,10 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
     size_t size;
     struct evbuffer *buf = NULL;
     char buff[4096];
-    /*elements *ele;*/
+    struct t_internal internal;
 
+    internal.bev = bev;
+    internal.s = s;
     buf = bufferevent_get_input(bev);
     while (evbuffer_get_length(buf) != 0)
     {
@@ -56,7 +58,7 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
         if (size != 0)
         {
             buff[size] = '\0';
-            tclt_dispatch_command(buff);
+            tclt_dispatch_command(buff, &internal);
         }
     }
 }
@@ -93,11 +95,25 @@ client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 }
 
 static int
-add_peer(void *f)
+add_peer(void *f, void *internal)
 {
     peer *p = (peer*)f;
 
-    printf("add a new peer : %s  %s %s\n", p->name, p->ip, p->key);
+    struct t_internal* intern = (struct t_internal*)internal;
+    if (p == NULL || intern == NULL)
+        return 1;
+    struct cfg_sockaddress out;
+    (void)memset(&out, 0, sizeof out);
+    /* Take the size from the sockaddr_storage*/
+    out.len = sizeof(out.sockaddr);
+    /* TODO: Sanity check with socklen */
+    if (evutil_parse_sockaddr_port(p->ip,
+                                   (struct sockaddr *)&out.sockaddr,
+                                   &out.len) == -1) {
+        (void)fprintf(stderr, "%s: not a valid IP address\n", p->ip);
+        return 1;
+    }
+    mc_peer_connect(intern->s, bufferevent_get_base(intern->bev), (struct sockaddr *)&out.sockaddr, out.len);
     return 0;
 }
 
