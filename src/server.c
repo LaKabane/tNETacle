@@ -70,7 +70,7 @@ static int
 find_udppeer(struct udp_peer const *a, void *ctx)
 {
     struct sockaddr *s = ctx;
-    return !evutil_sockaddr_cmp((struct sockaddr *)&a->addr, s, 0);
+    return !evutil_sockaddr_cmp(endpoint_addr(&a->peer_addr), s, 0);
 }
 
 char *next_token(char *ptr, char **saveit, char const *delimit)
@@ -133,38 +133,27 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
         cmd_name = v_cptr_at(splited, 0);
         if (strncmp(cmd_name, "udp_port", strlen(cmd_name)) == 0)
         {
-            char *s_udp_port = v_cptr_at(splited, 1);
-            struct mc *mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
-            unsigned short port = atoi(s_udp_port);
-            struct sockaddr_storage udp_addr;
-            unsigned int socklen;
-            char *s_status = NULL;
+            char            *s_udp_port = v_cptr_at(splited, 1);
+            struct mc       *mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
+            unsigned short  port = atoi(s_udp_port);
+            struct endpoint udp_remote_endpoint;
+            char            *s_status = NULL;
 
-            memcpy(&udp_addr, mc->p.address, mc->p.len);
-            if (udp_addr.ss_family == AF_INET)
-            {
-                struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
+            endpoint_init(&udp_remote_endpoint,
+                          mc->p.address,
+                          mc->p.len);
 
-                sin->sin_port = htons(port);
-                socklen = sizeof *sin;
-            }
-            else if (udp_addr.ss_family == AF_INET6)
-            {
-                struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
-
-                sin6->sin6_port = htons(port);
-                socklen = sizeof *sin6;
-            }
+            endpoint_set_port(&udp_remote_endpoint, port);
             if (splited->size > 1)
                 s_status = v_cptr_at(splited, 2);
             if (s_status == NULL || strcmp(s_status, "ok") != 0)
             {
                 evbuffer_add_printf(out, "udp_port:%d ok\r\n", udp_get_port(s->udp));
             }
+
             udp_register_new_peer(s->udp,
-                                  (struct sockaddr *)&udp_addr,
-                                  socklen,
-                                  DTLS_ENABLE);
+                                  &udp_remote_endpoint,
+                                  DTLS_DISABLE);
         }
         v_cptr_delete(splited);
         free(line);
@@ -230,9 +219,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
                 v_udp_erase(s->udp->udp_peers, up);
                 log_debug("[%s] stop peering with %s",
                           (up->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
-                          address_presentation((struct sockaddr *)&up->addr,
-                                               up->socklen,
-                                               name, sizeof(name)));
+                          endpoint_presentation(&up->peer_addr));
             }
             log_debug("[META] stop the meta-connexion with %s",
                       mc_presentation(mc, name, sizeof(name)));
@@ -377,6 +364,7 @@ server_init(struct server *s, struct event_base *evbase)
     {
         struct evconnlistener *evl = NULL;
         char listenname[INET6_ADDRSTRLEN];
+        struct endpoint endp;
 
         evl = evconnlistener_new_bind(evbase, listen_callback,
             s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
@@ -395,8 +383,9 @@ server_init(struct server *s, struct event_base *evbase)
         /*
          * We listen on the same address for the udp socket
          */
-        s->udp = server_udp_new(s, (struct sockaddr *)&it_listen->sockaddr,
-                              it_listen->len);
+        endpoint_init(&endp, (struct sockaddr *)&it_listen->sockaddr,
+                      it_listen->len);
+        s->udp = server_udp_new(s, &endp);
         if (s->udp == NULL)
         {
             log_warnx("[INIT] [UDP] failed to init the udp socket on %s",

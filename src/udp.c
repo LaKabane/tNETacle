@@ -50,7 +50,6 @@ forward_udp_frame_to_other_peers(struct udp *udp,
 {
     struct udp_peer *it = NULL;
     struct udp_peer *ite = NULL;
-    char name[INET6_ADDRSTRLEN];
 
     (void)current_socklen;
     for (it = v_udp_begin(udp->udp_peers), ite = v_udp_end(udp->udp_peers);
@@ -61,58 +60,43 @@ forward_udp_frame_to_other_peers(struct udp *udp,
 
         /* If it's not the peer we received the data from. */
         if (evutil_sockaddr_cmp(current_sockaddr,
-                                (struct sockaddr *)&it->addr, 0)
-            == 0)
+                                endpoint_addr(&it->peer_addr), 0) == 0)
             continue;
 
         err = sendto(udp->fd,
                      current_frame->raw_packet,
                      current_frame->size + sizeof(struct packet_hdr), 0,
-                     (struct sockaddr *)&it->addr,
-                     it->socklen);
+                     endpoint_addr(&it->peer_addr),
+                     endpoint_addrlen(&it->peer_addr));
+
         if (err == -1)
         {
-            log_notice("[%s] error while sending to %s",
-                       (it->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
-                       address_presentation((struct sockaddr *)&it->addr,
-                                            it->socklen,
-                                            name,
-                                            sizeof name));
+            log_warn("[%s] error while sending to %s",
+                     (it->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
+                     endpoint_presentation(&it->peer_addr));
             break;
         }
         log_debug("adding %d bytes to %s's output buffer",
             current_frame->size,
-            address_presentation((struct sockaddr *)&it->addr,
-                                 it->socklen,
-                                 name,
-                                 sizeof name));
+            endpoint_presentation(&it->peer_addr));
     }
 }
 
 struct udp_peer *
 udp_register_new_peer(struct udp *udp,
-                      struct sockaddr *s,
-                      int socklen,
+                      struct endpoint *remote,
                       int ssl_flags)
 {
-    struct udp_peer tmp_udp;
+    struct udp_peer tmp_udp = {};
+    struct endpoint *e = &tmp_udp.peer_addr;
 
-    memcpy(&tmp_udp.addr, s, socklen);
-    tmp_udp.socklen = socklen;
+    endpoint_copy(e, remote);
     tmp_udp.ssl_flags = ssl_flags;
     if (ssl_flags == DTLS_ENABLE)
     {
         int err = dtls_new_peer(udp->ctx, &tmp_udp);
         if (err == -1)
             log_warnx("[DTLS] failed to create ssl state for this peer");
-        if (ssl_flags & DTLS_CLIENT)
-        {
-            SSL_connect(tmp_udp.ssl);
-        }
-        else if (ssl_flags & DTLS_SERVER)
-        {
-            SSL_accept(tmp_udp.ssl);
-        }
     }
     log_info("[%s] register new peer",
              (ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP");
@@ -125,7 +109,6 @@ _broadcast_udp_to_peers(struct server *s, void *async_ctx)
     struct frame *fit = v_frame_begin(s->frames_to_send);
     struct frame *fite = v_frame_end(s->frames_to_send);
     struct udp   *udp = s->udp;
-    char name[INET6_ADDRSTRLEN];
 
     /* For all the frames*/
     for (;fit != fite; fit = v_frame_next(fit))
@@ -154,25 +137,20 @@ _broadcast_udp_to_peers(struct server *s, void *async_ctx)
                                fit->raw_packet,
                                fit->size + sizeof(struct packet_hdr),
                                0,
-                               (struct sockaddr const *)&it->addr,
-                               it->socklen);
+                               endpoint_addr(&it->peer_addr),
+                               endpoint_addrlen(&it->peer_addr));
 
             if (err == -1)
             {
                 log_warn("[%s] error while sending to %s",
                          (it->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
-                         address_presentation((struct sockaddr *)&it->addr,
-                                                it->socklen,
-                                                name,
-                                                sizeof name));
+                         endpoint_presentation(&it->peer_addr));
                 break;
             }
-            log_debug("udp adding %d(%-#2x) bytes to %s's output buffer",
-                fit->size, fit->size,
-                address_presentation((struct sockaddr *)&it->addr,
-                                     it->socklen,
-                                     name,
-                                     sizeof name));
+            log_debug("[%s] sending %d(%-#2x) bytes to %s",
+                      (it->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
+                      fit->size, fit->size,
+                      endpoint_presentation(&it->peer_addr));
         }
     }
     v_frame_foreach(s->frames_to_send, frame_free);
@@ -270,15 +248,14 @@ server_udp_exit(struct udp *udp)
 int
 server_udp_init(struct server *s,
                 struct udp *udp,
-                struct sockaddr *addr,
-                int len)
+                struct endpoint *e)
 {
     int             err;
     struct endpoint tmp_endpoint;
     evutil_socket_t tmp_sock = 0;
 
-    endpoint_init(&tmp_endpoint, addr, len);
-    tmp_sock = tnt_udp_socket(addr->sa_family);
+    tmp_sock = tnt_udp_socket(endpoint_addr(e)->sa_family);
+    endpoint_copy(&tmp_endpoint, e);
 
     if (tmp_sock == -1)
     {
@@ -321,12 +298,13 @@ server_udp_launch(struct udp *u)
         sched_fiber_launch(u->udp_brd_fib);
     if (u->udp_recv_fib != NULL)
         sched_fiber_launch(u->udp_recv_fib);
+    if (u->udp_demux != NULL)
+        sched_fiber_launch(u->udp_demux);
 }
 
 struct udp *
 server_udp_new(struct server *s,
-               struct sockaddr *addr,
-               int len)
+               struct endpoint *e)
 {
     int err;
     struct udp *udp;
@@ -336,7 +314,7 @@ server_udp_new(struct server *s,
     {
         return NULL;
     }
-    err = server_udp_init(s, udp, addr, len);
+    err = server_udp_init(s, udp, e);
     if (err == -1)
     {
         free(udp);

@@ -42,8 +42,7 @@ struct vector_frame;
 
 struct udp_peer
 {
-    struct sockaddr_storage addr;
-    int                     socklen;
+    struct endpoint         peer_addr;
     BIO                     *bio;
     BIO                     *_bio_backend;
     SSL                     *ssl;
@@ -65,22 +64,19 @@ struct udp
 };
 
 struct udp *server_udp_new(struct server *s,
-                           struct sockaddr *addr,
-                           int len);
+                           struct endpoint *e);
 
 int server_udp_init(struct server *s,
                     struct udp *u,
-                    struct sockaddr *addr,
-                    int len);
+                    struct endpoint *e);
 
 void server_udp_launch(struct udp *u);
 
 void server_udp_exit(struct udp *);
 
 struct udp_peer *udp_register_new_peer(struct udp *s,
-                           struct sockaddr *sock,
-                           int socklen,
-                           int ssl_flags);
+                                       struct endpoint *remote,
+                                       int ssl_flags);
 
 void forward_udp_frame_to_other_peers(struct udp *s,
                                       struct frame *current_frame,
