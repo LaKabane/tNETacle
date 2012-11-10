@@ -24,6 +24,7 @@ endpoint_init(struct endpoint *e,
               struct sockaddr const *addr,
               socklen_t const addrlen)
 {
+    memset(e, 0, sizeof(struct endpoint));
     memcpy(&e->addr, addr, addrlen);
     e->addrlen = addrlen;
 }
@@ -142,8 +143,8 @@ endpoint_presentation(struct endpoint const *e)
                 char tmp[INET_ADDRSTRLEN];
 
                 evutil_inet_ntop(AF_INET, &sin->sin_addr, tmp, sizeof tmp);
-                evutil_snprintf(name, sizeof name, "%s:%d", tmp, ntohs(sin->sin_port));
-                return name;
+                evutil_snprintf(name, INET6_ADDRSTRLEN, "%s:%d", tmp, ntohs(sin->sin_port));
+                break;
             }
         case AF_INET6:
             {
@@ -151,9 +152,24 @@ endpoint_presentation(struct endpoint const *e)
                 char tmp[INET6_ADDRSTRLEN];
 
                 evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, tmp, sizeof tmp);
-                evutil_snprintf(name, sizeof name, "%s:%d", tmp, ntohs(sin6->sin6_port));
-                return name;
+                evutil_snprintf(name, INET6_ADDRSTRLEN, "%s:%d", tmp, ntohs(sin6->sin6_port));
+                break;
+            }
+        default:
+            {
+                log_debug("[ENDPOINT] presentation doesn't handle protocol", e->addr.ss_family);
             }
     }
     return name;
+}
+
+int
+endpoint_cmp(struct endpoint const *a,
+             struct endpoint const *b)
+{
+    if (a->addrlen != b->addrlen)
+        return  -1;
+    int val = evutil_sockaddr_cmp(endpoint_addr(a),
+                               endpoint_addr(b), 1);
+    return val;
 }

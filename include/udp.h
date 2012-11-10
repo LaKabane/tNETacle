@@ -78,7 +78,8 @@ struct udp_peer *udp_register_new_peer(struct udp *s,
                                        struct endpoint *remote,
                                        int ssl_flags);
 
-void forward_udp_frame_to_other_peers(struct udp *s,
+void forward_udp_frame_to_other_peers(void *ctx,
+                                      struct udp *s,
                                       struct frame *current_frame,
                                       struct sockaddr *current_sockaddr,
                                       unsigned int current_socklen);

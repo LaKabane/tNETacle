@@ -131,6 +131,7 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
 
         splited = split(line);
         cmd_name = v_cptr_at(splited, 0);
+        log_debug("[META] [%s]", line);
         if (strncmp(cmd_name, "udp_port", strlen(cmd_name)) == 0)
         {
             char            *s_udp_port = v_cptr_at(splited, 1);
@@ -195,6 +196,24 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             struct endpoint e;
 
             endpoint_init(&e, mc->p.address, mc->p.len);
+            /* Check for certificate */
+            if (mc->ssl_flags & TLS_ENABLE)
+            {
+                X509 *cert;
+                SSL *ssl;
+                char name[512];
+
+                ssl = bufferevent_openssl_get_ssl(mc->bev);
+                cert = SSL_get_peer_certificate(ssl);
+                if (cert == NULL)
+                {
+                    log_info("[META] [TLS] %s doesn't share it's certificate.",
+                             mc_presentation(mc, name, sizeof name));
+                    v_mc_erase(s->pending_peers, mc);
+                    mc_close(mc);
+                    return ;
+                }
+            }
             log_info("[META] [%s] connexion established with %s",
                      mc->ssl_flags & TLS_ENABLE ? "TLS" : "TCP",
                      endpoint_presentation(&e));
@@ -292,6 +311,13 @@ listen_callback(struct evconnlistener *evl,
     mc_peer_accept(s, base, sock, len, fd);
 }
 
+int
+server_verify_cert(X509_STORE_CTX *xs, void *ctx)
+{
+    log_debug("[X509] [VERIFY] hello !");
+    X509_STORE_CTX_set_error(xs, X509_V_OK);
+    return 1;
+}
 
 SSL_CTX *
 evssl_init(void)
@@ -313,6 +339,8 @@ evssl_init(void)
         log_info("  openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert");
         return NULL;
     }
+    SSL_CTX_set_cert_verify_callback(server_ctx, server_verify_cert, NULL);
+    SSL_CTX_set_verify(server_ctx, SSL_VERIFY_PEER, NULL);
     return server_ctx;
 }
 

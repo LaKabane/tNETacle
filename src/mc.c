@@ -159,7 +159,7 @@ mc_peer_connect(struct server *s,
     bufferevent_setcb(tmp.bev, server_mc_read_cb, NULL, server_mc_event_cb, s);
     err = bufferevent_socket_connect(tmp.bev, sock, socklen);
     if (err == -1) {
-        log_warn("unable to connect to %s", peername);
+        log_warn("[META] unable to connect to %s", peername);
         return NULL;
     }
     return v_mc_insert(s->pending_peers, &tmp);
@@ -198,6 +198,12 @@ mc_peer_accept(struct server *s,
                       NULL,
                       server_mc_event_cb,
                       s);
+    if (mc.ssl_flags & TLS_ENABLE)
+    {
+        /* the handshake hasn't been done yet */
+        log_debug("[META] [TLS] waiting for the ssl handshake with %s", peername);
+        return v_mc_insert(s->pending_peers, &mc);
+    }
     log_debug("[META] opening a meta-connexion with %s", peername);
     return v_mc_insert(s->peers, &mc);
 }

@@ -63,4 +63,8 @@ endpoint_assign_sockname(int socket,
 char const *
 endpoint_presentation(struct endpoint const *e);
 
+int
+endpoint_cmp(struct endpoint const *a,
+             struct endpoint const *b);
+
 #endif /* end of include guard: ENDPOINT_DKUGVTSJ */

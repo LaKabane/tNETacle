@@ -42,7 +42,8 @@
 #include "dtls.h"
 
 void
-forward_udp_frame_to_other_peers(struct udp *udp,
+forward_udp_frame_to_other_peers(void *async_ctx,
+                                 struct udp *udp,
                                  struct frame *current_frame,
                                  struct sockaddr *current_sockaddr,
                                  unsigned int
@@ -50,7 +51,9 @@ forward_udp_frame_to_other_peers(struct udp *udp,
 {
     struct udp_peer *it = NULL;
     struct udp_peer *ite = NULL;
+    struct endpoint current_endp;
 
+    endpoint_init(&current_endp, current_sockaddr, current_socklen);
     (void)current_socklen;
     for (it = v_udp_begin(udp->udp_peers), ite = v_udp_end(udp->udp_peers);
         it != ite;
@@ -59,15 +62,17 @@ forward_udp_frame_to_other_peers(struct udp *udp,
         int err;
 
         /* If it's not the peer we received the data from. */
-        if (evutil_sockaddr_cmp(current_sockaddr,
-                                endpoint_addr(&it->peer_addr), 0) == 0)
+        if (endpoint_cmp(&it->peer_addr, &current_endp) == 0)
+        {
             continue;
-
-        err = sendto(udp->fd,
-                     current_frame->raw_packet,
-                     current_frame->size + sizeof(struct packet_hdr), 0,
-                     endpoint_addr(&it->peer_addr),
-                     endpoint_addrlen(&it->peer_addr));
+        }
+        
+        err = async_sendto(async_ctx,
+                           udp->fd,
+                           current_frame->raw_packet,
+                           current_frame->size + sizeof(struct packet_hdr), 0,
+                           endpoint_addr(&it->peer_addr),
+                           endpoint_addrlen(&it->peer_addr));
 
         if (err == -1)
         {
@@ -99,8 +104,9 @@ udp_register_new_peer(struct udp *udp,
         if (err == -1)
             log_warnx("[DTLS] failed to create ssl state for this peer");
     }
-    log_info("[%s] register new peer",
-             (ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP");
+    log_info("[%s] peering with %s ",
+             (ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
+             endpoint_presentation(remote));
     return v_udp_insert(udp->udp_peers, &tmp_udp);
 }
 
@@ -197,19 +203,21 @@ server_udp(void *ctx)
     while((err = frame_recvfrom(ctx,
                                 udp_fd,
                                 &current_frame,
-                                endpoint_addr(&e),
-                                &e.addrlen)) != -1)
+                                (struct sockaddr *)&sockaddr,
+                                &socklen)) != -1)
     {
+        endpoint_init(&e, (struct sockaddr *)&sockaddr, socklen);
         log_debug("[UDP] recving %d(%-#2x) from %s",
                   current_frame.size,
                   current_frame.size,
                   endpoint_presentation(&e));
 
         /* And forward it to anyone else but except current peer*/
-        forward_udp_frame_to_other_peers(s->udp,
+        forward_udp_frame_to_other_peers(ctx,
+                                         s->udp,
                                          &current_frame,
-                                         (struct sockaddr *)&sockaddr,
-                                         socklen);
+                                         endpoint_addr(&e),
+                                         endpoint_addrlen(&e));
 #if defined Windows
         /*
          * Send to current frame to the windows thread handling the tun/tap
