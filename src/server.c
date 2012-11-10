@@ -194,7 +194,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             struct mc tmp;
             struct endpoint e;
 
-            endpoint_init(&e, tmp.p.address, tmp.p.len);
+            endpoint_init(&e, mc->p.address, mc->p.len);
             log_info("[%s] connexion established with %s",
                      tmp.ssl_flags & TLS_ENABLE ? "TCP" : "TLS",
                      endpoint_presentation(&e));
