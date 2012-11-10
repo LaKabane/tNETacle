@@ -76,9 +76,10 @@ forward_udp_frame_to_other_peers(struct udp *udp,
                      endpoint_presentation(&it->peer_addr));
             break;
         }
-        log_debug("adding %d bytes to %s's output buffer",
-            current_frame->size,
-            endpoint_presentation(&it->peer_addr));
+        log_debug("[%s] forwarding %d(%-#2x) bytes to %s",
+                  (it->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
+                  current_frame->size, current_frame->size,
+                  endpoint_presentation(&it->peer_addr));
     }
 }
 
@@ -187,19 +188,22 @@ server_udp(void *ctx)
     evutil_socket_t udp_fd;
     evutil_socket_t tap_fd;
     int err;
+    struct endpoint e;
 
+    memset(&e, 0, sizeof(e));
     udp_fd = s->udp->fd;
     tap_fd = s->tap_fd;
     memset(&current_frame, 0, sizeof current_frame);
     while((err = frame_recvfrom(ctx,
                                 udp_fd,
                                 &current_frame,
-                                (struct sockaddr *)&sockaddr,
-                                &socklen)) != -1)
+                                endpoint_addr(&e),
+                                &e.addrlen)) != -1)
     {
-        /*log_debug("udp recv packet size=%d(%-#2x)",
+        log_debug("[UDP] recving %d(%-#2x) from %s",
                   current_frame.size,
-                  current_frame.size);*/
+                  current_frame.size,
+                  endpoint_presentation(&e));
 
         /* And forward it to anyone else but except current peer*/
         forward_udp_frame_to_other_peers(s->udp,
@@ -298,8 +302,8 @@ server_udp_launch(struct udp *u)
         sched_fiber_launch(u->udp_brd_fib);
     if (u->udp_recv_fib != NULL)
         sched_fiber_launch(u->udp_recv_fib);
-    if (u->udp_demux != NULL)
-        sched_fiber_launch(u->udp_demux);
+    /*if (u->udp_demux != NULL)
+        sched_fiber_launch(u->udp_demux);*/
 }
 
 struct udp *
