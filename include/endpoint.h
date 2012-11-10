@@ -26,31 +26,31 @@ struct endpoint
 };
 
 void endpoint_init(struct endpoint *e,
-              struct sockaddr *addr,
-              socklen_t addrlen);
+              struct sockaddr const *addr,
+              socklen_t const addrlen);
 
 struct endpoint *
 endpoint_new(void);
 
 struct endpoint *
-endpoint_clone(struct endpoint *src);
+endpoint_clone(struct endpoint const *src);
 
 void
 endpoint_copy(struct endpoint *dst,
-              struct endpoint *src);
+              struct endpoint const *src);
 
 int
 endpoint_set_ipport(struct endpoint *e,
                     char const *ip);
 
 int
-endpoint_port(struct endpoint *e);
+endpoint_port(struct endpoint const *e);
 
 struct sockaddr *
-endpoint_addr(struct endpoint *e);
+endpoint_addr(struct endpoint const *e);
 
-struct sockaddr *
-endpoint_addrlen(struct endpoint *e);
+socklen_t
+endpoint_addrlen(struct endpoint const *e);
 
 void
 endpoint_set_port(struct endpoint *e,
@@ -61,6 +61,6 @@ endpoint_assign_sockname(int socket,
                   struct endpoint *e);
 
 char const *
-endpoint_presentation(struct endpoint *e);
+endpoint_presentation(struct endpoint const *e);
 
 #endif /* end of include guard: ENDPOINT_DKUGVTSJ */

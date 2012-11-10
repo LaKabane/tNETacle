@@ -15,13 +15,14 @@
 
 #include "endpoint.h"
 #include "subset.h"
+#include "log.h"
 #include <string.h>
 #include <event2/util.h>
 
 void
 endpoint_init(struct endpoint *e,
-              struct sockaddr *addr,
-              socklen_t addrlen)
+              struct sockaddr const *addr,
+              socklen_t const addrlen)
 {
     memcpy(&e->addr, addr, addrlen);
     e->addrlen = addrlen;
@@ -45,7 +46,7 @@ endpoint_set_ipport(struct endpoint *e,
 }
 
 int
-endpoint_port(struct endpoint *e)
+endpoint_port(struct endpoint const *e)
 {
     int port;
 
@@ -66,7 +67,7 @@ endpoint_port(struct endpoint *e)
                 break;
             }
     }
-    return port;
+    return ntohs(port);
 }
 
 void
@@ -79,41 +80,41 @@ endpoint_set_port(struct endpoint *e,
             {
                 struct sockaddr_in *sin = (struct sockaddr_in *)&e->addr;
 
-                sin->sin_port = port;
+                sin->sin_port = htons(port);
                 break;
             }
         case AF_INET6:
             {
                 struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&e->addr;
 
-                sin6->sin6_port = port;
+                sin6->sin6_port = htons(port);
                 break;
             }
     }
 }
 
 struct sockaddr *
-endpoint_addr(struct endpoint *e)
+endpoint_addr(struct endpoint const *e)
 {
     return (struct sockaddr *)&e->addr;
 }
 
-struct sockaddr *
-endpoint_addrlen(struct endpoint *e)
+socklen_t
+endpoint_addrlen(struct endpoint const *e)
 {
-    return (struct sockaddr *)&e->addrlen;
+    return e->addrlen;
 }
 
 void
 endpoint_copy(struct endpoint *dst,
-              struct endpoint *src)
+              struct endpoint const *src)
 {
     memcpy(dst, src, src->addrlen);
     dst->addrlen = src->addrlen;
 }
 
 struct endpoint *
-endpoint_clone(struct endpoint *src)
+endpoint_clone(struct endpoint const *src)
 {
     struct endpoint *new = tnt_new(struct endpoint);
 
@@ -129,7 +130,7 @@ endpoint_assign_sockname(int socket,
 }
 
 char const *
-endpoint_presentation(struct endpoint *e)
+endpoint_presentation(struct endpoint const *e)
 {
     static char name[INET6_ADDRSTRLEN];
 
