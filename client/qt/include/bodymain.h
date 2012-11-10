@@ -37,6 +37,9 @@ public:
     explicit BodyMain(QWidget *parent = 0, Controller* controller = 0);
     void    addNewPeer(const QString& str);
 
+private slots:
+    void    deleteContact();
+
 private:
     Controller*    _controller;
 };

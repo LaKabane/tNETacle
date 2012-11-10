@@ -117,8 +117,19 @@ add_peer(void *f, void *internal)
     return 0;
 }
 
+static int
+delete_peer(void *f, void *internal)
+{
+    char *c = (char*)f;
+
+    (void)internal;
+    printf("delete peer %s\n", c);
+    return 0;
+}
+
 void
 client_init_callback(void)
 {
     tclt_set_callback_command(ADD_PEER_CMD, add_peer);
+    tclt_set_callback_command(DELETE_PEER_CMD, delete_peer);
 }

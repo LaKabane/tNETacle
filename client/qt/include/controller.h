@@ -61,7 +61,7 @@ public:
 
 public slots:
   bool			addContact();
-  void			deleteContact();
+  void			deleteContact(const QString &name);
   void			editContact(QListWidgetItem *);
   void			appendLog(const QString &);
   void			editRootNode();

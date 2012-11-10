@@ -20,10 +20,11 @@ BodyMain::BodyMain(QWidget *parent, Controller* controller) :
     QFrame(parent), _controller(controller)
 {
     this->setupUi(this);
-    _listContacts->clear();
+    //_listContacts->clear();
     _listGroups->clear();
 
     QObject::connect(this->_addPeer, SIGNAL(clicked()), _controller, SLOT(viewAddContact()));
+    QObject::connect(this->_deletePeer, SIGNAL(clicked()), this, SLOT(deleteContact()));
 }
 
 void
@@ -31,4 +32,18 @@ BodyMain::addNewPeer(const QString& str)
 {
     QTreeWidgetItem* newGuiPeer = new QTreeWidgetItem(_listContacts);
     newGuiPeer->setText(0, str);
+}
+
+void
+BodyMain::deleteContact()
+{
+    QList<QTreeWidgetItem*> peers = _listContacts->selectedItems();
+    for (unsigned int i = 0; i < peers.size(); ++i)
+    {
+        QTreeWidgetItem* peer = peers[i];
+        QString name = peer->text(0);
+        //_controller->deleteContact(name);
+        qDebug() << "lol";
+        _listContacts->removeItemWidget(peer, 0);
+    }
 }

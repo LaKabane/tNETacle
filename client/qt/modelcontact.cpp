@@ -86,7 +86,6 @@ void ModelContact::delContact(const QVector<QString>& param)
     const QString& name = param[0];
     if (_contacts.remove(name) != 1)
       throw new Exception("Error: Name (" + name + ") does not exist");
-    //this->_view->deleteNamed(name);
 }
 
 void  ModelContact::editContact(const QVector<QString>& param)

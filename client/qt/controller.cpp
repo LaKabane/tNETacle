@@ -80,6 +80,8 @@ int
 Controller::delete_peer_controll(void *f, void *internal)
 {
     char *str = static_cast<char*>(f);
+    QString str2(str);
+    qDebug() << str2;
 
     return 0;
 }
@@ -134,13 +136,13 @@ void Controller::error(const QString &s)
     //this->_view->printError(s);
 }
 
-void Controller::deleteContact()
+void Controller::deleteContact(const QString& name)
 {
     try
     {
         QVector<QString> v;
-        //v.append(_view->getSelected());
-        dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
+        v.append(name);
+        //dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
         this->writeToSocket(Protocol::delet(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
     }
     catch (Exception *e)
