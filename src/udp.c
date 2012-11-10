@@ -131,7 +131,7 @@ _broadcast_udp_to_peers(struct server *s, void *async_ctx)
             /* Convert the size to netword presentation*/
             hdr.size = htons(fit->size);
             /* Copy the header to the packet */
-            /* Enought place have been allocated for header and the frame */
+            /* Enough space have been allocated for header and the frame */
             memcpy(fit->raw_packet, &hdr, sizeof(hdr));
             err = async_sendto(async_ctx,
                                udp->fd,

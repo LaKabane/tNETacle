@@ -192,8 +192,12 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         if (mc != v_mc_end(s->pending_peers))
         {
             struct mc tmp;
+            struct endpoint e;
 
-            log_info("connexion established.");
+            endpoint_init(&e, tmp.p.address, tmp.p.len);
+            log_info("[%s] connexion established with %s",
+                     tmp.ssl_flags & TLS_ENABLE ? "TCP" : "TLS",
+                     endpoint_presentation(&e));
             memcpy(&tmp, mc, sizeof(tmp));
             v_mc_erase(s->pending_peers, mc);
             v_mc_push(s->peers, &tmp);
