@@ -196,6 +196,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             {
                 X509 *cert;
                 SSL *ssl;
+                EVP_PKEY *pubkey;
                 char name[512];
 
                 ssl = bufferevent_openssl_get_ssl(mc->bev);
@@ -208,15 +209,16 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
                     mc_close(mc);
                     return ;
                 }
+                pubkey = X509_get_pubkey(cert);
             }
             log_info("[META] [%s] connexion established with %s",
                      mc->ssl_flags & TLS_ENABLE ? "TLS" : "TCP",
                      endpoint_presentation(&e));
             memcpy(&tmp, mc, sizeof(tmp));
             v_mc_erase(s->pending_peers, mc);
-            v_mc_push(s->peers, &tmp);
-            mc_hello(&tmp, s->udp);
-            mc_establish_tunnel(&tmp, s->udp);
+            mc = v_mc_insert(s->peers, &tmp);
+            mc_hello(mc, s->udp);
+            mc_establish_tunnel(mc, s->udp);
         }
     }
     else if (events & BEV_EVENT_EOF)
@@ -334,6 +336,22 @@ server_verify_cert(X509_STORE_CTX *xs, void *ctx)
     return 1;
 }
 
+int
+server_preverify_cert(int preverify_ok, X509_STORE_CTX *xs)
+{
+    /* Always succeed */
+    switch (preverify_ok)
+    {
+        case 0:
+            log_debug("[X509] [PREVERIFY] preverify failed, force continue");
+            break;
+        case 1:
+            log_debug("[X509] [PREVERIFY] preverify succeed");
+            break;
+    }
+    return 1;
+}
+
 SSL_CTX *
 evssl_init(void)
 {
@@ -354,8 +372,10 @@ evssl_init(void)
         log_info("  openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert");
         return NULL;
     }
-    SSL_CTX_set_cert_verify_callback(server_ctx, server_verify_cert, NULL);
-    SSL_CTX_set_verify(server_ctx, SSL_VERIFY_PEER, NULL);
+    //SSL_CTX_set_cert_verify_callback(server_ctx, server_verify_cert, NULL);
+    SSL_CTX_set_verify(server_ctx,
+                       SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                       server_preverify_cert);
     return server_ctx;
 }
 
