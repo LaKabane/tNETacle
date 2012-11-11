@@ -60,6 +60,9 @@ int mc_add_raw_data(struct mc *,
 int mc_hello(struct mc *,
              struct udp *);
 
+int mc_establish_tunnel(struct mc *,
+                        struct udp *);
+
 struct mc *mc_peer_accept(struct server *s,
                           struct event_base *evbase,
                           struct sockaddr *sock,
@@ -88,6 +91,4 @@ char *address_presentation(struct sockaddr *,
                            int socklen,
                            char *, int);
 
-int
-mc_establish_tunnel(struct mc *self);
 #endif /* end of include guard: MC_ENDPOINT_JU2N66SJ */

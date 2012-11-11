@@ -119,38 +119,33 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = (struct server *)ctx;
     struct evbuffer *in = bufferevent_get_input(bev);
-    struct evbuffer *out = bufferevent_get_output(bev);
+    struct mc       *mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
     size_t len;
     char *line;
 
-    /* Get rid of every input */
+    /* Do nothing: this peer seems to exists, but we didn't approve it yet*/
+    if (mc == v_mc_end(s->peers))
+        return ;
+
     while ((line = evbuffer_readln(in, &len, EVBUFFER_EOL_CRLF)) != NULL)
     {
         struct vector_cptr *splited;
         char *cmd_name;
 
+        log_debug("[META] [%s]", line);
         splited = split(line);
         cmd_name = v_cptr_at(splited, 0);
-        log_debug("[META] [%s]", line);
         if (strncmp(cmd_name, "udp_port", strlen(cmd_name)) == 0)
         {
             char            *s_udp_port = v_cptr_at(splited, 1);
-            struct mc       *mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
             unsigned short  port = atoi(s_udp_port);
             struct endpoint udp_remote_endpoint;
-            char            *s_status = NULL;
 
             endpoint_init(&udp_remote_endpoint,
                           mc->p.address,
                           mc->p.len);
 
             endpoint_set_port(&udp_remote_endpoint, port);
-            if (splited->size > 1)
-                s_status = v_cptr_at(splited, 2);
-            if (s_status == NULL || strcmp(s_status, "ok") != 0)
-            {
-                evbuffer_add_printf(out, "udp_port:%d ok\r\n", udp_get_port(s->udp));
-            }
 
             udp_register_new_peer(s->udp,
                                   &udp_remote_endpoint,
@@ -221,7 +216,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             v_mc_erase(s->pending_peers, mc);
             v_mc_push(s->peers, &tmp);
             mc_hello(&tmp, s->udp);
-            //mc_establish_tunnel(&tmp, s->udp);
+            mc_establish_tunnel(&tmp, s->udp);
         }
     }
     else if (events & BEV_EVENT_EOF)
@@ -307,8 +302,28 @@ listen_callback(struct evconnlistener *evl,
 {
     struct server *s = (struct server *)ctx;
     struct event_base *base = evconnlistener_get_base(evl);
+    struct mc *mc;
 
-    mc_peer_accept(s, base, sock, len, fd);
+    /*
+     * Chipot:
+     *
+     * Pay attention !
+     * This function starts the SSL handshake if any.
+     * But the handshake is not concluded until the call to server_mc_event_cb
+     * with BEV_EVENT_CONNECTED as parameter.
+     *
+     * Yes, libevent call BEV_EVENT_CONNECTED in SERVER MODE.
+     *
+     * To keep a consistent behavior, we force the call to the callback, when we
+     * are _NOT_ in TLS mode.
+     *
+     * This is highly _HACKISH_ but it's the cleaner way I found by this time.
+     */
+    mc = mc_peer_accept(s, base, sock, len, fd);
+    if ((mc->ssl_flags & TLS_ENABLE) == 0)
+    {
+        server_mc_event_cb(mc->bev, BEV_EVENT_CONNECTED, s);
+    }
 }
 
 int

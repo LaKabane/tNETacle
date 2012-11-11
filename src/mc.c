@@ -162,6 +162,7 @@ mc_peer_connect(struct server *s,
         log_warn("[META] unable to connect to %s", peername);
         return NULL;
     }
+    bufferevent_disable(tmp.bev, EV_READ|EV_WRITE);
     return v_mc_insert(s->pending_peers, &tmp);
 }
 
@@ -205,7 +206,9 @@ mc_peer_accept(struct server *s,
         return v_mc_insert(s->pending_peers, &mc);
     }
     log_debug("[META] opening a meta-connexion with %s", peername);
-    return v_mc_insert(s->peers, &mc);
+    /* XXX HACK HACK HACK XXX */
+    bufferevent_disable(mc.bev, EV_READ|EV_WRITE);
+    return v_mc_insert(s->pending_peers, &mc);
 }
 
 
@@ -256,17 +259,20 @@ int
 mc_hello(struct mc *self, struct udp *udp)
 {
     struct evbuffer *output = bufferevent_get_output(self->bev);
-    unsigned short port = udp_get_port(udp);
 
+    (void)udp;
+    bufferevent_enable(self->bev, EV_READ|EV_WRITE);
     evbuffer_add_printf(output, "Hello ~!\r\n");
-    evbuffer_add_printf(output, "udp_port:%d\r\n", port);
     return 0;
 }
 
 int
-mc_establish_tunnel(struct mc *self)
+mc_establish_tunnel(struct mc *self, struct udp *udp)
 {
-    (void)self;
+    struct evbuffer *output = bufferevent_get_output(self->bev);
+    unsigned short port = udp_get_port(udp);
+
+    evbuffer_add_printf(output, "udp_port:%d\r\n", port);
     return 0;
 }
 
