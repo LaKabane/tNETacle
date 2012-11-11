@@ -18,6 +18,7 @@
 
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
+#include "networking.h"
 #include "coro.h"
 #include "tntsched.h"
 #include "endpoint.h"

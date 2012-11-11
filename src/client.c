@@ -23,6 +23,9 @@
 # include <unistd.h>
 #endif
 
+#include "wincompat.h"
+#include "networking.h"
+
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent_ssl.h>
@@ -58,10 +61,11 @@ client_mc_read_cb(struct bufferevent *bev, void *ctx)
                 {
 					if (strcmp(ele->u_value.buf, "Ip") == 0)
 					{
+						struct cfg_sockaddress out;
+
                         ele = ele->next;
 						if (ele == NULL)
 							return;
-						struct cfg_sockaddress out;
 						(void)memset(&out, 0, sizeof out);
 						/* Take the size from the sockaddr_storage*/
 						out.len = sizeof(out.sockaddr);

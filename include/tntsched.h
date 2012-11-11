@@ -16,6 +16,7 @@
 #ifndef SCHED_O6L1KITS
 #define SCHED_O6L1KITS
 
+#include "wincompat.h"
 #include "coro.h"
 #include <event2/util.h>
 

@@ -14,11 +14,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "networking.h"
 
 #ifdef Windows
 # define ZLIB_WINAPI

@@ -99,10 +99,10 @@ map_specifier int cmp_name(struct map_pair_name const *a, void *c)
 map_specifier value_type *map_(insert)(struct map_name *m, key_type k, value_type v)
 {
   struct map_pair_name *it;
-  struct map_pair_name pair = {
-    .key = k,
-    .value = v,
-  };
+  struct map_pair_name pair;
+  
+  pair.key = k;
+  pair.value = v;
 
   it = vector_(find_if)(m->vec, cmp_name, &pair);
   if (it == vector_(end)(m->vec))
@@ -117,10 +117,9 @@ map_specifier value_type *map_(insert)(struct map_name *m, key_type k, value_typ
 map_specifier void map_(remove)(struct map_name *m, key_type k)
 {
   struct map_pair_name *it;
-  struct map_pair_name pair = {
-    .key = k,
-  };
+  struct map_pair_name pair;
 
+  pair.key = k;
   it = vector_(find_if)(m->vec, cmp_name, &pair);
   if (it == vector_(end)(m->vec))
     return;
@@ -132,11 +131,10 @@ map_specifier void map_(remove)(struct map_name *m, key_type k)
 
 map_specifier value_type const *map_(access)(struct map_name *m, key_type k)
 {
-  struct map_pair_name search = {
-    .key = k,
-  };
+  struct map_pair_name search;
   struct map_pair_name *it;
 
+  search.key = k;
   it = vector_(find_if)(m->vec, cmp_name, &search);
   if (it == vector_(end)(m->vec))
     return NULL;
@@ -146,11 +144,10 @@ map_specifier value_type const *map_(access)(struct map_name *m, key_type k)
 
 map_specifier value_type *map_(find)(struct map_name *m, key_type k)
 {
-  struct map_pair_name search = {
-    .key = k,
-  };
+  struct map_pair_name search;
   struct map_pair_name *it;
 
+  search.key = k;
   it = vector_(find_if)(m->vec, cmp_name, &search);
   if (it == vector_(end)(m->vec))
     return NULL;

@@ -27,6 +27,7 @@
 #include <openssl/ssl.h> /* Can not forward declare SSL* types*/
 
 #include "udp.h"
+#include "mc.h"
 
 struct evconnlistener;
 struct bufferevent;

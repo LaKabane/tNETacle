@@ -13,11 +13,13 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
+#include <string.h>
+
+#include <event2/util.h>
+
 #include "endpoint.h"
 #include "subset.h"
 #include "log.h"
-#include <string.h>
-#include <event2/util.h>
 
 void
 endpoint_init(struct endpoint *e,
@@ -169,7 +171,5 @@ endpoint_cmp(struct endpoint const *a,
 {
     if (a->addrlen != b->addrlen)
         return  -1;
-    int val = evutil_sockaddr_cmp(endpoint_addr(a),
-                               endpoint_addr(b), 1);
-    return val;
+    return evutil_sockaddr_cmp(endpoint_addr(a), endpoint_addr(b), 1);
 }

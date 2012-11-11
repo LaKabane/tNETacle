@@ -69,7 +69,7 @@ endif()
 set(SOURCES_LIST
   src/conf.c
   src/tun-compat.c
-  src/compress.c
+  #src/compress.c
   #src/pipeline.c
   src/mc.c
   src/hexdump.c
@@ -97,6 +97,7 @@ set(HEADERS_LIST
     include/tntexits.h
     include/tntsocket.h
     include/tun.h
+    include/map.h
     include/vector.h
     include/imsg.h
     include/wincompat.h
@@ -107,6 +108,7 @@ set(HEADERS_LIST
     include/tntsched.h
     include/dtls.h
     include/subset.h
+    include/client.h
     include/endpoint.h
 )
 
@@ -256,7 +258,7 @@ endif()
 # ------------------------
 
 if (Windows)
-    target_link_libraries(tNETacle Ws2_32.lib)
+    target_link_libraries(tNETacle ws2_32.lib)
 endif()
 
 if (ClientQT)

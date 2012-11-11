@@ -26,9 +26,6 @@
 # define snprintf _snprintf
 # define ssize_t SSIZE_T
 
-# define write(A, B, C) windows_fix_write(A, B, C)
-# define read(A, B, C) windows_fix_read(A, B, C)
-
 long long strtonum(const char *, long long, long long, const char **);
 char * strndup(const char *, size_t);
 

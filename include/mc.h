@@ -16,8 +16,14 @@
 #ifndef MC_ENDPOINT_JU2N66SJ
 #define MC_ENDPOINT_JU2N66SJ
 
-#include <openssl/ssl.h> /*Can not forward declare SSL types..*/
 #include "networking.h"
+
+/*
+ * We include this one after networking.h because openssl includes windows.h
+ * leading to a redifinition of most of the wsaapi symbols on Windows.
+ * Seriously, fuck you OpenSSL.
+ */
+#include <openssl/ssl.h> /*Can not forward declare SSL types..*/
 #include "endpoint.h"
 
 struct bufferevent;

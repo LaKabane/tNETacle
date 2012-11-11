@@ -23,11 +23,12 @@
 
 #include <event2/event.h>
 
+#include "networking.h"
+
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
 
-#include "networking.h"
 #include "tnetacle.h"
 #include "mc.h"
 #include "tntsocket.h"
@@ -93,9 +94,10 @@ udp_register_new_peer(struct udp *udp,
                       struct endpoint *remote,
                       int ssl_flags)
 {
-    struct udp_peer tmp_udp = {};
+    struct udp_peer tmp_udp; 
     struct endpoint *e = &tmp_udp.peer_addr;
 
+    memset(&tmp_udp, 0, sizeof(tmp_udp));
     endpoint_copy(e, remote);
     tmp_udp.ssl_flags = ssl_flags;
     if (ssl_flags == DTLS_ENABLE)

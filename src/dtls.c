@@ -46,6 +46,7 @@ log_ssl(char const *msg, ...)
     char errstr[150];
     unsigned long errval;
 
+#if not defined(Windows)
     va_start(ap, msg);
     errval = ERR_get_error();
     ERR_error_string_n(errval, errstr, sizeof(errstr));
@@ -55,6 +56,7 @@ log_ssl(char const *msg, ...)
     free(fmt);
     free(log);
     va_end(ap);
+#endif
 }
 
 SSL_CTX *

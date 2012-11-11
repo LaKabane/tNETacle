@@ -23,6 +23,7 @@
 #endif /* Windows */
 
 #include "tnetacle.h"
+#include "networking.h"
 
 #ifndef TNT_OPTIONS_H_ 
 #define TNT_OPTIONS_H_ 

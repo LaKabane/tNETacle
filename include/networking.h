@@ -22,9 +22,9 @@
 # include <netinet/in.h>
 # include <unistd.h>
 #elif defined Windows
-# include <io.h>
-# include <WinSock2.h>
 # include <WS2tcpip.h>
+# include <ws2def.h>
+# include <io.h>
 # define EAGAIN WSAEWOULDBLOCK
 #endif
 
