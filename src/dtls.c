@@ -46,7 +46,7 @@ log_ssl(char const *msg, ...)
     char errstr[150];
     unsigned long errval;
 
-#if not defined(Windows)
+#if !defined(Windows)
     va_start(ap, msg);
     errval = ERR_get_error();
     ERR_error_string_n(errval, errstr, sizeof(errstr));
