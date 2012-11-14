@@ -40,6 +40,7 @@ public:
     explicit            BodyAddContact(QWidget* parent, Controller* controller);
     virtual            ~BodyAddContact();
     QDialogButtonBox* getOkOrReject() const {return okOrReject;}
+    void            cleanField();
 
 public slots:
     void    openPubKey();

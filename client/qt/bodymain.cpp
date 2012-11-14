@@ -20,7 +20,7 @@ BodyMain::BodyMain(QWidget *parent, Controller* controller) :
     QFrame(parent), _controller(controller)
 {
     this->setupUi(this);
-    //_listContacts->clear();
+    _listContacts->clear();
     _listGroups->clear();
 
     QObject::connect(this->_addPeer, SIGNAL(clicked()), _controller, SLOT(viewAddContact()));

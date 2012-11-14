@@ -76,3 +76,11 @@ void	BodyAddContact::openPubKey()
     if (_controller != 0)
         this->pubKey->setText(_controller->openPubKey());
 }
+
+void
+BodyAddContact::cleanField()
+{
+    this->name->clear();
+    this->pubKey->clear();
+    this->ip->clear();
+}
