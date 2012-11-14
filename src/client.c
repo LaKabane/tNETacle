@@ -98,10 +98,15 @@ static int
 add_peer(void *f, void *internal)
 {
     peer *p = (peer*)f;
+    int err = 0;
+    char *cmd = NULL;
 
     struct t_internal* intern = (struct t_internal*)internal;
     if (p == NULL || intern == NULL)
-        return 1;
+    {
+        err = 1;
+        return err;
+    }
     struct cfg_sockaddress out;
     (void)memset(&out, 0, sizeof out);
     /* Take the size from the sockaddr_storage*/
@@ -109,12 +114,27 @@ add_peer(void *f, void *internal)
     /* TODO: Sanity check with socklen */
     if (evutil_parse_sockaddr_port(p->ip,
                                    (struct sockaddr *)&out.sockaddr,
-                                   &out.len) == -1) {
+                                   &out.len) == -1)
+    {
         (void)fprintf(stderr, "%s: not a valid IP address\n", p->ip);
-        return 1;
+        err = 1;
+        return err;
     }
-    mc_peer_connect(intern->s, bufferevent_get_base(intern->bev), (struct sockaddr *)&out.sockaddr, out.len);
-    return 0;
+    err = mc_peer_connect(intern->s, bufferevent_get_base(intern->bev), (struct sockaddr *)&out.sockaddr, out.len);
+
+    /* Check if we can connect to the peer,
+     * if we can, resend it to the client to add it in the GUI
+     */
+    if (err != 0)
+        return err;
+    cmd = tclt_add_peers(p, 1);
+    if (cmd == NULL)
+    {
+        err = 2;
+        return err;
+    }
+    
+    return err;
 }
 
 static int
