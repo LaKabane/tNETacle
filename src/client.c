@@ -102,6 +102,7 @@ add_peer(void *f, void *internal)
     char *cmd = NULL;
 
     struct t_internal* intern = (struct t_internal*)internal;
+
     if (p == NULL || intern == NULL)
     {
         err = 1;
@@ -133,7 +134,7 @@ add_peer(void *f, void *internal)
         err = 2;
         return err;
     }
-    
+    bufferevent_write(intern->bev, cmd, strlen(cmd));
     return err;
 }
 
