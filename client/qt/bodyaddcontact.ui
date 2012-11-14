@@ -72,22 +72,5 @@
   <tabstop>okOrReject</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>okOrReject</sender>
-   <signal>rejected()</signal>
-   <receiver>BodyAddContact</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>93</x>
-     <y>78</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>93</x>
-     <y>47</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

@@ -178,9 +178,6 @@ bool Controller::addContact()
     //     return false;
     // }
 
-    /*
-    if (!_view->getInitialContactName().isEmpty()) // TODO if user select a different row after editing
-        this->deleteContact();*/
     try
     {
         peer p;
@@ -194,6 +191,7 @@ bool Controller::addContact()
         free(p.name);
         free(p.ip);
         free(p.key);
+        view->cleanField();
     }
     catch (Exception *e)
     {
