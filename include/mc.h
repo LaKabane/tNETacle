@@ -16,8 +16,15 @@
 #ifndef MC_ENDPOINT_JU2N66SJ
 #define MC_ENDPOINT_JU2N66SJ
 
-#include <openssl/ssl.h> /*Can not forward declare SSL types..*/
 #include "networking.h"
+
+/*
+ * We include this one after networking.h because openssl includes windows.h
+ * leading to a redifinition of most of the wsaapi symbols on Windows.
+ * Seriously, fuck you OpenSSL.
+ */
+#include <openssl/ssl.h> /*Can not forward declare SSL types..*/
+#include "endpoint.h"
 
 struct bufferevent;
 struct event_base;
@@ -59,16 +66,27 @@ int mc_add_raw_data(struct mc *,
 int mc_hello(struct mc *,
              struct udp *);
 
-int mc_peer_accept(struct server *s,
-               struct event_base *evbase,
-               struct sockaddr *sock,
-               int socklen,
-               int fd);
+int mc_establish_tunnel(struct mc *,
+                        struct udp *);
 
-int mc_peer_connect(struct server *s,
-                struct event_base *evbase,
-                struct sockaddr *sock,
-                int socklen);
+struct mc *mc_peer_accept(struct server *s,
+                          struct event_base *evbase,
+                          struct sockaddr *sock,
+                          int socklen,
+                          int fd);
+
+struct mc *mc_peer_connect(struct server *s,
+                           struct event_base *evbase,
+                           struct sockaddr *sock,
+                           int socklen);
+
+int mc_established(struct server *s,
+                   struct sockaddr *,
+                   int socklen);
+
+int mc_pending(struct server *s,
+                   struct sockaddr *,
+                   int socklen);
 
 /* used for debug, and print a mc */
 char *mc_presentation(struct mc*,
@@ -79,6 +97,4 @@ char *address_presentation(struct sockaddr *,
                            int socklen,
                            char *, int);
 
-int
-mc_establish_tunnel(struct mc *self);
 #endif /* end of include guard: MC_ENDPOINT_JU2N66SJ */

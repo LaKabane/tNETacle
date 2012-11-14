@@ -19,6 +19,7 @@
 #define CLIENT_CORE
 
 #include <openssl/ssl.h> /* Can not forward declare SSL* types*/
+#include "networking.h"
 #include "mc.h"
 
 struct bufferevent;

@@ -51,17 +51,6 @@
 #include "wincompat.h"
 #include "client.h"
 
-#define VECTOR_TYPE struct mc
-#define VECTOR_PREFIX mc
-#define VECTOR_NON_STATIC
-#include "vector.h"
-
-#define VECTOR_TYPE struct evconnlistener*
-#define VECTOR_PREFIX evl
-#define VECTOR_TYPE_SCALAR
-#define VECTOR_NON_STATIC
-#include "vector.h"
-
 #define VECTOR_TYPE char*
 #define VECTOR_PREFIX cptr
 #define DEFAULT_ALLOC_SIZE 4
@@ -81,7 +70,7 @@ static int
 find_udppeer(struct udp_peer const *a, void *ctx)
 {
     struct sockaddr *s = ctx;
-    return !evutil_sockaddr_cmp((struct sockaddr *)&a->addr, s, 0);
+    return !evutil_sockaddr_cmp(endpoint_addr(&a->peer_addr), s, 0);
 }
 
 char *next_token(char *ptr, char **saveit, char const *delimit)
@@ -130,53 +119,37 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = (struct server *)ctx;
     struct evbuffer *in = bufferevent_get_input(bev);
-    struct evbuffer *out = bufferevent_get_output(bev);
+    struct mc       *mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
     size_t len;
     char *line;
 
-    /* Get rid of every input */
-    (void)s;
+    /* Do nothing: this peer seems to exists, but we didn't approve it yet*/
+    if (mc == v_mc_end(s->peers))
+        return ;
+
     while ((line = evbuffer_readln(in, &len, EVBUFFER_EOL_CRLF)) != NULL)
     {
         struct vector_cptr *splited;
         char *cmd_name;
 
+        log_debug("[META] [%s]", line);
         splited = split(line);
         cmd_name = v_cptr_at(splited, 0);
         if (strncmp(cmd_name, "udp_port", strlen(cmd_name)) == 0)
         {
-            char *s_udp_port = v_cptr_at(splited, 1);
-            struct mc *mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
-            unsigned short port = atoi(s_udp_port);
-            struct sockaddr_storage udp_addr;
-            unsigned int socklen;
-            char *s_status = NULL;
+            char            *s_udp_port = v_cptr_at(splited, 1);
+            unsigned short  port = atoi(s_udp_port);
+            struct endpoint udp_remote_endpoint;
 
-            memcpy(&udp_addr, mc->p.address, mc->p.len);
-            if (udp_addr.ss_family == AF_INET)
-            {
-                struct sockaddr_in *sin = (struct sockaddr_in *)&udp_addr;
+            endpoint_init(&udp_remote_endpoint,
+                          mc->p.address,
+                          mc->p.len);
 
-                sin->sin_port = htons(port);
-                socklen = sizeof *sin;
-            }
-            else if (udp_addr.ss_family == AF_INET6)
-            {
-                struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&udp_addr;
+            endpoint_set_port(&udp_remote_endpoint, port);
 
-                sin6->sin6_port = htons(port);
-                socklen = sizeof *sin6;
-            }
-            if (splited->size > 1)
-                s_status = v_cptr_at(splited, 2);
-            if (s_status == NULL || strcmp(s_status, "ok") != 0)
-            {
-                evbuffer_add_printf(out, "udp_port:%d ok\r\n", udp_get_port(&s->udp)); 
-            }
-            udp_register_new_peer(&s->udp,
-                                  (struct sockaddr *)&udp_addr,
-                                  socklen,
-                                  DTLS_ENABLE);
+            udp_register_new_peer(s->udp,
+                                  &udp_remote_endpoint,
+                                  DTLS_DISABLE);
         }
         v_cptr_delete(splited);
         free(line);
@@ -215,13 +188,37 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         if (mc != v_mc_end(s->pending_peers))
         {
             struct mc tmp;
+            struct endpoint e;
 
-            log_info("connexion established.");
+            endpoint_init(&e, mc->p.address, mc->p.len);
+            /* Check for certificate */
+            if (mc->ssl_flags & TLS_ENABLE)
+            {
+                X509 *cert;
+                SSL *ssl;
+                EVP_PKEY *pubkey;
+                char name[512];
+
+                ssl = bufferevent_openssl_get_ssl(mc->bev);
+                cert = SSL_get_peer_certificate(ssl);
+                if (cert == NULL)
+                {
+                    log_info("[META] [TLS] %s doesn't share it's certificate.",
+                             mc_presentation(mc, name, sizeof name));
+                    v_mc_erase(s->pending_peers, mc);
+                    mc_close(mc);
+                    return ;
+                }
+                pubkey = X509_get_pubkey(cert);
+            }
+            log_info("[META] [%s] connexion established with %s",
+                     mc->ssl_flags & TLS_ENABLE ? "TLS" : "TCP",
+                     endpoint_presentation(&e));
             memcpy(&tmp, mc, sizeof(tmp));
             v_mc_erase(s->pending_peers, mc);
-            v_mc_push(s->peers, &tmp);
-            mc_hello(&tmp, &s->udp);
-            //mc_establish_tunnel(&tmp, s->udp);
+            mc = v_mc_insert(s->peers, &tmp);
+            mc_hello(mc, s->udp);
+            mc_establish_tunnel(mc, s->udp);
         }
     }
     else if (events & BEV_EVENT_EOF)
@@ -236,15 +233,13 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             char name[INET6_ADDRSTRLEN];
             struct sockaddr *sock = mc->p.address;
 
-            up = v_udp_find_if(s->udp.udp_peers, find_udppeer, sock);
-            if (up != v_udp_end(s->udp.udp_peers))
+            up = v_udp_find_if(s->udp->udp_peers, find_udppeer, sock);
+            if (up != v_udp_end(s->udp->udp_peers))
             {
-                v_udp_erase(s->udp.udp_peers, up);
+                v_udp_erase(s->udp->udp_peers, up);
                 log_debug("[%s] stop peering with %s",
                           (up->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
-                          address_presentation((struct sockaddr *)&up->addr,
-                                               up->socklen,
-                                               name, sizeof(name)));
+                          endpoint_presentation(&up->peer_addr));
             }
             log_debug("[META] stop the meta-connexion with %s",
                       mc_presentation(mc, name, sizeof(name)));
@@ -309,10 +304,53 @@ listen_callback(struct evconnlistener *evl,
 {
     struct server *s = (struct server *)ctx;
     struct event_base *base = evconnlistener_get_base(evl);
+    struct mc *mc;
 
-    mc_peer_accept(s, base, sock, len, fd);
+    /*
+     * Chipot:
+     *
+     * Pay attention !
+     * This function starts the SSL handshake if any.
+     * But the handshake is not concluded until the call to server_mc_event_cb
+     * with BEV_EVENT_CONNECTED as parameter.
+     *
+     * Yes, libevent call BEV_EVENT_CONNECTED in SERVER MODE.
+     *
+     * To keep a consistent behavior, we force the call to the callback, when we
+     * are _NOT_ in TLS mode.
+     *
+     * This is highly _HACKISH_ but it's the cleaner way I found by this time.
+     */
+    mc = mc_peer_accept(s, base, sock, len, fd);
+    if ((mc->ssl_flags & TLS_ENABLE) == 0)
+    {
+        server_mc_event_cb(mc->bev, BEV_EVENT_CONNECTED, s);
+    }
 }
 
+int
+server_verify_cert(X509_STORE_CTX *xs, void *ctx)
+{
+    log_debug("[X509] [VERIFY] hello !");
+    X509_STORE_CTX_set_error(xs, X509_V_OK);
+    return 1;
+}
+
+int
+server_preverify_cert(int preverify_ok, X509_STORE_CTX *xs)
+{
+    /* Always succeed */
+    switch (preverify_ok)
+    {
+        case 0:
+            log_debug("[X509] [PREVERIFY] preverify failed, force continue");
+            break;
+        case 1:
+            log_debug("[X509] [PREVERIFY] preverify succeed");
+            break;
+    }
+    return 1;
+}
 
 SSL_CTX *
 evssl_init(void)
@@ -334,6 +372,10 @@ evssl_init(void)
         log_info("  openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert");
         return NULL;
     }
+    //SSL_CTX_set_cert_verify_callback(server_ctx, server_verify_cert, NULL);
+    SSL_CTX_set_verify(server_ctx,
+                       SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+                       server_preverify_cert);
     return server_ctx;
 }
 
@@ -383,12 +425,14 @@ server_init(struct server *s, struct event_base *evbase)
 
     it_listen = v_sockaddr_begin(serv_opts.listen_addrs);
     ite_listen = v_sockaddr_end(serv_opts.listen_addrs);
+    s->ev_sched = sched_new(evbase);
+
     /* Listen on all ListenAddress */
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
     {
         struct evconnlistener *evl = NULL;
         char listenname[INET6_ADDRSTRLEN];
-        int err;
+        struct endpoint endp;
 
         evl = evconnlistener_new_bind(evbase, listen_callback,
             s, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, -1,
@@ -407,10 +451,10 @@ server_init(struct server *s, struct event_base *evbase)
         /*
          * We listen on the same address for the udp socket
          */
-        err = server_udp_init(s,
-                              (struct sockaddr *)&it_listen->sockaddr,
-                              it_listen->len);
-        if (err == -1)
+        endpoint_init(&endp, (struct sockaddr *)&it_listen->sockaddr,
+                      it_listen->len);
+        s->udp = server_udp_new(s, &endp);
+        if (s->udp == NULL)
         {
             log_warnx("[INIT] [UDP] failed to init the udp socket on %s",
                   address_presentation((struct sockaddr *)&it_listen->sockaddr,
@@ -464,10 +508,7 @@ void server_delete(struct server *s)
 {
     /* Start by the servers */
     v_evl_foreach(s->srv_list, evconnlistener_free);
-    server_udp_exit(&s->udp);
-
-    /* Then the tuntap device */
-    event_free(s->device);
+    server_udp_exit(s->udp);
 
     /* Clean the vectors */
     v_mc_foreach(s->pending_peers, (void (*)(struct mc const *))mc_close);

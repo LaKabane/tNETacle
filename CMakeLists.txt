@@ -69,7 +69,7 @@ endif()
 set(SOURCES_LIST
   src/conf.c
   src/tun-compat.c
-  src/compress.c
+  #src/compress.c
   #src/pipeline.c
   src/mc.c
   src/hexdump.c
@@ -81,6 +81,8 @@ set(SOURCES_LIST
   src/coro.c
   src/sched.c
   src/dtls.c
+  src/subset.c
+  src/endpoint.c
 )
 
 set(HEADERS_LIST 
@@ -95,6 +97,7 @@ set(HEADERS_LIST
     include/tntexits.h
     include/tntsocket.h
     include/tun.h
+    include/map.h
     include/vector.h
     include/client.h
     include/imsg.h
@@ -104,7 +107,11 @@ set(HEADERS_LIST
     include/frame.h
     include/coro.h
     include/tntsched.h
-    include/dtls.h)
+    include/dtls.h
+    include/subset.h
+    include/client.h
+    include/endpoint.h
+)
 
 # OS families specific things
 # ---------------------------
@@ -252,11 +259,14 @@ endif()
 # ------------------------
 
 if (Windows)
-    target_link_libraries(tNETacle Ws2_32.lib)
+    target_link_libraries(tNETacle ws2_32.lib)
 endif()
 
 if (ClientQT)
   include(${CMAKE_SOURCE_DIR}/client/qt/CMakeLists.txt)
+endif()
+if (TNT_BROADCAST)
+  include(${CMAKE_SOURCE_DIR}/client/tnt_broadcast/CMakeLists.txt)
 endif()
 
 include(CMakeLists.txt.local OPTIONAL)

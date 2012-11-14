@@ -23,6 +23,9 @@
 # include <unistd.h>
 #endif
 
+#include "wincompat.h"
+#include "networking.h"
+
 #include <stdarg.h>
 #include <event2/util.h>
 #include <event2/bufferevent.h>
@@ -67,6 +70,7 @@ void
 client_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
 {
     (void)ctx;
+
     if (events & BEV_EVENT_ERROR)
     {
         int everr;
@@ -99,6 +103,7 @@ add_peer(void *f, void *internal)
 {
     peer *p = (peer*)f;
     int err = 0;
+    struct mc* tmp = NULL;
     char *cmd = NULL;
 
     struct t_internal* intern = (struct t_internal*)internal;
@@ -121,14 +126,18 @@ add_peer(void *f, void *internal)
         err = 1;
         return err;
     }
-    err = mc_peer_connect(intern->s, bufferevent_get_base(intern->bev), (struct sockaddr *)&out.sockaddr, out.len);
+    tmp = mc_peer_connect(intern->s, bufferevent_get_base(intern->bev), (struct sockaddr *)&out.sockaddr, out.len);
 
     /* Check if we can connect to the peer,
      * if we can, resend it to the client to add it in the GUI
      */
-    if (err != 0)
+    if (tmp == NULL)
+    {
+        err = 1;
         return err;
+    }
     cmd = tclt_add_peers(p, 1);
+    printf("%s\n", cmd);
     if (cmd == NULL)
     {
         err = 2;
@@ -154,3 +163,4 @@ client_init_callback(void)
     tclt_set_callback_command(ADD_PEER_CMD, add_peer);
     tclt_set_callback_command(DELETE_PEER_CMD, delete_peer);
 }
+

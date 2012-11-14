@@ -99,6 +99,7 @@ struct rw_events *get_events(struct fiber_args *s, int fd, short event)
                                        s->fib);
             }
         }
+        return t;
     }
     return NULL;
 }
@@ -133,13 +134,16 @@ int async_event(struct fiber_args *s,
     if (flag & EV_READ)
     {
             it = get_events(s, fd, EV_READ);
+        /* XXX SIGSEGV it == NULL */
             event_add(it->r_event, NULL);
     }
     if (flag & EV_WRITE)
     {
             it = get_events(s, fd, EV_WRITE);
+        /* XXX SIGSEGV it == NULL */
             event_add(it->w_event, NULL);
     }
+    s->fib->fib_op.op_type = EVENT;
     s->fib->fib_op.ret = 0;
     coro_transfer(&s->fib->fib_ctx, origin);
     return s->fib->fib_op.ret;
@@ -165,6 +169,7 @@ int async_recvfrom(struct fiber_args *s,
             struct rw_events *it;
 
             it = get_events(s, fd, EV_READ);
+            /* XXX SIGSEGV (it == NULL) */
             event_add(it->r_event, NULL);
             s->fib->fib_op.op_type = RECVFROM;
             s->fib->fib_op.fd = fd;
@@ -198,6 +203,7 @@ int async_accept(struct fiber_args *s,
             struct rw_events *it;
 
             it = get_events(s, fd, EV_READ);
+            /* XXX SIGSEGV (it == NULL) */
             event_add(it->r_event, NULL);
             s->fib->fib_op.op_type = ACCEPT;
             s->fib->fib_op.fd = (intptr_t)fd;
@@ -230,6 +236,7 @@ ssize_t async_recv(struct fiber_args *s,
             struct rw_events *it;
 
             it = get_events(s, fd, EV_READ);
+            /* XXX SIGSEGV (it == NULL) */
             event_add(it->r_event, NULL);
             s->fib->fib_op.op_type = RECV;
             s->fib->fib_op.fd = (intptr_t)fd;
@@ -261,6 +268,7 @@ ssize_t async_send(struct fiber_args *s,
             struct rw_events *it;
 
             it = get_events(s, fd, EV_WRITE);
+            /* XXX SIGSEGV (it == NULL) */
             event_add(it->w_event, NULL);
             s->fib->fib_op.op_type = SEND;
             s->fib->fib_op.fd = (intptr_t)fd;
@@ -291,6 +299,7 @@ ssize_t async_read(struct fiber_args *s,
             struct rw_events *it;
 
             it = get_events(s, fd, EV_READ);
+            /* XXX SIGSEGV (it == NULL) */
             event_add(it->r_event, NULL);
             s->fib->fib_op.op_type = READ;
             s->fib->fib_op.fd = (intptr_t)fd;
@@ -320,6 +329,7 @@ ssize_t async_write(struct fiber_args *s,
             struct rw_events *it;
 
             it = get_events(s, fd, EV_WRITE);
+            /* XXX SIGSEGV (it == NULL) */
             event_add(it->w_event, NULL);
             s->fib->fib_op.op_type = WRITE;
             s->fib->fib_op.fd = (intptr_t)fd;
@@ -352,7 +362,6 @@ ssize_t async_sendto(struct fiber_args *s,
             struct rw_events *it;
 
             it = get_events(s, fd, EV_WRITE);
-            /* XXX SIGSEGV */
             event_add(it->w_event, NULL);
             s->fib->fib_op.op_type = SEND;
             s->fib->fib_op.fd = (intptr_t)fd;
@@ -373,9 +382,7 @@ intptr_t async_yield(struct fiber_args *s,
                      intptr_t yielded)
 {
     struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
-    struct fiber *parent = NULL;
 
-    parent = ((struct fiber *)s->fib->fib_op.fd);
     s->fib->fib_op.op_type = YIELD;
     s->fib->fib_op.arg1 = yielded;
     coro_transfer(&s->fib->fib_ctx, origin);
@@ -469,9 +476,10 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
             case EVENT:
                 {
                     fib->fib_op.ret |= EV_READ;
+                    break;
                 }
             default:
-                    fprintf(stderr, "[sched] syscall not implemented");
+                    log_warnx("[sched] syscall not implemented");
         }
     }
     else if (event & EV_WRITE)
@@ -506,6 +514,7 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
             case EVENT:
                 {
                     fib->fib_op.ret |= EV_WRITE;
+                    break;
                 }
             default:
                 break;

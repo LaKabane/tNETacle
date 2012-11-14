@@ -15,6 +15,7 @@
 */
 
 #include <WS2tcpip.h>
+#include <ws2def.h>
 
 #include <event2/event.h>
 #include <event2/buffer.h>

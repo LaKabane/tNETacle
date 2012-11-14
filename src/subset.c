@@ -1,6 +1,5 @@
-/*
+/**
  * Copyright (c) 2012, PICHOT Fabien Paul Leonard <pichot.fabien@gmail.com>
- *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
  * copyright notice and this permission notice appear in all copies.
@@ -12,25 +11,20 @@
  * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
- */
+**/
 
-#ifndef WINCOMPAT_H_
-#define WINCOMPAT_H_
-# if defined Windows
+#include <stdlib.h>
+#include <string.h>
 
-# define WIN32_LEAN_AND_MEAN
-# include <Windows.h>
+#include "subset.h"
 
-# define __func__ __FUNCTION__
-# define alloca _alloca
-# define snprintf _snprintf
-# define ssize_t SSIZE_T
+void *tnt_new_impl(size_t type_size)
+{
+    void *tmp;
 
-long long strtonum(const char *, long long, long long, const char **);
-char * strndup(const char *, size_t);
-
-LPWSTR formated_error(LPWSTR pMessage, DWORD m, ...);
-
-# endif
-#endif
-
+    tmp = malloc(type_size);
+    if (tmp == NULL)
+        return NULL;
+    memset(tmp, 0, type_size);
+    return tmp;
+}

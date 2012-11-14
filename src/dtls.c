@@ -29,6 +29,7 @@
 
 #include "networking.h"
 #include "tntsched.h"
+#include "endpoint.h"
 #include "options.h"
 #include "dtls.h"
 #include "udp.h"
@@ -45,6 +46,7 @@ log_ssl(char const *msg, ...)
     char errstr[150];
     unsigned long errval;
 
+#if !defined(Windows)
     va_start(ap, msg);
     errval = ERR_get_error();
     ERR_error_string_n(errval, errstr, sizeof(errstr));
@@ -54,6 +56,7 @@ log_ssl(char const *msg, ...)
     free(fmt);
     free(log);
     va_end(ap);
+#endif
 }
 
 SSL_CTX *
@@ -128,6 +131,8 @@ dtls_new_peer(SSL_CTX *ctx, struct udp_peer *p)
     }
 
     SSL_set_bio(ssl, p->bio, p->bio);
+
+    ssl = SSL_new(ctx);
     if (ssl == NULL)
     {
         BIO_free(p->bio);
@@ -218,7 +223,7 @@ static int
 find_peer(struct udp_peer const *P, void *ctx) 
 {
     struct sockaddr *addr = ctx;
-    return !evutil_sockaddr_cmp((struct sockaddr *)&P->addr, addr, 1);
+    return !evutil_sockaddr_cmp((struct sockaddr *)&P->peer_addr.addr, addr, 1);
 }
 
 /* Not functional */
@@ -237,7 +242,7 @@ dtls_recvfrom(int sockfd,
 
     nread = async_recvfrom(async_ctx,
                          sockfd,
-                         tbuf,
+                         (char *)tbuf,
                          sizeof(tbuf),
                          flags,
                          addr,
@@ -256,9 +261,11 @@ dtls_recvfrom(int sockfd,
         peer = v_udp_find_if(udp->udp_peers, find_peer, (void *)addr);
         if (peer == NULL)
         {
+            struct endpoint e;
+
+            endpoint_init(&e, addr, *socklen);
             peer = udp_register_new_peer(udp,
-                                         addr,
-                                         *socklen,
+                                         &e,
                                          DTLS_ENABLE | DTLS_SERVER);
         }
         BIO_write(peer->bio, tbuf, nread);

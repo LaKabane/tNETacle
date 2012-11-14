@@ -23,6 +23,7 @@
 #endif /* Windows */
 
 #include "tnetacle.h"
+#include "networking.h"
 
 #ifndef TNT_OPTIONS_H_ 
 #define TNT_OPTIONS_H_ 
@@ -35,7 +36,6 @@ struct cfg_sockaddress {
 #define VECTOR_TYPE struct cfg_sockaddress
 #define VECTOR_PREFIX sockaddr
 #define DEFAULT_ALLOC_SIZE 2
-#define VECTOR_FORWARD
 #include "vector.h"
 
 struct options {

@@ -16,6 +16,7 @@
 #ifndef SCHED_O6L1KITS
 #define SCHED_O6L1KITS
 
+#include "wincompat.h"
 #include "coro.h"
 #include <event2/util.h>
 
@@ -107,6 +108,11 @@ ssize_t async_send(struct fiber_args *s,
                    void const *buf,
                    size_t len,
                    int flag);
+
+ssize_t async_read(struct fiber_args *s,
+                   int fd,
+                   void *buf,
+                   size_t len);
 
 ssize_t async_recv(struct fiber_args *s,
                    int fd,
