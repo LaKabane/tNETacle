@@ -80,16 +80,14 @@ QClient::getBody() const
 void
 QClient::changeNextBody(QClient::state newState)
 {
+    _body->hide();
     if (_state == QClient::CONNEXION)
     {
         _state = QClient::MAIN;
-        _body->hide();
-        _body = _bodyMain;
-        _body->show();
+        _body = _bodyMain; 
     }
     else if (_state == QClient::MAIN)
     {
-        _body->hide();
         if (newState == QClient::ADDCONTACT)
         {
             _state = QClient::ADDCONTACT;
@@ -100,48 +98,41 @@ QClient::changeNextBody(QClient::state newState)
             _state = QClient::ADDGROUP;
             _body = _bodyAddGroup;
         }
-        _body->show();
     }
     else if (_state == QClient::ADDGROUP)
     {
         _state = QClient::MAIN;
-        _body->hide();
         _body = _bodyMain;
-        _body->show();
     }
     else if (_state == QClient::ADDCONTACT)
     {
         _state = QClient::MAIN;
-        _body->hide();
         _body = _bodyMain;
-        _body->show();
     }
+    _body->show();
 }
 
 void
 QClient::changePrevBody()
 {
+    _body->hide();
     if (_state == QClient::MAIN)
     {
         _state = QClient::CONNEXION;
-        _body->hide();
         _body = _bodyConnexion;
-        _body->show();
+
     }
     else if (_state == QClient::ADDGROUP)
     {
         _state = QClient::MAIN;
-        _body->hide();
         _body = _bodyMain;
-        _body->show();
     }
     else if (_state == QClient::ADDCONTACT)
     {
         _state = QClient::MAIN;
-        _body->hide();
         _body = _bodyMain;
-        _body->show();
     }
+    _body->show();
 }
 
 void
