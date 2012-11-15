@@ -49,7 +49,7 @@ struct fiber_args
 struct rw_events *get_events(struct fiber_args *s, int fd, short event)
 {
     struct rw_events *t;
-
+        //w_event
     t = m_fd_ev_find(s->fib->map_fe, fd);
     if (t == NULL)
     {
@@ -362,7 +362,7 @@ ssize_t async_sendto(struct fiber_args *s,
             struct rw_events *it;
 
             it = get_events(s, fd, EV_WRITE);
-            event_add(it->w_event, NULL);
+            event_add(it->w_event, NULL);// XXX Check if (it && it->w_event)
             s->fib->fib_op.op_type = SEND;
             s->fib->fib_op.fd = (intptr_t)fd;
             s->fib->fib_op.arg1 = (intptr_t)fd;

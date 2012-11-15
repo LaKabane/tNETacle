@@ -209,7 +209,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
                     mc_close(mc);
                     return ;
                 }
-                pubkey = X509_get_pubkey(cert);
+                pubkey = X509_get_pubkey(cert); //UNUSED ?
             }
             log_info("[META] [%s] connexion established with %s",
                      mc->ssl_flags & TLS_ENABLE ? "TLS" : "TCP",

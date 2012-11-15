@@ -45,7 +45,7 @@ endpoint_set_ipport(struct endpoint *e,
 {
     return evutil_parse_sockaddr_port(ip,
                                       (struct sockaddr *)&e->addr,
-                                      &e->addrlen);
+                                       (int *)&e->addrlen);
 }
 
 int
