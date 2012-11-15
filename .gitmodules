@@ -4,3 +4,6 @@
 [submodule "sub/libtuntap"]
 	path = sub/libtuntap
 	url = git@github.com:LaKabane/libtuntap
+[submodule "sub/calm-containers"]
+	path = sub/calm-containers
+	url = git@github.com:drepdash/calm-containers.git

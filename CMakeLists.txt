@@ -39,7 +39,6 @@ endif()
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 
-
 if (TUNTAP_FOUND)
     add_definitions(-DUSE_LIBTUNTAP)
 else()
@@ -50,12 +49,22 @@ endif()
 
 # Global include directories
 # ------------------
+
+
 include_directories(${CMAKE_HOME_DIRECTORY}/include)
 include_directories(${EVENT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
 include_directories(${TCLT_INCLUDE_DIR})
+if (${CALM_INCLUDE_DIR})
+        include_directories(${CALM_INCLUDE_DIR})
+else()
+        set(CALM_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/sub/calm-containers/include)
+        include_directories(${CALM_INCLUDE_DIR})
+endif()
+
+
 if (TUNTAP_FOUND)
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
@@ -97,8 +106,8 @@ set(HEADERS_LIST
     include/tntexits.h
     include/tntsocket.h
     include/tun.h
-    include/map.h
-    include/vector.h
+    ${CALM_INCLUDE_DIR}/map.h
+    ${CALM_INCLUDE_DIR}/vector.h
     include/client.h
     include/imsg.h
     include/wincompat.h
