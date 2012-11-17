@@ -153,6 +153,7 @@ tnt_fork(int imsg_fds[2]) {
     struct event *sigint = NULL;
     struct event *imsg_event = NULL;
     struct server server;
+    struct event_config *evcfg;
 
     switch ((pid = fork())) {
     case -1:
@@ -190,9 +191,20 @@ tnt_fork(int imsg_fds[2]) {
 
     tnt_priv_drop(pw);
 
+#if defined(Darwin)
+    evcfg = event_config_new();
+
+    /*event_config_avoid_method(evcfg, "kqueue");*/
+    /*event_config_avoid_method(evcfg, "poll");*/
+    /*event_config_avoid_method(evcfg, "devpoll");*/
+    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
+	log_err(1, "libevent");
+    }
+#else
     if ((evbase = event_base_new()) == NULL) {
 	log_err(1, "libevent");
     }
+#endif
 
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);

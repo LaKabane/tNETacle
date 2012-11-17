@@ -127,6 +127,31 @@ imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
     return ;
 }
 
+static void
+libevent_dump(struct event_base *base)
+{
+    int i;
+    enum event_method_feature f;
+    const char **methods = event_get_supported_methods();
+
+    printf("Starting Libevent %s.  Available methods are:\n",
+        event_get_version());
+    for (i=0; methods[i] != NULL; ++i) {
+        printf("    %s\n", methods[i]);
+    }
+
+    printf("Using Libevent with backend method %s.",
+        event_base_get_method(base));
+    f = event_base_get_features(base);
+    if ((f & EV_FEATURE_ET))
+        printf("  Edge-triggered events are supported.");
+    if ((f & EV_FEATURE_O1))
+        printf("  O(1) event notification is supported.");
+    if ((f & EV_FEATURE_FDS))
+        printf("  All FD types are supported.");
+    puts("");
+}
+
 int
 main(int argc, char *argv[]) {
     int ch;
@@ -138,6 +163,10 @@ main(int argc, char *argv[]) {
     struct event *sigint = NULL;
     struct event *sigterm = NULL;
     struct event *sigchld = NULL;
+
+#if defined(Darwin)
+    struct event_config	*evcfg;
+#endif
 
     /* Parse configuration file and then command line switches */
     tnt_parse_file(NULL);
@@ -188,9 +217,23 @@ main(int argc, char *argv[]) {
     signal(SIGSEGV, init_sig_hdlr);
     chld_pid = tnt_fork(imsg_fds);
 
+#if defined(Darwin)
+    evcfg = event_config_new();
+
+    event_config_avoid_method(evcfg, "kqueue");
+    event_config_avoid_method(evcfg, "poll");
+    /*event_config_avoid_method(evcfg, "devpoll");*/
+    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
+	log_err(1, "libevent");
+    }
+    printf("bite !\n");
+    exit(0);
+#else
     if ((evbase = event_base_new()) == NULL) {
 	log_err(1, "libevent");
     }
+#endif
+    libevent_dump(evbase);
 
     sigint = event_new(evbase, SIGINT, EV_SIGNAL, &sig_gen_hdlr, evbase);
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sig_gen_hdlr, evbase);
