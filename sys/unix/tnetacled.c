@@ -222,12 +222,10 @@ main(int argc, char *argv[]) {
 
     event_config_avoid_method(evcfg, "kqueue");
     event_config_avoid_method(evcfg, "poll");
-    /*event_config_avoid_method(evcfg, "devpoll");*/
+    event_config_avoid_method(evcfg, "devpoll");
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
 	log_err(1, "libevent");
     }
-    printf("bite !\n");
-    exit(0);
 #else
     if ((evbase = event_base_new()) == NULL) {
 	log_err(1, "libevent");

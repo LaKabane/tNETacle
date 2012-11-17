@@ -194,9 +194,9 @@ tnt_fork(int imsg_fds[2]) {
 #if defined(Darwin)
     evcfg = event_config_new();
 
-    /*event_config_avoid_method(evcfg, "kqueue");*/
-    /*event_config_avoid_method(evcfg, "poll");*/
-    /*event_config_avoid_method(evcfg, "devpoll");*/
+    event_config_avoid_method(evcfg, "kqueue");
+    event_config_avoid_method(evcfg, "poll");
+    event_config_avoid_method(evcfg, "devpoll");
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
 	log_err(1, "libevent");
     }
