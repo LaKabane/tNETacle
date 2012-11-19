@@ -24,7 +24,10 @@ find_package(ZLIB REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
 find_package(OpenSSL REQUIRED)
-find_package(Tclt REQUIRED)
+
+if (ClientQT)
+  find_package(Tclt REQUIRED)
+endif()
 
 if(WIN32)
 	find_package(Event COMPONENTS core REQUIRED)
@@ -39,6 +42,9 @@ endif()
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 
+if (ClientQT)
+  add_definitions(-DUSE_TCLT)
+endif()
 
 if (TUNTAP_FOUND)
     add_definitions(-DUSE_LIBTUNTAP)
@@ -55,13 +61,16 @@ include_directories(${EVENT_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
-include_directories(${TCLT_INCLUDE_DIR})
 if (TUNTAP_FOUND)
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
 	if (TAPCFG_FOUND)
 		include_directories(${TAPCFG_INCLUDE_DIRS})
 	endif()
+endif()
+
+if (ClientQT)
+  include_directories(${TCLT_INCLUDE_DIR})
 endif()
 
 # Portable source files
@@ -74,7 +83,6 @@ set(SOURCES_LIST
   src/mc.c
   src/hexdump.c
   src/server.c
-  src/client.c
   src/udp.c
   src/device.c
   src/frame.c
@@ -109,9 +117,19 @@ set(HEADERS_LIST
     include/tntsched.h
     include/dtls.h
     include/subset.h
-    include/client.h
     include/endpoint.h
 )
+
+# Add Source for LibTclt
+if (ClientQT)
+  set(SOURCES_LIST ${SOURCES_LIST}
+    src/client.c
+    )
+
+  set(HEADERS_LIST ${HEADERS_LIST}
+    include/client.h
+    )
+endif()
 
 # OS families specific things
 # ---------------------------
@@ -240,13 +258,16 @@ target_link_libraries(tNETacle
         ${ZLIB_LIBRARY}
         ${YAJL_LIBRARIES}
         ${OPENSSL_LIBRARIES}
-        ${TCLT_LIBRARY}
 )
 
 if (TUNTAP_FOUND)
   target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
 elseif(TAPCFG_FOUND)
   target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
+endif()
+
+if (ClientQT)
+  target_link_libraries(tNETacle ${TCLT_LIBRARY})
 endif()
 
 # Linux linked libraries
