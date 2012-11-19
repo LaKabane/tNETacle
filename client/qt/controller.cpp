@@ -58,11 +58,10 @@ Controller::add_peer_controll(void *f, void *internal)
 {
     peer *p = static_cast<peer*>(f);
 
-    IClient* view = QClient::get(0);
+    BodyMain* view = dynamic_cast<BodyMain*>(BodyMain::get(0, 0));
     if(view != 0)
     {
-        BodyMain* mainView = dynamic_cast<BodyMain*>(view->getBody());
-        mainView->addNewPeer(p->name);
+        view->addNewPeer(p->name);
     }
     return 0;
 }
