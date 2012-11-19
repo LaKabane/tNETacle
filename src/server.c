@@ -497,9 +497,27 @@ server_init(struct server *s, struct event_base *evbase)
     ite_peer = v_sockaddr_end(serv_opts.peer_addrs);
     for (;it_peer != ite_peer; it_peer = v_sockaddr_next(it_peer))
     {
-        mc_peer_connect(s, evbase,
+        struct mc *mc_peer = NULL;
+#ifdef USE_TCLT
+        peer p;
+        char *cmd;
+
+        /* TODO : Real information */
+        p.name = strdup("");
+        p.name = strdup("");
+        p.name = strdup("");
+#endif
+        mc_peer = mc_peer_connect(s, evbase,
                         (struct sockaddr *)&it_peer->sockaddr,
                         it_peer->len);
+#ifdef USE_TCLT
+        if (mc_peer != NULL && s->mc_client.bev)
+        {
+            cmd = tclt_add_peer(&p);
+            bufferevent_write(s->mc_client.bev, cmd, strlen(cmd));
+            free(cmd);
+        }
+#endif
     }
     return 0;
 }

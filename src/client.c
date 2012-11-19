@@ -136,8 +136,7 @@ add_peer(void *f, void *internal)
         err = 1;
         return err;
     }
-    cmd = tclt_add_peers(p, 1);
-    printf("%s\n", cmd);
+    cmd = tclt_add_peer(&p);
     if (cmd == NULL)
     {
         err = 2;

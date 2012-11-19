@@ -187,7 +187,7 @@ bool Controller::addContact()
         if (p.name == 0 || p.ip == 0 || p.key == 0)
             throw new Exception("Impossible to duplicate elements");
         dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(&p);
-        this->writeToSocket(tclt_add_peers(&p, 1));
+        this->writeToSocket(tclt_add_peer(&p));
         free(p.name);
         free(p.ip);
         free(p.key);
