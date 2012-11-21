@@ -139,10 +139,8 @@ void Controller::deleteContact(const QString& name)
 {
     try
     {
-        QVector<QString> v;
-        v.append(name);
         //dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
-        this->writeToSocket(Protocol::delet(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
+        this->writeToSocket(tclt_delete_peer(name.toStdString().c_str()));
     }
     catch (Exception *e)
     {

@@ -44,9 +44,8 @@ BodyMain::deleteContact()
     {
         QTreeWidgetItem* peer = peers[i];
         QString name = peer->text(0);
-        //_controller->deleteContact(name);
-        qDebug() << "lol";
-        _listContacts->removeItemWidget(peer, 0);
+        _controller->deleteContact(name);
+        delete peer;
     }
 }
 
