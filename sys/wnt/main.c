@@ -474,66 +474,64 @@ main(int argc, char *argv[])
     int errcode;
     struct event_base *evbase = NULL;
     struct server server;
-    struct device *interfce;
+    struct device *tuntap;
     struct bufferevent *bev;
     struct event_config *cfg = event_config_new();
     char cnf_file[2048];
     evutil_socket_t pair[2];
 
-    strcpy(cnf_file, getenv("APPDATA"));
-    strncat(cnf_file, _PATH_DEFAULT_CONFIG_FILE, strlen(_PATH_DEFAULT_CONFIG_FILE));
+	/* Parse the default configuration file */
+    (void)strcpy(cnf_file, getenv("APPDATA"));
+    (void)strncat(cnf_file, _PATH_DEFAULT_CONFIG_FILE, strlen(_PATH_DEFAULT_CONFIG_FILE));
     errcode = tnt_parse_file(cnf_file);
-    if (errcode == -1)
-    {
-        fprintf(stderr, "No conf file");
-        exit(1);
+    if (errcode == -1) {
+        log_err(1, "No configuration file found");
     }
 
+	/* Initialize various libraries */
     if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
-        log_err(-1, "Failed to init WSA.");
+        log_err(1, "Failed to init WSA");
     }
-
-
-    if (serv_opts.encryption)
-        server.server_ctx = evssl_init();
-    else
-        server.server_ctx = NULL;
-
-    //Evil !!
-    //event_config_set_flag(cfg, EVENT_BASE_FLAG_STARTUP_IOCP);
-    if ((evbase = event_base_new_with_config(cfg)) == NULL) {
-        log_err(-1, "Failed to init the event library");
+	if ((evbase = event_base_new_with_config(cfg)) == NULL) {
+        log_err(1, "Failed to init the event library");
     } else {
         libevent_dump(evbase);
     }
-    if ((interfce = tnt_ttc_open(TNT_TUNMODE_ETHERNET)) == NULL) {
-        log_err(-1, "Failed to open a tap interface");
+
+	/* Initialize our code */
+    if (serv_opts.encryption) {
+        server.server_ctx = evssl_init();
+	} else {
+        server.server_ctx = NULL;
+	}
+	/* TODO: Get the wanted device type from the conf */
+    if ((tuntap = tnt_ttc_open(TNT_TUNMODE_ETHERNET)) == NULL) {
+        log_err(1, "Failed to open a tap interface");
     }
     /*
-    Arty: There's definitely a workaround for those signals on windows, we'll
-    see that later.
-    */
+     * Arty: There's definitely a workaround for those signals on windows, we'll
+     * see that later.
+     */
     //sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     //sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);
 
     errcode = evutil_socketpair(AF_INET, SOCK_STREAM, 0, &pair);
-    if (errcode == -1)
-    {
+    if (errcode == -1) {
         log_notice("Can't create the socketpair");
     }
 
     bev = bufferevent_socket_new(evbase, pair[0], BEV_OPT_CLOSE_ON_FREE);
-    if (bev != NULL)
-    {
+    if (bev != NULL) {
         bufferevent_setcb(bev, pipe_read_cb, NULL, NULL, &server);
         bufferevent_enable(bev, EV_READ);
         server.pipe_endpoint = bev;
     }
-    if (server_init(&server, evbase) == -1)
-        log_err(-1, "Failed to init the server socket");
+    if (server_init(&server, evbase) == -1) {
+        log_err(1, "Failed to initialize the server socket");
+	}
 
-    /* start iocp thread here. */
-    IOCPData.fd = (HANDLE)tnt_ttc_get_fd(interfce);
+    /* start iocp thread here */
+    IOCPData.fd = (HANDLE)tnt_ttc_get_fd(tuntap);
     IOCPData.pipe_fd = pair[1];
     IOCPData.enabled = 1;
     IOCPData.server = &server;
@@ -545,23 +543,22 @@ main(int argc, char *argv[])
         0,
         &dwThreadId);
     if (hIOCPThread == NULL) {
-        log_err(-1, TEXT("CreateThread for IOCP thread failed."));
+        log_err(1, TEXT("CreateThread for IOCP thread failed"));
     }
 
-
-    if (tnt_ttc_set_ip(interfce, serv_opts.addr) == -1){
-        log_err(-1, "Failed to set interface's ip");
+	/* Now we can use the TAP32 driver */
+    if (tnt_ttc_set_ip(tuntap, serv_opts.addr) == -1) {
+        log_err(1, "Failed to set interface's ip");
     }
-    if (tnt_ttc_up(interfce) != 0) {
-        log_err(-1, "For some reason, the interface couldn't be up'd");
+    if (tnt_ttc_up(tuntap) != 0) {
+        log_err(1, "For some reason, the interface couldn't be up'd");
     }
-
-    server_set_device(&server, tnt_ttc_get_fd(interfce));
+    server_set_device(&server, tnt_ttc_get_fd(tuntap));
 
     //event_add(sigterm, NULL);
     //event_add(sigint, NULL);
 
-    log_info("tnetacle ready");
+    log_info("tNETacle ready");
 
     log_info("Starting event loop");
     if (event_base_dispatch(evbase) == -1) {
@@ -569,10 +566,6 @@ main(int argc, char *argv[])
         fprintf(stderr, "(%d) %s\n", errcode, evutil_socket_error_to_string(errcode));
     }
 
-    /*
-    * It may look like we freed this one twice, once here and once in tnetacled.c
-    * but this is not the case. Please don't erase this !
-    */
     event_base_free(evbase);
 
     /* Additionnal IOCP thread collection */
@@ -580,7 +573,8 @@ main(int argc, char *argv[])
     WaitForSingleObject(hIOCPThread, INFINITE);
     CloseHandle(hIOCPThread);
 
-    tnt_ttc_close(interfce);
+	tnt_ttc_down(tuntap);
+    tnt_ttc_close(tuntap);
     //event_free(sigterm);
     //event_free(sigint);
 
