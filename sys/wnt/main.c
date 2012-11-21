@@ -78,7 +78,7 @@ void broadcast_to_peers(struct server *s);
 void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct server *s, SOCKET pipe_fd)
 {
     char *packet;
-    short frame_size = size;
+    short frame_size = (short)size;
     int errcode;
     size_t packet_size = frame_size + sizeof(frame_size);
     //LPOVERLAPPED overlapped = NULL;
@@ -89,8 +89,8 @@ void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct serve
     packet = (char *)malloc(size + sizeof(short));
     if (packet == NULL)
         return ;
-    memcpy(packet, &frame_size, sizeof(frame_size));
-    memcpy(packet + sizeof(frame_size), frame, frame_size);
+    (void)memcpy(packet, &frame_size, sizeof(frame_size));
+    (void)memcpy(packet + sizeof(frame_size), frame, frame_size);
 
     //The send is supposed to be async also, so we need a new overlapped
     //overlapped = (LPOVERLAPPED)malloc(sizeof(OVERLAPPED));
@@ -119,7 +119,7 @@ void handle_frames(char *frame, size_t size, LPOVERLAPPED_ENTRY Ol, struct serve
     //    }
     //}
 
-    errcode = send(pipe_fd, packet, packet_size, 0);
+    errcode = send(pipe_fd, packet, (int)packet_size, 0);
     if (errcode == 0 && (errcode = WSAGetLastError()) != WSA_IO_PENDING)
     {
         log_debug("Error(%d) pipe write: %s", errcode, formated_error(L"%1%0", errcode));

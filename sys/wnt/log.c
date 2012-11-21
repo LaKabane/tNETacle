@@ -1,4 +1,4 @@
-/* Here will be the Windows NT logging API implementation */
+/* TODO: Windows NT logging API implementation */
 
 #include <stdio.h>
 #include "log.h"

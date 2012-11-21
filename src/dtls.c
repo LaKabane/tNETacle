@@ -40,13 +40,13 @@ extern struct options serv_opts;
 void
 log_ssl(char const *msg, ...)
 {
-    va_list ap;
+#if !defined(Windows) /* TODO */
+	va_list ap;
     char *fmt;
     char *log;
     char errstr[150];
     unsigned long errval;
 
-#if !defined(Windows)
     va_start(ap, msg);
     errval = ERR_get_error();
     ERR_error_string_n(errval, errstr, sizeof(errstr));
