@@ -20,7 +20,7 @@ include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local OPTIONAL)
 
 # Global Packages search
 # ------------------
-find_package(ZLIB REQUIRED)
+#find_package(ZLIB REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
 find_package(OpenSSL REQUIRED)
@@ -58,7 +58,7 @@ endif()
 # ------------------
 include_directories(${CMAKE_HOME_DIRECTORY}/include)
 include_directories(${EVENT_INCLUDE_DIR})
-include_directories(${ZLIB_INCLUDE_DIR})
+#include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
 if (TUNTAP_FOUND)
@@ -255,10 +255,10 @@ add_executable(tNETacle ${SOURCES_LIST})
 
 target_link_libraries(tNETacle
         ${EVENT_LIBRARIES}
-        ${ZLIB_LIBRARY}
         ${YAJL_LIBRARIES}
         ${OPENSSL_LIBRARIES}
 )
+# ${ZLIB_LIBRARY}
 
 if (TUNTAP_FOUND)
   target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
