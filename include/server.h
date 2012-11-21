@@ -44,9 +44,9 @@ struct speer;
 #define VECTOR_PREFIX mc
 #include "vector.h"
 
-/* #define VECTOR_TYPE struct speer */
-/* #define VECTOR_PREFIX speer */
-/* #include "vector.h" */
+#define VECTOR_TYPE struct speer
+#define VECTOR_PREFIX speer
+#include "vector.h"
 
 #define VECTOR_TYPE struct evconnlistener*
 #define VECTOR_PREFIX evl
