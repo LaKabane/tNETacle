@@ -35,39 +35,13 @@
 #include "log.h"
 #include "tun.h"
 
-/* Will search the first available tap device with both libraries */
-struct device *
-tnt_ttc_open(int tunmode) {
-	struct device *dev;
-
-	if ((dev = tuntap_init()) == NULL)
-		return NULL;
-
-    if (tunmode == TNT_TUNMODE_TUNNEL)
-        tunmode = TUNTAP_MODE_TUNNEL;
-    else if (tunmode == TNT_TUNMODE_ETHERNET)
-        tunmode = TUNTAP_MODE_ETHERNET;
-    else
-        return NULL;
-
-	if (tuntap_start(dev, tunmode, TUNTAP_ID_ANY) == -1) {
-		tuntap_release(dev);
-		return NULL;
-	}
-	return dev;
-}
-
-void
-tnt_ttc_close(struct device *dev) {
-	tuntap_destroy(dev);
-}
-
 int
 tnt_ttc_set_ip(struct device *dev, const char *addr) {
 	char *ip, *mask;
 	int netbits;
 	int ret;
 
+	log_info(addr);
 	ret = 0;
 	ip = strdup(addr);
 	if (ip == NULL)
@@ -86,16 +60,6 @@ tnt_ttc_set_ip(struct device *dev, const char *addr) {
 	ret = tuntap_set_ip(dev, ip, netbits);
 	free(ip);
 	return ret;
-}
-
-int
-tnt_ttc_up(struct device *dev) {
-	return tuntap_up(dev);
-}
-
-int
-tnt_ttc_down(struct device *dev) {
-	return tuntap_down(dev);
 }
 
 intptr_t

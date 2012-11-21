@@ -304,7 +304,6 @@ DWORD IOCPFunc(void *lpParam)
                 else if (key == 0xDEADBEAF)
                 {
                     DWORD size;
-                    int errcode;
 
                     /*
                      * Here we fetch the interesting data from the entry, and
@@ -505,9 +504,14 @@ main(int argc, char *argv[])
         server.server_ctx = NULL;
 	}
 	/* TODO: Get the wanted device type from the conf */
-    if ((tuntap = tnt_ttc_open(TNT_TUNMODE_ETHERNET)) == NULL) {
-        log_err(1, "Failed to open a tap interface");
-    }
+	if ((tuntap = tuntap_init()) == NULL) {
+		log_err(1, "Can't allocate tap interface");
+	}
+	if (tuntap_start(tuntap, TUNTAP_MODE_ETHERNET, TUNTAP_ID_ANY) == -1) {
+		tuntap_destroy(tuntap);
+		log_err(1, "Failed to open a tap interface");
+	}
+
     /*
      * Arty: There's definitely a workaround for those signals on windows, we'll
      * see that later.
@@ -550,7 +554,7 @@ main(int argc, char *argv[])
     if (tnt_ttc_set_ip(tuntap, serv_opts.addr) == -1) {
         log_err(1, "Failed to set interface's ip");
     }
-    if (tnt_ttc_up(tuntap) != 0) {
+    if (tuntap_up(tuntap) != 0) {
         log_err(1, "For some reason, the interface couldn't be up'd");
     }
     server_set_device(&server, tnt_ttc_get_fd(tuntap));
@@ -573,8 +577,8 @@ main(int argc, char *argv[])
     WaitForSingleObject(hIOCPThread, INFINITE);
     CloseHandle(hIOCPThread);
 
-	tnt_ttc_down(tuntap);
-    tnt_ttc_close(tuntap);
+	tuntap_down(tuntap);
+    tuntap_destroy(tuntap);
     //event_free(sigterm);
     //event_free(sigint);
 
