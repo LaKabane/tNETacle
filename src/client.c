@@ -36,12 +36,12 @@
 #include <openssl/err.h>
 
 #include "log.h"
+#include "options.h"
 #include "client.h"
 #include "tclt.h"
 #include "tclt_parse.h"
 #include "tclt_command.h"
 #include "server.h"
-#include "options.h"
 
 void
 client_mc_read_cb(struct bufferevent *bev, void *ctx)
@@ -105,7 +105,7 @@ add_peer(void *f, void *internal)
     int err = 0;
     struct mc* tmp = NULL;
     char *cmd = NULL;
-
+    struct cfg_sockaddress out;
     struct t_internal* intern = (struct t_internal*)internal;
 
     if (p == NULL || intern == NULL)
@@ -113,7 +113,6 @@ add_peer(void *f, void *internal)
         err = 1;
         return err;
     }
-    struct cfg_sockaddress out;
     (void)memset(&out, 0, sizeof out);
     /* Take the size from the sockaddr_storage*/
     out.len = sizeof(out.sockaddr);
@@ -152,7 +151,6 @@ delete_peer(void *f, void *internal)
     char *c = (char*)f;
 
     (void)internal;
-    printf("delete peer %s\n", c);
     return 0;
 }
 
@@ -162,4 +160,3 @@ client_init_callback(void)
     tclt_set_callback_command(ADD_PEER_CMD, add_peer);
     tclt_set_callback_command(DELETE_PEER_CMD, delete_peer);
 }
-
