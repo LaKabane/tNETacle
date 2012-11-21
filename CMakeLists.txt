@@ -59,7 +59,6 @@ endif()
 # ------------------
 set(SOURCES_LIST
   src/conf.c
-  src/tun-compat.c
   #src/compress.c
   #src/pipeline.c
   src/mc.c
@@ -86,7 +85,6 @@ set(HEADERS_LIST
     include/tnetacle.h
     include/tntexits.h
     include/tntsocket.h
-    include/tun.h
     include/map.h
     include/vector.h
     include/client.h

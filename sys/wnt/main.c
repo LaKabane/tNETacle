@@ -20,13 +20,15 @@
 #include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
+#include <event2/util.h>
 
 #include <io.h>
+
+#include <tuntap.h>
 
 #include "tnetacle.h"
 #include "tntexits.h"
 #include "log.h"
-#include "tun.h"
 #include "options.h"
 #include "pathnames.h"
 #include "hexdump.h"
@@ -552,12 +554,32 @@ main(int argc, char *argv[])
     }
 
 	/* Now we can use the TAP32 driver */
-    if (tnt_ttc_set_ip(tuntap, serv_opts.addr) == -1) {
-        log_err(1, "Failed to set interface's ip");
-    }
-    if (tuntap_up(tuntap) != 0) {
-        log_err(1, "For some reason, the interface couldn't be up'd");
-    }
+	{
+		char *ip, *mask;
+		int netbits;
+		int ret;
+
+		ret = 0;
+		ip = strdup(serv_opts.addr);
+		if (ip == NULL) {
+			log_err(1, "Invalid 'Address' value in the configuration file");
+		}
+
+		mask = strchr(ip, '/');
+		if (mask == NULL) {
+	        free(ip);
+			log_err(1, "Invalid 'Address' value in the configuration file");
+	    }
+		*mask= '\0';
+		++mask;
+
+		netbits = (short)evutil_strtoll(mask, NULL, 10);
+		ret = tuntap_set_ip(tuntap, ip, netbits);
+		free(ip);
+	}
+	if (tuntap_up(tuntap) != 0) {
+	    log_err(1, "For some reason, the interface couldn't be up'd");
+	}
     server_set_device(&server, (int)TUNTAP_GET_FD(tuntap));
 
     //event_add(sigterm, NULL);
