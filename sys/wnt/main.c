@@ -464,6 +464,7 @@ tnt_socketpair(int family, int type, int protocol,
 	return -1;
 #undef ERR
 }
+
 int
 main(int argc, char *argv[])
 {

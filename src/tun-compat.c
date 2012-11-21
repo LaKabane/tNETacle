@@ -61,9 +61,3 @@ tnt_ttc_set_ip(struct device *dev, const char *addr) {
 	free(ip);
 	return ret;
 }
-
-int
-tnt_ttc_get_mtu(struct device *dev) {
-	return tuntap_get_mtu(dev);
-}
-

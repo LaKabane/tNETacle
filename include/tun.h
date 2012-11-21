@@ -20,7 +20,6 @@
 # include <tuntap.h>
 
 int               tnt_ttc_set_ip(struct device *, const char *);
-int               tnt_ttc_get_mtu(struct device *dev);
 
 #endif
 
