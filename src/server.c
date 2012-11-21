@@ -62,10 +62,12 @@
 extern struct options serv_opts;
 
 static int
-find_bev(struct mc const *a, void *ctx)
+find_bev(struct speer const *a, void *ctx)
 {
     struct bufferevent *bev = ctx;
-    return a->bev == bev;
+    if (a->smc != NULL)
+        return a->smc->bev == bev;
+    return 0;
 }
 
 static int
@@ -121,12 +123,12 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
 {
     struct server *s = (struct server *)ctx;
     struct evbuffer *in = bufferevent_get_input(bev);
-    struct mc       *mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
+    struct mc       *mc = v_speer_find_if(s->peers, (void *)find_bev, bev);
     size_t len;
     char *line;
 
-    /* Do nothing: this peer seems to exists, but we didn't approve it yet*/
-    if (mc == v_mc_end(s->peers))
+    /* Do nothing: this peer seems to exists, but we didn't approve it yet */
+    if (mc == v_speer_end(s->peers)->smc)
         return ;
 
     while ((line = evbuffer_readln(in, &len, EVBUFFER_EOL_CRLF)) != NULL)
@@ -178,7 +180,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
     dump_flags(events);
     if (events & BEV_EVENT_CONNECTED)
     {
-        struct mc *mc;
+        struct speer *peer;
 
         /*
          * If we received the notification that the connection is established,
@@ -186,8 +188,8 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
          * s->peers.
          */
 
-        mc = v_mc_find_if(s->pending_peers, (void *)find_bev, bev);
-        if (mc != v_mc_end(s->pending_peers))
+        peer = v_speer_find_if(s->pending_peers, (void *)find_bev, bev);
+        if (peer != v_speer_end(s->pending_peers))
         {
             struct mc tmp;
             struct endpoint e;
@@ -207,7 +209,7 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
                 {
                     log_info("[META] [TLS] %s doesn't share it's certificate.",
                              mc_presentation(mc, name, sizeof name));
-                    v_mc_erase(s->pending_peers, mc);
+                    v_speers_erase(s->pending_peers, mc);
                     mc_close(mc);
                     return ;
                 }

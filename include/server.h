@@ -68,8 +68,8 @@ struct server
 {
   struct vector_evl     *srv_list; /*list of the listenners*/
   struct udp            *udp;
-  struct vector_mc      *peers; /* The actual list of peers */
-  struct vector_mc      *pending_peers; /* Pending in connection peers*/
+  struct vector_speer   *peers; /* The actual list of peers */
+  struct vector_speer   *pending_peers; /* Pending in connection peers*/
   struct vector_frame   *frames_to_send;
   struct event_base     *evbase;
   struct fiber          *device_fib;
