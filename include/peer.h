@@ -17,12 +17,13 @@
 #ifndef PEER_QUE_TOUT
 # define PEER_QUE_TOUT
 
-#include "mc.h"
 #include "tclt.h"
 
-struct t_peer
+struct mc;
+
+struct speer
 {
-    mc    *smc;
+    struct mc    *smc;
     peer    *p;
 };
 

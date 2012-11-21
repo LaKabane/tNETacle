@@ -28,6 +28,7 @@
 
 #include "udp.h"
 #include "mc.h"
+#include "peer.h"
 
 struct evconnlistener;
 struct bufferevent;
@@ -37,11 +38,15 @@ struct vector_mc;
 struct sockaddr;
 struct fiber;
 struct frame;
-struct t_peer;
+struct speer;
 
-#define VECTOR_TYPE struct t_peer
-#define VECTOR_PREFIX peer
+#define VECTOR_TYPE struct mc
+#define VECTOR_PREFIX mc
 #include "vector.h"
+
+/* #define VECTOR_TYPE struct speer */
+/* #define VECTOR_PREFIX speer */
+/* #include "vector.h" */
 
 #define VECTOR_TYPE struct evconnlistener*
 #define VECTOR_PREFIX evl
