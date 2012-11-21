@@ -57,7 +57,7 @@ send_buffer_to_device_thread(struct server *s,
 {
     struct evbuffer *output = bufferevent_get_output(s->pipe_endpoint);
 
-    /*No need to networkize the size, we are in local !*/
+    /* No need to networkize the size, we are in local ! */
     evbuffer_add(output, &frame->size, sizeof frame->size);
     evbuffer_add(output, frame->frame, frame->size);
 }
@@ -76,6 +76,7 @@ server_set_device(struct server *s,
     {
         evconnlistener_enable(*it);
     }
+	server_udp_launch(s->udp);
     log_info("listeners started");
 }
 
