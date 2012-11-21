@@ -535,7 +535,7 @@ main(int argc, char *argv[])
 	}
 
     /* start iocp thread here */
-    IOCPData.fd = (HANDLE)tnt_ttc_get_fd(tuntap);
+    IOCPData.fd = (HANDLE)TUNTAP_GET_FD(tuntap);
     IOCPData.pipe_fd = pair[1];
     IOCPData.enabled = 1;
     IOCPData.server = &server;
@@ -557,7 +557,7 @@ main(int argc, char *argv[])
     if (tuntap_up(tuntap) != 0) {
         log_err(1, "For some reason, the interface couldn't be up'd");
     }
-    server_set_device(&server, tnt_ttc_get_fd(tuntap));
+    server_set_device(&server, (int)TUNTAP_GET_FD(tuntap));
 
     //event_add(sigterm, NULL);
     //event_add(sigint, NULL);
