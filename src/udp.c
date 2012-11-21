@@ -202,6 +202,7 @@ server_udp(void *ctx)
     udp_fd = s->udp->fd;
     tap_fd = s->tap_fd;
     memset(&current_frame, 0, sizeof current_frame);
+    /* TODO: Fix this while for Windows */
     while((err = frame_recvfrom(ctx,
                                 udp_fd,
                                 &current_frame,
@@ -235,6 +236,7 @@ server_udp(void *ctx)
 #endif
         frame_free(&current_frame);
     }
+    sched_fiber_exit(ctx, 1);
 }
 
 void
