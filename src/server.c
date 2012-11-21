@@ -51,9 +51,7 @@
 #include "wincompat.h"
 #include "client.h"
 
-#ifdef USE_TCLT
 #include "tclt.h"
-#endif
 
 #define VECTOR_TYPE char*
 #define VECTOR_PREFIX cptr
@@ -383,7 +381,6 @@ evssl_init(void)
     return server_ctx;
 }
 
-#ifdef USE_TCLT
 static
 void listen_client_callback(struct evconnlistener *evl, evutil_socket_t fd,
   struct sockaddr *sock, int len, void *ctx)
@@ -410,7 +407,6 @@ void listen_client_callback(struct evconnlistener *evl, evutil_socket_t fd,
         log_notice("[CLT] Failed to init a meta connexion");
     }
 }
-#endif
 
 int
 server_init(struct server *s, struct event_base *evbase)
@@ -476,7 +472,6 @@ server_init(struct server *s, struct event_base *evbase)
     it_client = v_sockaddr_begin(serv_opts.client_addrs);
     ite_client = v_sockaddr_end(serv_opts.client_addrs);
 
-#ifdef USE_TCLT
     /* Listen on all ClientAddress */
     for (; it_client != ite_client; it_client = v_sockaddr_next(it_client), ++i)
     {
@@ -496,7 +491,6 @@ server_init(struct server *s, struct event_base *evbase)
 		evconnlistener_enable(evl);
 		v_evl_push(s->srv_list, evl);
 	}
-#endif
 
     /* If we don't have any PeerAddress it's finished */
     if (v_sockaddr_size(serv_opts.peer_addrs) == 0)
@@ -507,7 +501,6 @@ server_init(struct server *s, struct event_base *evbase)
     for (;it_peer != ite_peer; it_peer = v_sockaddr_next(it_peer))
     {
         struct mc *mc_peer = NULL;
-#ifdef USE_TCLT
         peer p;
         char *cmd;
 
@@ -515,18 +508,15 @@ server_init(struct server *s, struct event_base *evbase)
         p.name = strdup("");
         p.name = strdup("");
         p.name = strdup("");
-#endif
         mc_peer = mc_peer_connect(s, evbase,
                         (struct sockaddr *)&it_peer->sockaddr,
                         it_peer->len);
-#ifdef USE_TCLT
         if (mc_peer != NULL && s->mc_client.bev)
         {
             cmd = tclt_add_peer(&p);
             bufferevent_write(s->mc_client.bev, cmd, strlen(cmd));
             free(cmd);
         }
-#endif
     }
     return 0;
 }
