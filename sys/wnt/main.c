@@ -487,7 +487,7 @@ main(int argc, char *argv[])
     (void)strncat(cnf_file, _PATH_DEFAULT_CONFIG_FILE, strlen(_PATH_DEFAULT_CONFIG_FILE));
     errcode = tnt_parse_file(cnf_file);
     if (errcode == -1) {
-        log_err(1, "No configuration file found");
+        log_err(1, "Failed to find the configuration file");
     }
 
 	/* Initialize various libraries */
@@ -508,7 +508,7 @@ main(int argc, char *argv[])
 	}
 	/* TODO: Get the wanted device type from the conf */
 	if ((tuntap = tuntap_init()) == NULL) {
-		log_err(1, "Can't allocate tap interface");
+		log_err(1, "Failed to allocate a tap interface");
 	}
 	if (tuntap_start(tuntap, TUNTAP_MODE_ETHERNET, TUNTAP_ID_ANY) == -1) {
 		tuntap_destroy(tuntap);
@@ -524,7 +524,7 @@ main(int argc, char *argv[])
 
     errcode = evutil_socketpair(AF_INET, SOCK_STREAM, 0, &pair);
     if (errcode == -1) {
-        log_notice("Can't create the socketpair");
+        log_notice("Failed to create the socketpair");
     }
 
     bev = bufferevent_socket_new(evbase, pair[0], BEV_OPT_CLOSE_ON_FREE);
@@ -550,7 +550,7 @@ main(int argc, char *argv[])
         0,
         &dwThreadId);
     if (hIOCPThread == NULL) {
-        log_err(1, TEXT("CreateThread for IOCP thread failed"));
+        log_err(1, TEXT("Failed to create the IOCP thread"));
     }
 
 	/* Now we can use the TAP32 driver */
@@ -578,7 +578,7 @@ main(int argc, char *argv[])
 		free(ip);
 	}
 	if (tuntap_up(tuntap) != 0) {
-	    log_err(1, "For some reason, the interface couldn't be up'd");
+	    log_err(1, "Failed to connect the interface");
 	}
     server_set_device(&server, (int)TUNTAP_GET_FD(tuntap));
 
@@ -605,7 +605,7 @@ main(int argc, char *argv[])
     //event_free(sigterm);
     //event_free(sigint);
 
-    log_info("tnetacle exiting");
+    log_info("tNETacle exiting");
     WSACleanup();
     return TNT_OK;
 }
