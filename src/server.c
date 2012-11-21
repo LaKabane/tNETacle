@@ -51,6 +51,10 @@
 #include "wincompat.h"
 #include "client.h"
 
+#ifdef USE_TCLT
+#include "tclt.h"
+#endif
+
 #define VECTOR_TYPE char*
 #define VECTOR_PREFIX cptr
 #define DEFAULT_ALLOC_SIZE 4
