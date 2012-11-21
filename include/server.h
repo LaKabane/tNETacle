@@ -37,10 +37,10 @@ struct vector_mc;
 struct sockaddr;
 struct fiber;
 struct frame;
-struct mc;
+struct t_peer;
 
-#define VECTOR_TYPE struct mc
-#define VECTOR_PREFIX mc
+#define VECTOR_TYPE struct t_peer
+#define VECTOR_PREFIX peer
 #include "vector.h"
 
 #define VECTOR_TYPE struct evconnlistener*
