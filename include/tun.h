@@ -17,22 +17,15 @@
 #ifndef TNETACLE_TUN_H_
 #define TNETACLE_TUN_H_
 
-# if defined USE_LIBTUNTAP
-#  include <tuntap.h>
-# elif defined USE_TAPCFG
-#  include <tapcfg.h>
-#  define device tapcfg_s
-# else
-#  error "You must define USE_LIBTUNTAP or USE_TAPCFG"
-# endif
+# include <tuntap.h>
 
-struct device	*tnt_ttc_open(int);
-void		 tnt_ttc_close(struct device *);
-int		 tnt_ttc_set_ip(struct device *, const char *);
-int		 tnt_ttc_up(struct device *);
-int		 tnt_ttc_down(struct device *);
-intptr_t	 tnt_ttc_get_fd(struct device *);
-int		 tnt_ttc_get_mtu(struct device *dev);
+struct device    *tnt_ttc_open(int);
+void              tnt_ttc_close(struct device *);
+int               tnt_ttc_set_ip(struct device *, const char *);
+int               tnt_ttc_up(struct device *);
+int               tnt_ttc_down(struct device *);
+intptr_t          tnt_ttc_get_fd(struct device *);
+int               tnt_ttc_get_mtu(struct device *dev);
 
 #endif
 

@@ -35,23 +35,11 @@ else()
 	find_package(Event COMPONENTS core openssl REQUIRED)
 endif()
 
-if (NOT TUNTAP_FOUND)
-    find_package(Tapcfg REQUIRED)
-endif()
-
 # Global CPP definitions
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 
 if (ClientQT)
   add_definitions(-DUSE_TCLT)
-endif()
-
-if (TUNTAP_FOUND)
-    add_definitions(-DUSE_LIBTUNTAP)
-else()
-    if (TAPCFG_FOUND)
-        add_definitions(-DUSE_TAPCFG)
-    endif()
 endif()
 
 # Global include directories
@@ -61,13 +49,7 @@ include_directories(${EVENT_INCLUDE_DIR})
 #include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
-if (TUNTAP_FOUND)
-	include_directories(${TUNTAP_INCLUDE_DIRS})
-else()
-	if (TAPCFG_FOUND)
-		include_directories(${TAPCFG_INCLUDE_DIRS})
-	endif()
-endif()
+include_directories(${TUNTAP_INCLUDE_DIRS})
 
 if (ClientQT)
   include_directories(${TCLT_INCLUDE_DIR})
@@ -257,14 +239,9 @@ target_link_libraries(tNETacle
         ${EVENT_LIBRARIES}
         ${YAJL_LIBRARIES}
         ${OPENSSL_LIBRARIES}
+		${TUNTAP_LIBRARIES}
 )
 # ${ZLIB_LIBRARY}
-
-if (TUNTAP_FOUND)
-  target_link_libraries(tNETacle ${TUNTAP_LIBRARIES})
-elseif(TAPCFG_FOUND)
-  target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
-endif()
 
 if (ClientQT)
   target_link_libraries(tNETacle ${TCLT_LIBRARY})

@@ -20,7 +20,7 @@ Directories
     8. 'sys/unix', contains UNIX family (*BSD, Linux and Mac OS X)
        specific files.
     9. 'sys/wnt', contains Windows NT specific files.
-   10. 'sys/vms', contains VMS specific files. (This is a joke)
+   10. 'sys/vms', contains VMS specific files. (This one is a joke)
    11. 'client', contains subdirectories for our clients.
    12. 'client/share', contains files shared by some clients.
    13. 'client/qt', contains files for our Qt client.
@@ -36,8 +36,7 @@ owned by root with permission 700, or the tNETacle will refuse to start.
 Install OpenSSL, Libevent-2.0.x (both _core and _openssl), Yajl 2.x and zlib.
 If you are under Linux you might install libbsd too, but it's not mandatory.
 
-Depending of your system you should now install either tapcfg or libtuntap.
-libtuntap is prefered but not available on FreeBSD, Windows and Mac OS X.
+Depending of your system you should now install libtuntap.
 
 Install CMake, then run something like
     mkdir build && cd build && cmake .. && make
@@ -68,7 +67,5 @@ Licence
    * The libyajl is distributed under the ISC license;
    * The libbsd library is distrbitued under BSD and MIT license,
      check here for more details: <http://libbsd.freedesktop.org/wiki/#License>;
-   * The tapcfg library is distributed under the LGPL license,
-     check here for more details: <http://code.google.com/p/tapcfg/>;
    * The libtuntap library is distributed under the ISC license;
 
