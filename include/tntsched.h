@@ -101,7 +101,7 @@ ssize_t async_sendto(struct fiber_args *s,
                    size_t len,
                    int flag,
                    struct sockaddr const *sock,
-                   int socklen);
+                   socklen_t socklen);
 
 ssize_t async_send(struct fiber_args *s,
                    int fd,
@@ -131,12 +131,12 @@ int async_recvfrom(struct fiber_args *s,
                    int len,
                    int flag,
                    struct sockaddr *sock,
-                   int *socklen);
+                   socklen_t *socklen);
 
 int async_accept(struct fiber_args *s,
                  int fd,
                  struct sockaddr *sock,
-                 int *socklen);
+                 socklen_t *socklen);
 
 
 #endif /* end of include guard: SCHED_O6L1KITS */
