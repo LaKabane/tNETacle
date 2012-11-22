@@ -42,6 +42,7 @@
 #include "tnetacle.h"
 #include "tntexits.h"
 #include "options.h"
+#include "log_extern.h"
 #include "log.h"
 #include "tun.h"
 
@@ -194,14 +195,14 @@ main(int argc, char *argv[]) {
     log_set_prefix("pre-fork");
 
     if (geteuid()) {
-	(void)fprintf(stderr, "need root privileges\n");
-	return 1;
+        (void)fprintf(stderr, "need root privileges\n");
+        return 1;
     }
 
 
     if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1) {
-	perror("socketpair");
-	return 1;
+        perror("socketpair");
+        return 1;
     }
 
     if (debug == 0) {
@@ -224,23 +225,25 @@ main(int argc, char *argv[]) {
     event_config_avoid_method(evcfg, "poll");
     /*event_config_avoid_method(evcfg, "devpoll");*/
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
-	log_err(1, "libevent");
+        log_err(1, "libevent");
     }
     printf("bite !\n");
     exit(0);
 #else
     if ((evbase = event_base_new()) == NULL) {
-	log_err(1, "libevent");
+        log_err(1, "libevent");
     }
 #endif
     libevent_dump(evbase);
+    event_set_log_callback(tnet_libevent_log);
+    tuntap_log_set_cb(tnet_libtuntap_log);
 
     sigint = event_new(evbase, SIGINT, EV_SIGNAL, &sig_gen_hdlr, evbase);
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sig_gen_hdlr, evbase);
     sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sig_gen_hdlr, evbase);
 
     if (close(imsg_fds[1]))
-	log_notice("close");
+        log_notice("close");
 
     data.evbase = evbase;
     data.is_ready_write = 0;
@@ -263,15 +266,15 @@ main(int argc, char *argv[]) {
      * as the child is stillborn.
      */
     if (sigchld_recv != 1)
-	event_base_dispatch(evbase);
+        event_base_dispatch(evbase);
     else
-	log_notice("tNETacle initialisation failed");
+        log_notice("tNETacle initialisation failed");
 
     signal(SIGCHLD, SIG_DFL);
     signal(SIGSEGV, SIG_DFL);
 
     if (chld_pid != 0)
-	kill(chld_pid, SIGTERM);
+        kill(chld_pid, SIGTERM);
 
     msgbuf_clear(&ibuf.w);
     event_free(event);

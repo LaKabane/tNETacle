@@ -207,7 +207,7 @@ server_udp(void *async_ctx)
         err = frame_recvfrom(async_ctx, udp_fd, &current_frame,
           (struct sockaddr *)&sockaddr, &socklen);
         if (err == -1) {
-            log_warnx("frame_recvfrom error");
+            //log_warnx("frame_recvfrom error");
             continue;
         }
 

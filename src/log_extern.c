@@ -29,7 +29,7 @@ tnet_libevent_log(int severity, const char *msg) {
     switch (severity) {
     case EVENT_LOG_DEBUG:
         if (debug == 1) {
-            log_debug("[libevent]%s", msg);
+            log_debug("[libevent] %s", msg);
         }
         break;
     case EVENT_LOG_MSG:
@@ -53,7 +53,7 @@ tnet_libtuntap_log(int severity, const char *msg) {
     switch (severity) {
     case TUNTAP_LOG_DEBUG:
         if (debug == 1) {
-            log_debug("[libtuntap]%s", msg);
+            log_debug("[libtuntap] %s", msg);
         }
         break;
     case TUNTAP_LOG_NOTICE:

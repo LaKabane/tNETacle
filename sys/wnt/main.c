@@ -29,6 +29,7 @@
 #include "tnetacle.h"
 #include "tntexits.h"
 #include "log.h"
+#include "log_extern.h"
 #include "options.h"
 #include "pathnames.h"
 #include "hexdump.h"
@@ -497,6 +498,7 @@ main(int argc, char *argv[])
     } else {
         libevent_dump(evbase);
     }
+    event_set_log_callback(tnet_libevent_log);
 
 	/* Initialize our code */
     if (serv_opts.encryption) {
@@ -512,6 +514,7 @@ main(int argc, char *argv[])
 		tuntap_destroy(tuntap);
 		log_err(1, "Failed to open a tap interface");
 	}
+    tuntap_log_set_cb(tnet_libtuntap_log);
 
     /*
      * Arty: There's definitely a workaround for those signals on windows, we'll
