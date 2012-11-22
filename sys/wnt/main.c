@@ -48,32 +48,7 @@ typedef struct IOData {
     char enabled;
 } IODATA, *PIODATA;
 
-IODATA IOCPData;
-
-static void
-libevent_dump(struct event_base *base)
-{
-    int i;
-    enum event_method_feature f;
-    const char **methods = event_get_supported_methods();
-
-    printf("Starting Libevent %s.  Available methods are:\n",
-        event_get_version());
-    for (i=0; methods[i] != NULL; ++i) {
-        printf("    %s\n", methods[i]);
-    }
-
-    printf("Using Libevent with backend method %s.",
-        event_base_get_method(base));
-    f = event_base_get_features(base);
-    if ((f & EV_FEATURE_ET))
-        printf("  Edge-triggered events are supported.");
-    if ((f & EV_FEATURE_O1))
-        printf("  O(1) event notification is supported.");
-    if ((f & EV_FEATURE_FDS))
-        printf("  All FD types are supported.");
-    puts("");
-}
+static IODATA IOCPData;
 
 void init_options(struct options *);
 void broadcast_to_peers(struct server *s);
@@ -496,7 +471,7 @@ main(int argc, char *argv[])
 	if ((evbase = event_base_new_with_config(cfg)) == NULL) {
         log_err(1, "Failed to init the event library");
     } else {
-        libevent_dump(evbase);
+        tnet_libevent_dump(evbase);
     }
     event_set_log_callback(tnet_libevent_log);
 
@@ -523,7 +498,7 @@ main(int argc, char *argv[])
     //sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     //sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);
 
-    errcode = evutil_socketpair(AF_INET, SOCK_STREAM, 0, &pair);
+    errcode = evutil_socketpair(AF_INET, SOCK_STREAM, 0, (intptr_t *)&pair);
     if (errcode == -1) {
         log_notice("Failed to create the socketpair");
     }
@@ -592,7 +567,7 @@ main(int argc, char *argv[])
     log_info("Starting event loop");
     if (event_base_dispatch(evbase) == -1) {
         errcode = WSAGetLastError();
-        fprintf(stderr, "(%d) %s\n", errcode, evutil_socket_error_to_string(errcode));
+        log_warn("(%d) %s\n", errcode, evutil_socket_error_to_string(errcode));
     }
 
     event_base_free(evbase);
