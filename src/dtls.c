@@ -116,7 +116,7 @@ dtls_new_peer(SSL_CTX *ctx, struct udp_peer *p)
     int err;
     SSL *ssl;
 
-    err = BIO_new_bio_pair(&p->bio, UDP_MTU, &p->_bio_backend, UDP_MTU);
+    err = BIO_new_bio_pair(&p->bio, TNETACLE_UDP_MTU, &p->_bio_backend, TNETACLE_UDP_MTU);
     if (err != 1)
     {
         log_ssl("[DTLS] unable to create the Buffered IO needed for dtls multiplexing");
@@ -185,7 +185,7 @@ dtls_sendto(int sockfd,
     }
     else
     {
-        unsigned char tbuf[UDP_MTU];
+        unsigned char tbuf[TNETACLE_UDP_MTU];
         int ret;
 
         ret = BIO_read(peer->bio, tbuf, sizeof(tbuf));
@@ -238,7 +238,7 @@ dtls_recvfrom(int sockfd,
               void *async_ctx)
 {
     int nread;
-    unsigned char tbuf[UDP_MTU];
+    unsigned char tbuf[TNETACLE_UDP_MTU];
 
     nread = async_recvfrom(async_ctx,
                          sockfd,
@@ -279,7 +279,7 @@ dtls_recvfrom(int sockfd,
         {
             int size;
 
-            size = BIO_read(peer->bio, tbuf, UDP_MTU);
+            size = BIO_read(peer->bio, tbuf, TNETACLE_UDP_MTU);
             async_sendto(async_ctx,
                          sockfd,
                          tbuf,

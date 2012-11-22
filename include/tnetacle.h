@@ -23,28 +23,30 @@
 struct passwd;
 
 #ifndef TNETACLE_H__
-#define TNETACLE_H__
+# define TNETACLE_H__
 
 /*
  * Add this user to your system, with daemon class,
  * nologin shell and /var/empty for home.
  */
-#define TNETACLE_USER "_tnetacle"
+# define TNETACLE_USER "_tnetacle"
 
-#define TNETACLE_DEFAULT_PORT	4242
-#define CLIENT_DEFAULT_PORT	4243
-#define TNETACLE_MAX_PORTS	256
-#define TNETACLE_DEFAULT_LISTEN_IPV4 "0.0.0.0"
-#define TNETACLE_DEFAULT_LISTEN_IPV6 "::"
+# define TNETACLE_DEFAULT_PORT           4242
+# define CLIENT_DEFAULT_PORT             4243
+# define TNETACLE_MAX_PORTS              256
+# define TNETACLE_DEFAULT_LISTEN_IPV4    "0.0.0.0"
+# define TNETACLE_DEFAULT_LISTEN_IPV6    "::"
+# define TNETACLE_UDP_PORT               7676
+# define TNETACLE_UDP_MTU                1500
 
 /*
  * Few definitions for windows
  */
-#if defined Windows
-# include "wincompat.h"
-#endif
+# if defined Windows
+#  include "wincompat.h"
+# endif
 
-#define DEBUG fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__)
+# define DEBUG fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__)
 
 /*
  * Definition of types for our imsg.
@@ -55,10 +57,10 @@ enum imsg_type {
 	IMSG_SET_IP,
 };
 
-char 		*tnt_getprogname(void);
-void    	 tnt_setproctitle(const char *);
-int		 tnt_fork(int [2]);
-int		 tnt_daemonize(void);
+char        *tnt_getprogname(void);
+void         tnt_setproctitle(const char *);
+int          tnt_fork(int [2]);
+int          tnt_daemonize(void);
 
 /* src/conf.c */
 int	 tnt_parse_buf(char *, size_t);
