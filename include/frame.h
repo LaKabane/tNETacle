@@ -19,7 +19,7 @@
 struct vector_frame;
 
 struct frame {
-    unsigned short size;
+    size_t size;
     void *frame;
     void *raw_packet;
 };

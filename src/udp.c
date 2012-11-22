@@ -34,7 +34,6 @@
 #include "tntsocket.h"
 #include "server.h"
 #include "log.h"
-#include "wincompat.h"
 #include "udp.h"
 #include "frame.h"
 #include "device.h"
@@ -47,15 +46,15 @@ forward_udp_frame_to_other_peers(void *async_ctx,
                                  struct udp *udp,
                                  struct frame *current_frame,
                                  struct sockaddr *current_sockaddr,
-                                 unsigned int
-                                 current_socklen) 
+                                 unsigned int current_socklen) 
 {
+    struct fiber_args *fargs = (struct fiber_args *)async_ctx;
+    struct endpoint current_endp;
     struct udp_peer *it = NULL;
     struct udp_peer *ite = NULL;
-    struct endpoint current_endp;
 
     endpoint_init(&current_endp, current_sockaddr, current_socklen);
-    (void)current_socklen;
+
     for (it = v_udp_begin(udp->udp_peers), ite = v_udp_end(udp->udp_peers);
         it != ite;
         it = v_udp_next(it))
@@ -68,7 +67,7 @@ forward_udp_frame_to_other_peers(void *async_ctx,
             continue;
         }
         
-        err = async_sendto(async_ctx,
+        err = async_sendto(fargs,
                            udp->fd,
                            current_frame->raw_packet,
                            current_frame->size + sizeof(struct packet_hdr), 0,
@@ -115,6 +114,7 @@ udp_register_new_peer(struct udp *udp,
 static void
 _broadcast_udp_to_peers(struct server *s, void *async_ctx)
 {
+    struct fiber_args *fargs = (struct fiber_args *)async_ctx;
     struct frame *fit = v_frame_begin(s->frames_to_send);
     struct frame *fite = v_frame_end(s->frames_to_send);
     struct udp   *udp = s->udp;
@@ -133,15 +133,14 @@ _broadcast_udp_to_peers(struct server *s, void *async_ctx)
             int err;
             struct packet_hdr hdr;
 
-            memset(&hdr, 0, sizeof (struct packet_hdr));
+            (void)memset(&hdr, 0, sizeof (struct packet_hdr));
 
             /* Header configuration for the packet */
-            /* Convert the size to netword presentation*/
-            hdr.size = htons(fit->size);
+            hdr.size = htonl(fit->size);
             /* Copy the header to the packet */
             /* Enough space have been allocated for header and the frame */
-            memcpy(fit->raw_packet, &hdr, sizeof(hdr));
-            err = async_sendto(async_ctx,
+            (void)memcpy(fit->raw_packet, &hdr, sizeof(hdr));
+            err = async_sendto(fargs,
                                udp->fd,
                                fit->raw_packet,
                                fit->size + sizeof(struct packet_hdr),
@@ -167,14 +166,18 @@ _broadcast_udp_to_peers(struct server *s, void *async_ctx)
 }
 
 void
-broadcast_udp(void *ctx)
+broadcast_udp(void *async_ctx)
 {
-    struct server *s = (struct server *)sched_get_userptr(ctx);
+    struct fiber_args *fargs;
+    struct server *s;
+
+    fargs = (struct fiber_args *)async_ctx;
+    s = (struct server *)sched_get_userptr(fargs);
 
     while (1)
     {
-        async_yield(ctx, /*unused*/0);
-        _broadcast_udp_to_peers(s, ctx);
+        async_yield(fargs, /*unused*/0);
+        _broadcast_udp_to_peers(s, async_ctx);
     }
 }
 
@@ -187,28 +190,35 @@ broadcast_udp_to_peers(struct server *s)
 }
 
 void
-server_udp(void *ctx)
+server_udp(void *async_ctx)
 {
-    struct server *s = (struct server *)sched_get_userptr(ctx);
-    struct frame current_frame;
-    struct sockaddr_storage sockaddr;
-    unsigned int socklen = sizeof sockaddr;
+    socklen_t socklen;
     evutil_socket_t udp_fd;
     evutil_socket_t tap_fd;
-    int err;
+    struct fiber_args *fargs;
+    struct server *s;
+    struct frame current_frame;
+    struct sockaddr_storage sockaddr;
     struct endpoint e;
 
-    memset(&e, 0, sizeof(e));
+    fargs = (struct fiber_args *)async_ctx;
+    s = (struct server *)sched_get_userptr(fargs);
     udp_fd = s->udp->fd;
     tap_fd = s->tap_fd;
-    memset(&current_frame, 0, sizeof current_frame);
-    /* TODO: Fix this while for Windows */
-    while((err = frame_recvfrom(ctx,
-                                udp_fd,
-                                &current_frame,
-                                (struct sockaddr *)&sockaddr,
-                                &socklen)) != -1)
-    {
+    socklen = sizeof sockaddr;
+    (void)memset(&e, 0, sizeof(e));
+    (void)memset(&current_frame, 0, sizeof current_frame);
+
+    while(1) {
+        int err;
+        
+        err = frame_recvfrom(async_ctx, udp_fd, &current_frame,
+          (struct sockaddr *)&sockaddr, &socklen);
+
+        if (err == -1) {
+            continue;
+        }
+
         endpoint_init(&e, (struct sockaddr *)&sockaddr, socklen);
         log_debug("[UDP] recving %d(%-#2x) from %s",
                   current_frame.size,
@@ -216,7 +226,7 @@ server_udp(void *ctx)
                   endpoint_presentation(&e));
 
         /* And forward it to anyone else but except current peer*/
-        forward_udp_frame_to_other_peers(ctx,
+        forward_udp_frame_to_other_peers(async_ctx,
                                          s->udp,
                                          &current_frame,
                                          endpoint_addr(&e),
@@ -229,14 +239,14 @@ server_udp(void *ctx)
         send_buffer_to_device_thread(s, &current_frame);
 #else
         /* Write the current frame on the device and clean the evbuffer*/
-        async_write(ctx,
+        async_write(async_ctx,
                     tap_fd,
                     current_frame.frame,
                     current_frame.size);
 #endif
         frame_free(&current_frame);
     }
-    sched_fiber_exit(ctx, 1);
+    sched_fiber_exit(fargs, 1);
 }
 
 void
@@ -253,7 +263,7 @@ udp_peer_free(struct udp_peer const *u)
 void
 server_udp_exit(struct udp *udp)
 {
-    close(udp->fd);
+    (void)close(udp->fd);
     SSL_CTX_free(udp->ctx);
     v_udp_foreach(udp->udp_peers, udp_peer_free);
     v_udp_delete(udp->udp_peers);
@@ -340,23 +350,25 @@ server_udp_new(struct server *s,
 }
 
 int
-frame_recvfrom(void *ctx,
+frame_recvfrom(void *async_ctx,
                int fd,
                struct frame *frame,
                struct sockaddr *saddr,
-               unsigned int *socklen)
+               socklen_t *socklen)
 {
     int err = 0;
     struct packet_hdr hdr;
     unsigned short local_size;
+    struct fiber_args *fargs;
 
-    err = async_recvfrom(ctx,
+    fargs = (struct fiber_args *)async_ctx;
+    err = async_recvfrom(fargs,
                          fd,
                          (char *)&hdr,
                          sizeof(struct packet_hdr),
                          MSG_PEEK,
                          saddr,
-                         (int *)socklen);
+                         socklen);
     /*
     ** Sometimes, on some OS, recvfrom return EMSGSIZE when the size of the
     ** peeked buffer is not enough to read the entire datagram.
@@ -367,9 +379,9 @@ frame_recvfrom(void *ctx,
         int local_err = EVUTIL_SOCKET_ERROR();
 
 #if defined Windows
-#define MSG_TOO_LONG WSAEMSGSIZE
+# define MSG_TOO_LONG WSAEMSGSIZE
 #else
-#define MSG_TOO_LONG EMSGSIZE
+# define MSG_TOO_LONG EMSGSIZE
 #endif
         if (local_err != MSG_TOO_LONG)
         {
@@ -380,7 +392,7 @@ frame_recvfrom(void *ctx,
     }
     local_size = ntohs(hdr.size);
     frame_alloc(frame, local_size);
-    err = async_recv(ctx,
+    err = async_recv(fargs,
                      fd,
                      (char *)frame->raw_packet,
                      frame->size + sizeof(struct packet_hdr),
