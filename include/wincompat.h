@@ -31,7 +31,6 @@
  * Functions helpers
  */
 # define alloca _alloca
-# define snprintf _snprintf
 # define strcpy(x, y) strcpy_s((x), _countof(x), (y))
 /* From libtuntap's tuntap.h */
 # undef snprintf
