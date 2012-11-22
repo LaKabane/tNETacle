@@ -21,6 +21,7 @@
 #include "log.h"
 #include "tntsched.h"
 
+
 struct rw_events
 {
     struct event *r_event;
@@ -33,6 +34,12 @@ struct rw_events
 #include "map.h"
 
 void sched_dispatch(evutil_socket_t fd, short event, void *ctx);
+
+struct fiber_args
+{
+    struct fiber *fib;
+    intptr_t userptr;
+};
 
 #define VECTOR_TYPE struct fiber*
 #define VECTOR_PREFIX fiber

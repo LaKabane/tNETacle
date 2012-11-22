@@ -48,12 +48,6 @@ struct operation
     intptr_t arg6;
 };
 
-struct fiber_args
-{
-    struct fiber *fib;
-    intptr_t userptr;
-};
-
 struct fiber
 {
     struct coro_context fib_ctx;
@@ -107,7 +101,7 @@ ssize_t async_sendto(struct fiber_args *s,
                    size_t len,
                    int flag,
                    struct sockaddr const *sock,
-                   socklen_t socklen);
+                   int socklen);
 
 ssize_t async_send(struct fiber_args *s,
                    int fd,
@@ -137,12 +131,12 @@ int async_recvfrom(struct fiber_args *s,
                    int len,
                    int flag,
                    struct sockaddr *sock,
-                   socklen_t *socklen);
+                   int *socklen);
 
 int async_accept(struct fiber_args *s,
                  int fd,
                  struct sockaddr *sock,
-                 socklen_t *socklen);
+                 int *socklen);
 
 
 #endif /* end of include guard: SCHED_O6L1KITS */
