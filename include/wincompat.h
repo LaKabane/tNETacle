@@ -16,11 +16,12 @@
 
 #ifndef WINCOMPAT_H_
 #define WINCOMPAT_H_
-# if defined Windows
+#if defined Windows
 
 # define WIN32_LEAN_AND_MEAN
 # include <Windows.h>
 # include <stdlib.h> /* For _countof */
+# include <sys/types.h>
 
 /* Avoid redifinition */
 # if !defined __func__
@@ -42,6 +43,7 @@
  * Types helpers
  */
 # define ssize_t SSIZE_T
+typedef unsigned short sa_family_t;
 
 /*
  * Prototypes our reimplementations

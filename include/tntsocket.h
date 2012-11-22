@@ -13,13 +13,13 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#pragma once
 #ifndef TNTSOCKET_UUQ1C5JM
 #define TNTSOCKET_UUQ1C5JM
 
 #ifdef Windows
 # define WIN32_LEAN_AND_MEAN
 # include <Winsock2.h>
+# include "wincompat.h"
 #else
 # include <sys/types.h>
 # include <sys/socket.h>
@@ -30,13 +30,7 @@
 
 /* The values must stay like this */
 
-enum tnt_socket_proto {
-  IPv4 = AF_INET,
-  IPv6 = AF_INET6,
-  ANY = AF_UNSPEC,
-};
-
-evutil_socket_t tnt_tcp_socket(enum tnt_socket_proto);
-evutil_socket_t tnt_udp_socket(enum tnt_socket_proto);
+evutil_socket_t tnt_tcp_socket(sa_family_t);
+evutil_socket_t tnt_udp_socket(sa_family_t);
 
 #endif /* end of include guard: TNTSOCKET_UUQ1C5JM */
