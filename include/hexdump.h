@@ -13,8 +13,13 @@
  * PERFORMANCE OF THIS SOFTWARE.
 **/
 
+#ifndef HEXDUMP_LNIPE9IR
+# define HEXDUMP_LNIPE9IR
+
 /* dumps size bytes of *data with log_debug. Looks like:
  * [0000] 75 6E 6B 6E 6F 77 6E 20   30 FF 00 00 00 00 39 00 unknown 0.....9.
  */
 void hex_dump(void *data, int size);
 void hex_dump_chk(void *data, int size);
+
+#endif /* end of include guard: HEXDUMP_LNIPE9IR */

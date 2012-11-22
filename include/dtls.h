@@ -14,37 +14,17 @@
 **/
 
 #ifndef DTLS_B4BZSCI2
-#define DTLS_B4BZSCI2
+# define DTLS_B4BZSCI2
 
 struct udp_peer;
 struct udp;
 
-int dtls_new_peer(SSL_CTX *ctx,
-                  struct udp_peer *p);
-
-SSL_CTX *create_udp_ctx(void);
-
-ssize_t dtls_recvfrom(int sockfd,
-              void *buf,
-              size_t len,
-              int flags,
-              struct sockaddr *addr,
-              int *socklen,
-              struct udp *udp,
-              void *async_ctx);
-
-ssize_t dtls_sendto(int sockfd,
-                    void const *buf,
-                    size_t len,
-                    int flags,
-                    struct sockaddr const *addr,
-                    int socklen,
-                    struct udp_peer *perr,
-                    void *async_ctx);
-
-ssize_t dtls_do_handshake(int fd,
-                          struct udp *udp,
-                          struct udp_peer *peer,
-                          void *async_ctx);
+SSL_CTX     *create_udp_ctx(void);
+int          dtls_new_peer(SSL_CTX *, struct udp_peer *);
+ssize_t      dtls_do_handshake(int, struct udp *, struct udp_peer *, void *);
+ssize_t      dtls_recvfrom(int, void *, size_t, int, struct sockaddr *,
+                           int *, struct udp *, void *);
+ssize_t      dtls_sendto(int, void const *, size_t, int,
+                         struct sockaddr const *, socklen_t, struct udp_peer *, void *);
 
 #endif /* end of include guard: DTLS_B4BZSCI2 */

@@ -13,26 +13,17 @@
  * PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#ifndef DEVICE_3U2N3YXR
-#define DEVICE_3U2N3YXR
-
 #include "networking.h"
 
-#define FRAME_DYN_SIZE 1600
+#ifndef DEVICE_3U2N3YXR
+# define DEVICE_3U2N3YXR
 
-#if defined Windows
+# define FRAME_DYN_SIZE 1600
 
-void
-send_buffer_to_device_thread(struct server *s,
-                             struct frame *frame);
-
-#endif
-
-void
-server_device(void *ctx);
-
-void
-server_set_device(struct server *s,
-                  int fd);
+# if defined Windows
+void send_buffer_to_device_thread(struct server *, struct frame *);
+# endif
+void server_device(void *);
+void server_set_device(struct server *, int);
 
 #endif /* end of include guard: DEVICE_3U2N3YXR */

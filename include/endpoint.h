@@ -13,58 +13,29 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#pragma once
-#ifndef ENDPOINT_DKUGVTSJ
-#define ENDPOINT_DKUGVTSJ
-
 #include "networking.h"
 
-struct endpoint
-{
+#ifndef ENDPOINT_DKUGVTSJ
+# define ENDPOINT_DKUGVTSJ
+
+struct endpoint {
     struct sockaddr_storage addr;
     socklen_t               addrlen;
 };
 
-void endpoint_init(struct endpoint *e,
-              struct sockaddr const *addr,
-              socklen_t const addrlen);
-
-struct endpoint *
-endpoint_new(void);
-
-struct endpoint *
-endpoint_clone(struct endpoint const *src);
-
-void
-endpoint_copy(struct endpoint *dst,
-              struct endpoint const *src);
-
-int
-endpoint_set_ipport(struct endpoint *e,
-                    char const *ip);
-
-int
-endpoint_port(struct endpoint const *e);
-
-struct sockaddr *
-endpoint_addr(struct endpoint const *e);
-
-socklen_t
-endpoint_addrlen(struct endpoint const *e);
-
-void
-endpoint_set_port(struct endpoint *e,
-                  int port);
-
-void
-endpoint_assign_sockname(int socket,
-                  struct endpoint *e);
-
-char const *
-endpoint_presentation(struct endpoint const *e);
-
-int
-endpoint_cmp(struct endpoint const *a,
-             struct endpoint const *b);
+void             endpoint_init(struct endpoint *, struct sockaddr const *,
+                               socklen_t const);
+struct endpoint *endpoint_new(void);
+struct endpoint *endpoint_clone(struct endpoint const *);
+void             endpoint_copy(struct endpoint *, struct endpoint const *);
+int              endpoint_set_ipport(struct endpoint *, char const *);
+int              endpoint_port(struct endpoint const *);
+struct sockaddr *endpoint_addr(struct endpoint const *);
+socklen_t        endpoint_addrlen(struct endpoint const *);
+void             endpoint_set_port(struct endpoint *, int port);
+void             endpoint_assign_sockname(int, struct endpoint *);
+char const      *endpoint_presentation(struct endpoint const *);
+int              endpoint_cmp(struct endpoint const *,
+                              struct endpoint const *);
 
 #endif /* end of include guard: ENDPOINT_DKUGVTSJ */

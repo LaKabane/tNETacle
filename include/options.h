@@ -26,17 +26,17 @@
 #include "networking.h"
 
 #ifndef TNT_OPTIONS_H_ 
-#define TNT_OPTIONS_H_ 
+# define TNT_OPTIONS_H_ 
 
 struct cfg_sockaddress {
     int len;
     struct sockaddr_storage sockaddr;
 };
 
-#define VECTOR_TYPE struct cfg_sockaddress
-#define VECTOR_PREFIX sockaddr
-#define DEFAULT_ALLOC_SIZE 2
-#include "vector.h"
+# define VECTOR_TYPE struct cfg_sockaddress
+# define VECTOR_PREFIX sockaddr
+# define DEFAULT_ALLOC_SIZE 2
+# include "vector.h"
 
 struct options {
     int tunnel;                    /* Tunnel type: layer 2 or 3 */

@@ -15,7 +15,7 @@
  */
 
 #if !defined LOG_EXTERN_ASD12
-#define LOG_EXTERN_ASD12
+# define LOG_EXTERN_ASD12
 
 void    tnet_libevent_log(int, const char *);
 void    tnet_libtuntap_log(int, const char *);

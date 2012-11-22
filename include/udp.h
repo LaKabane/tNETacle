@@ -24,8 +24,13 @@
 #ifndef UDP_US4EZ32H
 # define UDP_US4EZ32H
 
-enum udp_ssl_flags
-{
+struct server;
+struct frame;
+struct sockaddr;
+struct event;
+struct vector_frame;
+
+enum udp_ssl_flags {
     DTLS_ENABLE = (1 << 0),
     DTLS_DISABLE = (1 << 1),
     DTLS_CLIENT = (1 << 2),
@@ -33,33 +38,25 @@ enum udp_ssl_flags
     DTLS_CONNECTED = (1 << 4),
 };
 
-struct server;
-struct frame;
-struct sockaddr;
-struct event;
-struct vector_frame;
-
-struct udp_peer
-{
-    struct endpoint         peer_addr;
-    BIO                     *bio;
-    BIO                     *_bio_backend;
-    SSL                     *ssl;
-    enum udp_ssl_flags      ssl_flags;
+struct udp_peer {
+    struct endpoint      peer_addr;
+    BIO                 *bio;
+    BIO                 *_bio_backend;
+    SSL                 *ssl;
+    enum udp_ssl_flags   ssl_flags;
 };
 
 # define VECTOR_TYPE struct udp_peer
 # define VECTOR_PREFIX udp
 # include "vector.h"
 
-struct udp
-{
-    int                     fd;
-    SSL_CTX                 *ctx;
-    struct fiber            *udp_recv_fib;
-    struct fiber            *udp_brd_fib;
-    struct vector_udp       *udp_peers;
-    struct endpoint         udp_endpoint;
+struct udp {
+    int                  fd;
+    SSL_CTX             *ctx;
+    struct fiber        *udp_recv_fib;
+    struct fiber        *udp_brd_fib;
+    struct vector_udp   *udp_peers;
+    struct endpoint      udp_endpoint;
 };
 
 struct udp      *server_udp_new(struct server *, struct endpoint *);
@@ -69,10 +66,14 @@ void             server_udp_exit(struct udp *);
 void             server_udp(void *);
 void             server_dtls(void *);
 
-struct udp_peer *udp_register_new_peer(struct udp *, struct endpoint *,int);
-void             forward_udp_frame_to_other_peers(void *, struct udp *, struct frame *, struct sockaddr *, socklen_t);
+struct udp_peer *udp_register_new_peer(struct udp *, struct endpoint *, int);
+void             forward_udp_frame_to_other_peers(void *, struct udp *,
+                                                  struct frame *,
+                                                  struct sockaddr *,
+                                                  socklen_t);
 void             broadcast_udp_to_peers(struct server *);
-int              frame_recvfrom(void *, int, struct frame *, struct sockaddr *, socklen_t *);
+int              frame_recvfrom(void *, int, struct frame *, struct sockaddr *,
+                                socklen_t *);
 unsigned short   udp_get_port(struct udp *);
 
 #endif /* end of include guard: UDP_US4EZ32H */

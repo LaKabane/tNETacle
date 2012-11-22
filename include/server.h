@@ -13,12 +13,7 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#pragma once
-#ifndef SERVER_KW2DIKER
-#define SERVER_KW2DIKER
-
 #include "networking.h"
-
 /*
  * We include this one after networking.h because openssl includes windows.h
  * leading to a redifinition of most of the wsaapi symbols on Windows.
@@ -28,6 +23,10 @@
 
 #include "udp.h"
 #include "mc.h"
+#include "wincompat.h"
+
+#ifndef SERVER_KW2DIKER
+# define SERVER_KW2DIKER
 
 struct evconnlistener;
 struct bufferevent;
@@ -39,28 +38,22 @@ struct fiber;
 struct frame;
 struct mc;
 
-#define VECTOR_TYPE struct mc
-#define VECTOR_PREFIX mc
-#include "vector.h"
+# define VECTOR_TYPE struct mc
+# define VECTOR_PREFIX mc
+# include "vector.h"
 
-#define VECTOR_TYPE struct evconnlistener*
-#define VECTOR_PREFIX evl
-#define VECTOR_TYPE_SCALAR
-#include "vector.h"
+# define VECTOR_TYPE struct evconnlistener*
+# define VECTOR_PREFIX evl
+# define VECTOR_TYPE_SCALAR
+# include "vector.h"
 
-#if defined Windows
-# define ssize_t SSIZE_T
-#endif
-
-#pragma pack(push, 1)
-struct packet_hdr
-{
+# pragma pack(push, 1)
+struct packet_hdr {
     unsigned short size;
 };
-#pragma pack(pop)
+# pragma pack(pop)
 
-struct server 
-{
+struct server {
   struct vector_evl     *srv_list; /*list of the listenners*/
   struct udp            *udp;
   struct vector_mc      *peers; /* The actual list of peers */
@@ -70,36 +63,25 @@ struct server
   struct fiber          *device_fib;
   SSL_CTX               *server_ctx;
   struct sched          *ev_sched;
-  struct mc             mc_client;
-  evutil_socket_t       tap_fd;
-#if defined Windows
+  struct mc              mc_client;
+  evutil_socket_t        tap_fd;
+# if defined Windows
   struct bufferevent    *pipe_endpoint;
-#endif
+# endif
 };
 
-SSL_CTX *evssl_init(void);
+SSL_CTX     *evssl_init(void);
 
-int server_init(struct server *,
-                struct event_base *);
-
-void server_delete(struct server *);
-
-void server_set_device(struct server *,
-                       int fd);
-
-#if defined Windows
-void broadcast_udp_to_peers(struct server *s);
-
-int frame_alloc(struct frame *,
-                unsigned int size);
-#endif
-
+int          server_init(struct server *, struct event_base *);
+void         server_delete(struct server *);
+void         server_set_device(struct server *, int);
 /* I didn't want to do this */
-void server_mc_event_cb(struct bufferevent *bev,
-                        short events,
-                        void *ctx);
+void         server_mc_event_cb(struct bufferevent *, short events, void *);
+void         server_mc_read_cb(struct bufferevent *, void *);
 
-void server_mc_read_cb(struct bufferevent *bev,
-                       void *ctx);
+# if defined Windows
+void         broadcast_udp_to_peers(struct server *);
+int          frame_alloc(struct frame *, unsigned int);
+# endif
 
 #endif /* end of include guard: SERVER_KW2DIKER */

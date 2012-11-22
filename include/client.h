@@ -14,28 +14,23 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#pragma once
-#ifndef CLIENT_CORE
-#define CLIENT_CORE
-
 #include <openssl/ssl.h> /* Can not forward declare SSL* types*/
 #include "networking.h"
+#include "wincompat.h"
 #include "mc.h"
+
+#ifndef CLIENT_CORE
+# define CLIENT_CORE
 
 struct bufferevent;
 
-#if defined Windows
-# define ssize_t SSIZE_T
-#endif
-
-struct t_internal
-{
+struct t_internal {
     struct bufferevent *bev;
     struct server *s;
 };
 
-void client_mc_read_cb(struct bufferevent *bev, void *ctx);
-void client_mc_event_cb(struct bufferevent *bev, short events, void *ctx);
+void client_mc_read_cb(struct bufferevent *, void *);
+void client_mc_event_cb(struct bufferevent *, short events, void *);
 void client_init_callback(void);
 
 #endif /* CLIENT_CORE */

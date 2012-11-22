@@ -13,9 +13,6 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
-#ifndef TNTSOCKET_UUQ1C5JM
-#define TNTSOCKET_UUQ1C5JM
-
 #ifdef Windows
 # define WIN32_LEAN_AND_MEAN
 # include <Winsock2.h>
@@ -28,7 +25,8 @@
 
 #include <event2/util.h>
 
-/* The values must stay like this */
+#ifndef TNTSOCKET_UUQ1C5JM
+# define TNTSOCKET_UUQ1C5JM
 
 evutil_socket_t tnt_tcp_socket(sa_family_t);
 evutil_socket_t tnt_udp_socket(sa_family_t);

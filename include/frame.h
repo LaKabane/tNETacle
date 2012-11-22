@@ -14,7 +14,7 @@
 **/
 
 #ifndef FRAME_LNIPE9IR
-#define FRAME_LNIPE9IR
+# define FRAME_LNIPE9IR
 
 struct vector_frame;
 
@@ -24,15 +24,11 @@ struct frame {
     void *raw_packet;
 };
 
-#define VECTOR_TYPE struct frame
-#define VECTOR_PREFIX frame
-#include "vector.h"
+# define VECTOR_TYPE struct frame
+# define VECTOR_PREFIX frame
+# include "vector.h"
 
-void
-frame_free(struct frame const *f);
-
-int
-frame_alloc(struct frame *frame,
-            unsigned int size);
+void    frame_free(struct frame const *);
+int     frame_alloc(struct frame *, unsigned int);
 
 #endif /* end of include guard: FRAME_LNIPE9IR */
