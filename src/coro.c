@@ -38,6 +38,10 @@
  * go to Ralf S. Engelschall <rse@engelschall.com>.
  */
 
+/*
+ * All modifications to this file made for tNETacle are under the BSD license.
+ */
+
 #include "coro.h"
 
 #include <string.h>
@@ -76,12 +80,14 @@
 #  include <unistd.h>
 # endif
 
+# include "log.h"
+
 static coro_func coro_init_func;
 static void *coro_init_arg;
 static coro_context *new_coro, *create_coro;
 
 static void
-coro_init (void)
+coro_init(void)
 {
   volatile coro_func func = coro_init_func;
   volatile void *arg = coro_init_arg;
@@ -95,7 +101,8 @@ coro_init (void)
   func ((void *)arg);
 
   /* the new coro returned. bad. just abort() for now */
-  abort ();
+  log_warnx("The new coro failed");
+  abort();
 }
 
 #if CORO_WIN32
