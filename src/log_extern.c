@@ -17,7 +17,9 @@
 #include <sys/types.h>
 
 #include <event2/event.h>
-#include <tuntap.h>
+#if 0
+# include <tuntap.h>
+#endif
 
 #include "tnetacle.h"
 #include "log.h"
@@ -27,18 +29,18 @@ extern int debug;
 void
 tnet_libevent_log(int severity, const char *msg) {
     switch (severity) {
-    case EVENT_LOG_DEBUG:
+    case _EVENT_LOG_DEBUG:
         if (debug == 1) {
             log_debug("[libevent]%s", msg);
         }
         break;
-    case EVENT_LOG_MSG:
+    case _EVENT_LOG_MSG:
         log_info("[libevent] %s", msg);
         break;
-    case EVENT_LOG_WARN:
+    case _EVENT_LOG_WARN:
         log_warnx("[libevent] %s", msg);
         break;
-    case EVENT_LOG_ERR:
+    case _EVENT_LOG_ERR:
         /* We will not quit */
         log_warnx("[libevent] ERROR: %s", msg);
         break;
@@ -50,6 +52,7 @@ tnet_libevent_log(int severity, const char *msg) {
 
 void
 tnet_libtuntap_log(int severity, const char *msg) {
+#if 0
     switch (severity) {
     case TUNTAP_LOG_DEBUG:
         if (debug == 1) {
@@ -73,4 +76,29 @@ tnet_libtuntap_log(int severity, const char *msg) {
         log_notice("Received strange log from libtuntap");
         break;
     }
+#endif
+}
+
+void
+tnet_libevent_dump(struct event_base *base) {
+    int i;
+    enum event_method_feature f;
+    const char **methods = event_get_supported_methods();
+
+    printf("Starting Libevent %s.  Available methods are:\n",
+        event_get_version());
+    for (i=0; methods[i] != NULL; ++i) {
+        printf("    %s\n", methods[i]);
+    }
+
+    printf("Using Libevent with backend method %s.",
+        event_base_get_method(base));
+    f = event_base_get_features(base);
+    if ((f & EV_FEATURE_ET))
+        printf("  Edge-triggered events are supported.");
+    if ((f & EV_FEATURE_O1))
+        printf("  O(1) event notification is supported.");
+    if ((f & EV_FEATURE_FDS))
+        printf("  All FD types are supported.");
+    puts("");
 }

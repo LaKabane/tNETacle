@@ -155,7 +155,7 @@ int async_recvfrom(struct fiber_args *s,
                    int len,
                    int flag,
                    struct sockaddr *sock,
-                   int *socklen)
+                   socklen_t *socklen)
 {
     int res;
 
@@ -190,11 +190,11 @@ int async_recvfrom(struct fiber_args *s,
 int async_accept(struct fiber_args *s,
                  int fd,
                  struct sockaddr *sock,
-                 int *socklen)
+                 socklen_t *socklen)
 {
     int res_fd;
 
-    res_fd = accept(fd, sock, (socklen_t *)socklen);
+    res_fd = accept(fd, sock, socklen);
     if (res_fd == -1)
     {
         if (EVUTIL_SOCKET_ERROR() == EAGAIN)
@@ -349,11 +349,11 @@ ssize_t async_sendto(struct fiber_args *s,
                size_t len,
                int flags,
                struct sockaddr const *dst,
-               int addrlen)
+               socklen_t socklen)
 {
     ssize_t ret;
 
-    ret = sendto(fd, buf, len, flags, dst, addrlen);
+    ret = sendto(fd, buf, len, flags, dst, socklen);
     if (ret == -1)
     {
         if (EVUTIL_SOCKET_ERROR() == EAGAIN)
@@ -370,7 +370,7 @@ ssize_t async_sendto(struct fiber_args *s,
             s->fib->fib_op.arg3 = (intptr_t)len;
             s->fib->fib_op.arg4 = (intptr_t)flags;
             s->fib->fib_op.arg5 = (intptr_t)dst;
-            s->fib->fib_op.arg6 = (intptr_t)addrlen;
+            s->fib->fib_op.arg6 = (intptr_t)socklen;
             coro_transfer(&s->fib->fib_ctx, origin);
             return (ssize_t)s->fib->fib_op.ret;
         }

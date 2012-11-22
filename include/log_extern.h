@@ -18,6 +18,8 @@
 #define LOG_EXTERN_ASD12
 
 void    tnet_libevent_log(int, const char *);
+void    tnet_libevent_dump(struct event_base *);
 void    tnet_libtuntap_log(int, const char *);
 
 #endif /* LOG_EXTERN_ASD12 */
+
