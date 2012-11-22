@@ -83,7 +83,7 @@ void forward_udp_frame_to_other_peers(void *ctx,
                                       struct udp *s,
                                       struct frame *current_frame,
                                       struct sockaddr *current_sockaddr,
-                                      unsigned int current_socklen);
+                                      socklen_t current_socklen);
 
 void broadcast_udp_to_peers(struct server *s);
 
@@ -91,7 +91,7 @@ int frame_recvfrom(void *ctx,
                    int fd,
                    struct frame *frame,
                    struct sockaddr *saddr,
-                   unsigned int *socklen);
+                   socklen_t *socklen);
 
 void
 server_udp(void *ctx);
