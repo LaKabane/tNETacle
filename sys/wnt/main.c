@@ -574,6 +574,7 @@ main(int argc, char *argv[])
 		netbits = (short)evutil_strtoll(mask, NULL, 10);
 		ret = tuntap_set_ip(tuntap, ip, netbits);
 		free(ip);
+        log_debug("Set IP address to %s", serv_opts.addr);
 	}
 	if (tuntap_up(tuntap) != 0) {
 	    log_err(1, "Failed to connect the interface");
