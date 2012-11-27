@@ -1,0 +1,56 @@
+tNETacle.dat
+============
+
+Introduction
+------------
+
+This file will help you to use the tNETacle fortune database.
+It's a collection of quotes from IRC/SILC channels or hackathon where tNETacle
+devs have been.
+
+Beware, some quotes are in French, and nearly all of them are private jokes.
+
+Fortunes files are splited in two:
+
+  * A text file containing the quotes;
+  * A binary file, the 'random access data' file;
+
+We ship a pre-compiled tNETacle.dat file which should be sufficient for a simple
+installation.
+
+If you plan to add a new quotes, then read the next section, but if you just
+want to install the files, go to *Installation*.
+
+Compilation
+-----------
+
+First you need a fortune compiler, like strfile (also known as unstr).
+As it is not packaged nor shiped by default on modern operation systems,
+you will have to compile by hand.
+
+Hint: On OpenBSD, you will find the sources here `/usr/src/games/fortune/strfile/`
+
+When you finally found and compiled it, you can run this command:
+
+    $ strfile dat/tNETacle
+    "tNETacle.dat" created
+    There were 8 strings
+    Longest string: 309 bytes
+    Shortest string: 37 bytes
+
+Installation
+------------
+
+You can now install these two files in your fortune directory, probably
+`/usr/share/games/fortune`.
+
+You can now test the success of the operation and be delighted with a quote.
+
+    $ fortune -f
+    ___% /usr/share/games/fortune
+	...
+	___% tNETacle
+    $ fortune tNETacle
+    Normalement là je perd ma bite.
+                    -- @tribouille
+
