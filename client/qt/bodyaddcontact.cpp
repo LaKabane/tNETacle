@@ -29,18 +29,6 @@ BodyAddContact::BodyAddContact(QWidget* parent, Controller* controller)
   //QObject::connect(selectPubKey->button(QDialogButtonBox::Open), SIGNAL(clicked()), this, SLOT(openPubKey()));
 }
 
-BodyAddContact::BodyAddContact(QWidget* parent, Controller* controller, const QString& name, const QString& key)
-  : QFrame(parent), _controller(controller), _initialName(name)
-{
-    this->setAttribute(Qt::WA_DeleteOnClose);
-    setupUi(this);
-    QObject::connect(okOrReject, SIGNAL(accepted()), _controller, SLOT(addContact()));
-    //QObject::connect(okOrReject, SIGNAL(rejected()), &win, SLOT(deleteAddContact()));
-    this->name->setText(name);
-    this->pubKey->setText(key);
-}
-
-
 BodyAddContact::~BodyAddContact()
 {
 }

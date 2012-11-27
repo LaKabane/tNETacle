@@ -47,7 +47,7 @@ public:
     void                 changePrevBody();
     void                 connected();
     void                 disconnected();
-    static IClient    *get(Controller* controller = 0);
+    explicit             QClient(Controller* controller = 0);
 
 private:
     Controller*    _controller;
@@ -59,9 +59,6 @@ private:
     QWidget*    _bodyMain;
     QWidget*    _bodyAddGroup;
     QWidget*    _bodyAddContact;
-
-    static IClient* _instance;
-    explicit             QClient(Controller* controller = 0);
 };
 
 #endif /* !QCLIENT_H_ */

@@ -47,7 +47,7 @@ struct options serv_opts;
 
 struct ctx {
     const unsigned char *map;
-    int   len;
+    size_t               len;
 };
 
 void

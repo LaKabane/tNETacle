@@ -21,12 +21,13 @@
 #include "qclient.h"
 #include "controller.h"
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
     Controller*    controller = new Controller;
-    QClient* client = static_cast<QClient*>(QClient::get(controller));
+    QClient* client = new QClient(controller);
     controller->setGui(client);
     controller->initWindow();
 

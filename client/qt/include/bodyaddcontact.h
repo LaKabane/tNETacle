@@ -35,7 +35,6 @@ public:
     const QString    getInitialContactName() const;
     QString            getNewContactKey() const;
     QString             getContactIp() const;
-    explicit             BodyAddContact(QWidget* parent, Controller *controller, const QString &name, const QString &key);
 
     explicit            BodyAddContact(QWidget* parent, Controller* controller);
     virtual            ~BodyAddContact();

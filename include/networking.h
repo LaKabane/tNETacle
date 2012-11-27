@@ -25,8 +25,10 @@
 # include <WS2tcpip.h>
 # include <ws2def.h>
 # include <io.h>
-# define EAGAIN WSAEWOULDBLOCK
-#endif
+# if !defined EAGAIN
+#  define EAGAIN WSAEWOULDBLOCK
+# endif /* !EAGAIN */
+#endif /* Unix */
 
 
 #endif /* end of include guard: NETWORKING_LLW6GBE3 */

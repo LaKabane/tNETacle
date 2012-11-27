@@ -16,6 +16,8 @@
 
 #include "bodymain.h"
 
+QWidget* BodyMain::_instance = 0;
+
 BodyMain::BodyMain(QWidget *parent, Controller* controller) :
     QFrame(parent), _controller(controller)
 {
@@ -42,8 +44,15 @@ BodyMain::deleteContact()
     {
         QTreeWidgetItem* peer = peers[i];
         QString name = peer->text(0);
-        //_controller->deleteContact(name);
-        qDebug() << "lol";
-        _listContacts->removeItemWidget(peer, 0);
+        _controller->deleteContact(name);
+        delete peer;
     }
+}
+
+QWidget*
+BodyMain::get(QWidget* parent, Controller* c)
+{
+    if (BodyMain::_instance == 0)
+        BodyMain::_instance = new BodyMain(parent, c);
+    return BodyMain::_instance;
 }

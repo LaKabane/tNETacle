@@ -23,8 +23,6 @@
 
 #include <iostream>
 
-IClient* QClient::_instance = 0;
-
 QClient::QClient(Controller* controller) :
   QMainWindow(0),
   _controller(controller),
@@ -41,7 +39,7 @@ QClient::QClient(Controller* controller) :
     _bodyConnexion->setObjectName(QString::fromUtf8("bodyConnexion"));
     _bodyConnexion->show();
 
-    _bodyMain = new BodyMain(this, controller);
+    _bodyMain = BodyMain::get(this, controller);
     _bodyMain->setObjectName(QString::fromUtf8("bodyMain"));
     _bodyMain->hide();
 
@@ -148,12 +146,4 @@ QClient::disconnected()
     _body->hide();
     _body = _bodyConnexion;
     _body->show();
-}
-
-IClient*
-QClient::get(Controller* c)
-{
-    if (QClient::_instance == 0)
-        QClient::_instance = new QClient(c);
-    return QClient::_instance;
 }
