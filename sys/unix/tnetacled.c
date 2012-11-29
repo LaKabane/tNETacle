@@ -134,22 +134,22 @@ libevent_dump(struct event_base *base)
     enum event_method_feature f;
     const char **methods = event_get_supported_methods();
 
-    printf("Starting Libevent %s.  Available methods are:\n",
-        event_get_version());
-    for (i=0; methods[i] != NULL; ++i) {
-        printf("    %s\n", methods[i]);
+    log_debug("Starting Libevent %s.  Available methods are:",
+             event_get_version());
+    for (i=0; methods[i] != NULL; ++i)
+    {
+        log_debug("	%s", methods[i]);
     }
 
-    printf("Using Libevent with backend method %s.",
-        event_base_get_method(base));
+    log_debug("Using Libevent with backend method %s.",
+             event_base_get_method(base));
     f = event_base_get_features(base);
     if ((f & EV_FEATURE_ET))
-        printf("  Edge-triggered events are supported.");
+        log_debug("  Edge-triggered events are supported.");
     if ((f & EV_FEATURE_O1))
-        printf("  O(1) event notification is supported.");
+        log_debug("  O(1) event notification is supported.");
     if ((f & EV_FEATURE_FDS))
-        printf("  All FD types are supported.");
-    puts("");
+        log_debug("  All FD types are supported.");
 }
 
 int
@@ -163,10 +163,7 @@ main(int argc, char *argv[]) {
     struct event *sigint = NULL;
     struct event *sigterm = NULL;
     struct event *sigchld = NULL;
-
-#if defined(Darwin)
-    struct event_config	*evcfg;
-#endif
+    struct event_config *evcfg;
 
     /* Parse configuration file and then command line switches */
     tnt_parse_file(NULL);
@@ -193,6 +190,8 @@ main(int argc, char *argv[]) {
     log_init();
     log_set_prefix("pre-fork");
 
+    evcfg = event_config_new();
+
     if (geteuid()) {
         (void)fprintf(stderr, "need root privileges\n");
         return 1;
@@ -218,18 +217,15 @@ main(int argc, char *argv[]) {
     chld_pid = tnt_fork(imsg_fds);
 
 #if defined(Darwin)
-    evcfg = event_config_new();
-
     event_config_avoid_method(evcfg, "kqueue");
     event_config_avoid_method(evcfg, "poll");
-    /*event_config_avoid_method(evcfg, "devpoll");*/
+    event_config_avoid_method(evcfg, "devpoll");
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
-	log_err(1, "libevent");
+        log_err(1, "libevent");
     }
-    printf("bite !\n");
     exit(0);
 #else
-    if ((evbase = event_base_new()) == NULL) {
+    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
         log_err(1, "libevent");
     }
 #endif
@@ -282,6 +278,7 @@ main(int argc, char *argv[]) {
     event_base_free(evbase);
     if (dev != NULL)
         tnt_ttc_close(dev);
+    event_config_free(evcfg);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
