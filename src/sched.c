@@ -228,6 +228,18 @@ int async_accept(struct fiber_args *s,
     return res_fd;
 }
 
+void    async_sleep(struct fiber_args *s,
+                    int time)
+{
+    struct timeval tv;
+    struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
+
+    tv.tv_sec = time;
+    tv.tv_usec = 0;
+    event_add(s->fib->yield_event, &tv);
+    coro_transfer(&s->fib->fib_ctx, origin);
+}
+
 ssize_t async_recv(struct fiber_args *s,
                int fd,
                void *buf,
@@ -426,6 +438,12 @@ void async_wake(struct fiber *F,
 intptr_t sched_get_userptr(struct fiber_args *args)
 {
     return args->userptr;
+}
+
+struct fiber *
+sched_get_fiber(struct fiber_args *args)
+{
+    return args->fib;
 }
 
 struct sched *sched_new(struct event_base *evbase)

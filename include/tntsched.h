@@ -87,6 +87,11 @@ void sched_fiber_exit(struct fiber_args *args, int val);
 
 intptr_t sched_get_userptr(struct fiber_args *args);
 
+struct fiber * sched_get_fiber(struct fiber_args *args);
+
+void async_sleep(struct fiber_args *args,
+                 int sec);
+
 int async_event(struct fiber_args *s,
                 int fd,
                 short flag);
