@@ -384,7 +384,7 @@ ssize_t async_sendto(struct fiber_args *s,
 
             it = get_events(s, fd, EV_WRITE);
             event_add(it->w_event, NULL);// XXX Check if (it && it->w_event)
-            s->fib->fib_op.op_type = SEND;
+            s->fib->fib_op.op_type = SENDTO;
             s->fib->fib_op.fd = (intptr_t)fd;
             s->fib->fib_op.arg1 = (intptr_t)fd;
             s->fib->fib_op.arg2 = (intptr_t)buf;
