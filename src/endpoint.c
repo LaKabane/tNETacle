@@ -172,5 +172,5 @@ endpoint_cmp(struct endpoint const *a,
 {
     if (a->addrlen != b->addrlen)
         return  -1;
-    return evutil_sockaddr_cmp(endpoint_addr(a), endpoint_addr(b), 1) == 0;
+    return evutil_sockaddr_cmp(endpoint_addr(a), endpoint_addr(b), 1);
 }
