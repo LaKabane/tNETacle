@@ -64,30 +64,37 @@ tnt_imsg_callback(evutil_socket_t fd, short events, void *args) {
     struct imsgbuf *ibuf = data->ibuf;
 
     if (events & EV_READ || data->is_ready_read == 1) {
-	data->is_ready_read = 1;
-	if (tnt_dispatch_imsg(data) == -1)
-	    data->is_ready_read = 0;
+        data->is_ready_read = 1;
+        if (tnt_dispatch_imsg(data) == -1)
+            data->is_ready_read = 0;
     }
     if (events & EV_WRITE || data->is_ready_write == 1) {
-	data->is_ready_write = 1;
-	if (ibuf->w.queued > 0) {
-	    if (msgbuf_write(&ibuf->w) == -1)
-		data->is_ready_write = 0;
-	}
+        data->is_ready_write = 1;
+        if (ibuf->w.queued > 0) {
+            if (msgbuf_write(&ibuf->w) == -1)
+                data->is_ready_write = 0;
+        }
     }
 }
 
 static void
 chld_sighdlr(evutil_socket_t sig, short events, void *args) {
-    (void)events;
     struct event_base *evbase = args;
 
-    switch (sig) {
-	case SIGTERM:
-	case SIGINT:
-	    event_base_loopbreak(evbase);
-	    break;
+    char *name = "unknow";
+    (void)events;
+
+    switch (sig)
+    {
+        case SIGTERM:
+            name = "sigterm";
+            break;
+        case SIGINT:
+            name = "sigint";
+            break;
     }
+    log_warnx("received signal %s(%d), stopping", name, sig);
+    event_base_loopbreak(evbase);
 }
 
 static void
@@ -130,15 +137,15 @@ init_pipe_endpoint(int imsg_fds[2], struct imsg_data *data) {
     struct event *event = NULL;
 
     if (close(imsg_fds[0]))
-	log_notice("close");
+        log_notice("close");
 
     data->is_ready_write = 0;
     data->is_ready_read = 0;
     imsg_init(data->ibuf, imsg_fds[1]);
     evutil_make_socket_nonblocking(imsg_fds[1]);
     event = event_new(data->evbase, imsg_fds[1],
-		      EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
-		      &tnt_imsg_callback, data);
+                      EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
+                      &tnt_imsg_callback, data);
     return event;
 }
 
@@ -155,22 +162,22 @@ tnt_fork(int imsg_fds[2]) {
     struct server server;
 
     switch ((pid = fork())) {
-    case -1:
-	log_err(TNT_OSERR, "fork");
-	break;
-    case 0:
-	tnt_setproctitle("[unpriv]");
-	log_set_prefix("unpriv");
-	break;
-    default:
-	tnt_setproctitle("[priv]");
-	log_set_prefix("priv");
-	return pid;
+        case -1:
+            log_err(TNT_OSERR, "fork");
+            break;
+        case 0:
+            tnt_setproctitle("[unpriv]");
+            log_set_prefix("unpriv");
+            break;
+        default:
+            tnt_setproctitle("[priv]");
+            log_set_prefix("priv");
+            return pid;
     }
 
     if ((pw = getpwnam(TNETACLE_USER)) == NULL) {
-	log_errx(1, "unknown user " TNETACLE_USER);
-	return TNT_NOUSER;
+        log_errx(1, "unknown user " TNETACLE_USER);
+        return TNT_NOUSER;
     }
 
     /* Initialize the OpenSSL library */
@@ -191,7 +198,7 @@ tnt_fork(int imsg_fds[2]) {
     tnt_priv_drop(pw);
 
     if ((evbase = event_base_new()) == NULL) {
-	log_err(1, "libevent");
+        log_err(1, "libevent");
     }
 
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
@@ -202,7 +209,7 @@ tnt_fork(int imsg_fds[2]) {
     signal(SIGCHLD, SIG_DFL);
 
     if (server_init(&server, evbase) == -1)
-	log_errx(1, "failed to init the server socket");
+        log_errx(1, "failed to init the server socket");
 
     data.ibuf = &ibuf;
     data.evbase = evbase;
@@ -236,6 +243,7 @@ tnt_fork(int imsg_fds[2]) {
 
     event_free(sigterm);
     event_free(sigint);
+    close(event_get_fd(imsg_event));
     event_free(imsg_event);
     event_base_free(evbase);
 
@@ -256,37 +264,37 @@ tnt_dispatch_imsg(struct imsg_data *data) {
 
     n = imsg_read(ibuf);
     if (n == -1) {
-	log_warnx("loose some imsgs");
-	imsg_clear(ibuf);
-	return -1;
+        log_warnx("loose some imsgs");
+        imsg_clear(ibuf);
+        return -1;
     }
 
     if (n == 0) {
-	log_warnx("pipe closed");
-	return -1;
+        log_warnx("pipe closed");
+        return -1;
     }
 
     /* Loops through the queue created by imsg_read */
     while ((n = imsg_get(ibuf, &imsg)) != 0 && n != -1) {
-	switch (imsg.hdr.type) {
-	case IMSG_CREATE_DEV:
-            device_fd = imsg.fd;
-	    log_info("receive IMSG_CREATE_DEV: fd %i", device_fd);
+        switch (imsg.hdr.type) {
+            case IMSG_CREATE_DEV:
+                device_fd = imsg.fd;
+                log_info("receive IMSG_CREATE_DEV: fd %i", device_fd);
 
-	    server_set_device(data->server, device_fd);
+                server_set_device(data->server, device_fd);
 
-	    /* directly ask to configure the tun device */
-	    imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
-			serv_opts.addr , strlen(serv_opts.addr));
-	    break;
-	default:
-	    break;
-	}
-	imsg_free(&imsg);
+                /* directly ask to configure the tun device */
+                imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
+                             serv_opts.addr , strlen(serv_opts.addr));
+                break;
+            default:
+                break;
+        }
+        imsg_free(&imsg);
     }
     if (n == -1) {
-	log_warnx("imsg_get");
-	return -1;
+        log_warnx("imsg_get");
+        return -1;
     }
     return 0;
 }
