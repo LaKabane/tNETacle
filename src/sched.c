@@ -142,15 +142,15 @@ int async_event(struct fiber_args *s,
 
     if (flag & EV_READ)
     {
-            it = get_events(s, fd, EV_READ);
+        it = get_events(s, fd, EV_READ);
         /* XXX SIGSEGV it == NULL */
-            event_add(it->r_event, NULL);
+        event_add(it->r_event, NULL);
     }
     if (flag & EV_WRITE)
     {
-            it = get_events(s, fd, EV_WRITE);
+        it = get_events(s, fd, EV_WRITE);
         /* XXX SIGSEGV it == NULL */
-            event_add(it->w_event, NULL);
+        event_add(it->w_event, NULL);
     }
     s->fib->fib_op.op_type = EVENT;
     s->fib->fib_op.ret = 0;
@@ -241,10 +241,10 @@ void    async_sleep(struct fiber_args *s,
 }
 
 ssize_t async_recv(struct fiber_args *s,
-               int fd,
-               void *buf,
-               size_t len,
-               int flags)
+                   int fd,
+                   void *buf,
+                   size_t len,
+                   int flags)
 {
     ssize_t ret;
 
@@ -273,10 +273,10 @@ ssize_t async_recv(struct fiber_args *s,
 }
 
 ssize_t async_send(struct fiber_args *s,
-               int fd,
-               void const *buf,
-               size_t len,
-               int flags)
+                   int fd,
+                   void const *buf,
+                   size_t len,
+                   int flags)
 {
     ssize_t ret;
 
@@ -305,9 +305,9 @@ ssize_t async_send(struct fiber_args *s,
 }
 
 ssize_t async_read(struct fiber_args *s,
-                    int fd,
-                    void *buf,
-                    size_t len)
+                   int fd,
+                   void *buf,
+                   size_t len)
 {
     ssize_t ret;
 
@@ -365,12 +365,12 @@ ssize_t async_write(struct fiber_args *s,
 }
 
 ssize_t async_sendto(struct fiber_args *s,
-               int fd,
-               void const *buf,
-               size_t len,
-               int flags,
-               struct sockaddr const *dst,
-               int addrlen)
+                     int fd,
+                     void const *buf,
+                     size_t len,
+                     int flags,
+                     struct sockaddr const *dst,
+                     int addrlen)
 {
     ssize_t ret;
 
@@ -601,11 +601,14 @@ struct fiber *sched_new_fiber(struct sched *S,
     struct fiber_args *args;
     struct fiber *new_fiber;
     void *stack_space;
+    size_t stack_size = 1 << 14;
         
-    args = malloc(sizeof(*args));
+    args = malloc(sizeof(struct fiber_args));
     new_fiber = malloc(sizeof(struct fiber));
-    stack_space = malloc(1 << 16);
+    stack_space = malloc(stack_size);
 
+    memset(new_fiber, 0, sizeof(struct fiber));
+    memset(args, 0, sizeof(struct fiber_args));
     if (stack_space != NULL
         && new_fiber != NULL
         && args != NULL)
@@ -614,7 +617,7 @@ struct fiber *sched_new_fiber(struct sched *S,
         args->userptr = userptr;
         args->fib->map_fe = m_fd_ev_new();
 
-        new_fiber->fib_stack_size = 1 << 16;
+        new_fiber->fib_stack_size = stack_size;
         new_fiber->fib_stack = stack_space;
         new_fiber->fib_op.op_type = NONE;
         new_fiber->sched_back_ref = S;
@@ -626,7 +629,7 @@ struct fiber *sched_new_fiber(struct sched *S,
                                            sched_dispatch,
                                            new_fiber); 
         event_add(new_fiber->yield_event, NULL);
-        coro_create(&new_fiber->fib_ctx, func, args, stack_space, 1 << 16);
+        coro_create(&new_fiber->fib_ctx, func, args, stack_space, stack_size);
         return new_fiber;
     }
     free(stack_space);
