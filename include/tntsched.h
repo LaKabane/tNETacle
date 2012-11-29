@@ -57,6 +57,8 @@ struct fiber
     struct sched        *sched_back_ref;
     struct event        *yield_event;
     struct map_fd_ev    *map_fe;
+    void                (*dtor)(struct fiber *, intptr_t);
+    intptr_t            dtor_ctx;
 };
 
 struct sched
@@ -76,6 +78,10 @@ struct fiber *sched_new_fiber(struct sched *S,
                               intptr_t userptr);
 
 void sched_fiber_delete(struct fiber *);
+
+void sched_fiber_set_dtor(struct fiber *,
+                          void (*dtor)(struct fiber *, intptr_t),
+                          intptr_t ctx);
 
 void sched_fiber_exit(struct fiber_args *args, int val);
 

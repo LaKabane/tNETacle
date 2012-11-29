@@ -21,7 +21,6 @@
 #include "log.h"
 #include "tntsched.h"
 
-
 struct rw_events
 {
     struct event *r_event;
@@ -49,7 +48,7 @@ struct fiber_args
 struct rw_events *get_events(struct fiber_args *s, int fd, short event)
 {
     struct rw_events *t;
-        //w_event
+
     t = m_fd_ev_find(s->fib->map_fe, fd);
     if (t == NULL)
     {
@@ -104,6 +103,14 @@ struct rw_events *get_events(struct fiber_args *s, int fd, short event)
     return NULL;
 }
 
+void sched_fiber_set_dtor(struct fiber *f,
+                          void (*dtor)(struct fiber *, intptr_t),
+                          intptr_t ctx)
+{
+    f->dtor = dtor;
+    f->dtor_ctx = ctx;
+}
+
 void sched_fiber_exit(struct fiber_args *s,
                       int val)
 {
@@ -120,6 +127,8 @@ void sched_fiber_exit(struct fiber_args *s,
     s->fib->fib_op.op_type = FREE;
     s->fib->fib_op.arg1 = val;
 
+    if (s->fib->dtor != NULL)
+        s->fib->dtor(s->fib, s->fib->dtor_ctx);
     free(s);
     coro_transfer(src, dst);
 }
@@ -426,6 +435,7 @@ struct sched *sched_new(struct event_base *evbase)
     sched = malloc(sizeof(*sched));
     memset(sched, 0, sizeof(*sched));
     sched->evbase = evbase;
+    sched->origin_ctx = NULL;
     return sched;
 }
 
@@ -590,6 +600,8 @@ struct fiber *sched_new_fiber(struct sched *S,
         new_fiber->fib_stack = stack_space;
         new_fiber->fib_op.op_type = NONE;
         new_fiber->sched_back_ref = S;
+        new_fiber->dtor = NULL;
+        new_fiber->dtor_ctx = 0;
         new_fiber->yield_event = event_new(S->evbase,
                                            -1,
                                            0,
