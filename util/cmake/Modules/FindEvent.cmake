@@ -17,6 +17,9 @@ find_path(EVENT_INCLUDE_DIR event.h
   PATH_SUFFIXES event2
 )
 
+# FreeBSD fix http://trac.medu.se/T93
+set(CMAKE_LIBRARY_PATH /usr/local/lib/event2)
+
 if (Event_FIND_COMPONENTS)
 	foreach( component ${Event_FIND_COMPONENTS})
 		string( TOUPPER ${component} _COMPONENT)

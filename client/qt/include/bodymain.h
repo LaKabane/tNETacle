@@ -34,7 +34,7 @@ class BodyMain : public QFrame, public Ui::BodyMain
 {
     Q_OBJECT
 public:
-    explicit BodyMain(QWidget *parent = 0, Controller* controller = 0);
+    static QWidget*    get(QWidget* parent = 0, Controller* controller = 0);
     void    addNewPeer(const QString& str);
 
 private slots:
@@ -42,6 +42,8 @@ private slots:
 
 private:
     Controller*    _controller;
+    explicit BodyMain(QWidget *parent = 0, Controller* controller = 0);
+    static QWidget* _instance;
 };
 
 #endif // BODYMAIN_H

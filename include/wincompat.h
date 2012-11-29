@@ -20,17 +20,35 @@
 
 # define WIN32_LEAN_AND_MEAN
 # include <Windows.h>
+# include <stdlib.h> /* For _countof */
 
-# define __func__ __FUNCTION__
+/* Avoid redifinition */
+# if !defined __func__
+#  define __func__ (char *)__FUNCTION__ /* Prevent a warning on Windows */
+# endif
+
+/*
+ * Functions helpers
+ */
 # define alloca _alloca
 # define snprintf _snprintf
+/* From libtuntap's tuntap.h */
+# undef snprintf
+# undef _snprintf
+# define snprintf(x, y, z, ...) _snprintf_s((x), (y), (y), (z), __VA_ARGS__);
+# define strncat(x, y, z) strncat_s((x), _countof(x), (y), (z));
+
+/*
+ * Types helpers
+ */
 # define ssize_t SSIZE_T
 
+/*
+ * Prototypes our reimplementations
+ */
 long long strtonum(const char *, long long, long long, const char **);
 char * strndup(const char *, size_t);
-
 LPWSTR formated_error(LPWSTR pMessage, DWORD m, ...);
 
 # endif
 #endif
-

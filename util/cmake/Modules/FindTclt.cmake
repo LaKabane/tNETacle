@@ -15,7 +15,7 @@ endif()
 
 libfind_pkg_check_modules(TCLT_PKGCONF libtclt)
 
-find_path(TCLT_INCLUDE_DIR tclt_json.h
+find_path(TCLT_INCLUDE_DIR tclt.h
   PATH ${TCLT_PKGCONF_INCLUDE_DIRS}
 )
 

@@ -41,7 +41,7 @@ struct passwd;
  * Few definitions for windows
  */
 #if defined Windows
-# define __func__ __FUNCTIONW__
+# include "wincompat.h"
 #endif
 
 #define DEBUG fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__)

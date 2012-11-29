@@ -58,11 +58,10 @@ Controller::add_peer_controll(void *f, void *internal)
 {
     peer *p = static_cast<peer*>(f);
 
-    IClient* view = QClient::get(0);
+    BodyMain* view = dynamic_cast<BodyMain*>(BodyMain::get(0, 0));
     if(view != 0)
     {
-        BodyMain* mainView = dynamic_cast<BodyMain*>(view->getBody());
-        mainView->addNewPeer(p->name);
+        view->addNewPeer(p->name);
     }
     return 0;
 }
@@ -140,10 +139,8 @@ void Controller::deleteContact(const QString& name)
 {
     try
     {
-        QVector<QString> v;
-        v.append(name);
         //dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
-        this->writeToSocket(Protocol::delet(dynamic_cast<ModelContact*>(this->_modelContacts)->getObjectName(), v));
+        this->writeToSocket(tclt_delete_peer(name.toStdString().c_str()));
     }
     catch (Exception *e)
     {
@@ -187,7 +184,7 @@ bool Controller::addContact()
         if (p.name == 0 || p.ip == 0 || p.key == 0)
             throw new Exception("Impossible to duplicate elements");
         dynamic_cast<ModelContact*>(this->_modelContacts)->addContact(&p);
-        this->writeToSocket(tclt_add_peers(&p, 1));
+        this->writeToSocket(tclt_add_peer(&p));
         free(p.name);
         free(p.ip);
         free(p.key);
