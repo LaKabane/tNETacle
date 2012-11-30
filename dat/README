@@ -24,13 +24,15 @@ want to install the files, go to *Installation*.
 Compilation
 -----------
 
-First you need a fortune compiler, like strfile (also known as unstr).
-As it is not packaged nor shiped by default on modern operation systems,
-you will have to compile by hand.
+First you need a fortune compiler, like strfile:
 
-Hint: On OpenBSD, you will find the sources here `/usr/src/games/fortune/strfile/`
+  * FreeBSD: Shipped by default;
+  * OpenBSD, NetBSD: Source code here: `/usr/src/games/fortune/strfile/`;
+  * Solaris: OpenCSW package `fortune`;
+  * Debian, Ubuntu: Package `fortune-mod`;
+  * Others: http://github.com/Aversiste/strfile;
 
-When you finally found and compiled it, you can run this command:
+When you finally found and installed/compiled it, you can run this command:
 
     $ strfile dat/tNETacle
     "tNETacle.dat" created
@@ -53,4 +55,3 @@ You can now test the success of the operation and be delighted with a quote.
     $ fortune tNETacle
     Normalement là je perd ma bite.
                     -- @tribouille
-

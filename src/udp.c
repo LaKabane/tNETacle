@@ -71,7 +71,8 @@ forward_udp_frame_to_other_peers(void *async_ctx,
         err = async_sendto(async_ctx,
                            udp->fd,
                            current_frame->raw_packet,
-                           current_frame->size + sizeof(struct packet_hdr), 0,
+                           current_frame->size + sizeof(struct packet_hdr),
+                           0,
                            endpoint_addr(&it->peer_addr),
                            endpoint_addrlen(&it->peer_addr));
 
@@ -235,6 +236,7 @@ server_udp(void *ctx)
 #endif
         frame_free(&current_frame);
     }
+    sched_fiber_exit(ctx, 1);
 }
 
 void
@@ -251,7 +253,7 @@ udp_peer_free(struct udp_peer const *u)
 void
 server_udp_exit(struct udp *udp)
 {
-    close(udp->fd);
+    (void)close((int)udp->fd);
     SSL_CTX_free(udp->ctx);
     v_udp_foreach(udp->udp_peers, udp_peer_free);
     v_udp_delete(udp->udp_peers);
@@ -339,7 +341,7 @@ server_udp_new(struct server *s,
 
 int
 frame_recvfrom(void *ctx,
-               int fd,
+               evutil_socket_t fd,
                struct frame *frame,
                struct sockaddr *saddr,
                unsigned int *socklen)
@@ -391,4 +393,6 @@ udp_get_port(struct udp *udp)
 {
     return endpoint_port(&udp->udp_endpoint);
 }
+
+
 

@@ -20,14 +20,14 @@
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
+# include <arpa/inet.h>
 # include <unistd.h>
+# define TNET_EAGAIN EAGAIN
 #elif defined Windows
 # include <WS2tcpip.h>
 # include <ws2def.h>
 # include <io.h>
-# if !defined EAGAIN
-#  define EAGAIN WSAEWOULDBLOCK
-# endif /* !EAGAIN */
+# define TNET_EAGAIN WSAEWOULDBLOCK
 #endif /* Unix */
 
 

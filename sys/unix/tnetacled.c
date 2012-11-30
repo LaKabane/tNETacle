@@ -139,10 +139,7 @@ main(int argc, char *argv[]) {
     struct event *sigint = NULL;
     struct event *sigterm = NULL;
     struct event *sigchld = NULL;
-
-#if defined(Darwin)
-    struct event_config	*evcfg;
-#endif
+    struct event_config *evcfg;
 
     /* Parse configuration file and then command line switches */
     tnt_parse_file(NULL);
@@ -169,22 +166,24 @@ main(int argc, char *argv[]) {
     log_init();
     log_set_prefix("pre-fork");
 
+    evcfg = event_config_new();
+
     if (geteuid()) {
-	(void)fprintf(stderr, "need root privileges\n");
-	return 1;
+        (void)fprintf(stderr, "need root privileges\n");
+        return 1;
     }
 
 
     if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1) {
-	perror("socketpair");
-	return 1;
+        perror("socketpair");
+        return 1;
     }
 
     if (debug == 0) {
-	if (tnt_daemonize() == -1) {
-		fprintf(stderr, "can't daemonize\n");
-		return 1;
-	}
+        if (tnt_daemonize() == -1) {
+            fprintf(stderr, "can't daemonize\n");
+            return 1;
+        }
     }
     /* The child can die while we are still in the init phase. So we need to
      * monitor for SIGCHLD by signal
@@ -194,19 +193,16 @@ main(int argc, char *argv[]) {
     chld_pid = tnt_fork(imsg_fds);
 
 #if defined(Darwin)
-    evcfg = event_config_new();
-
     event_config_avoid_method(evcfg, "kqueue");
     event_config_avoid_method(evcfg, "poll");
-    /*event_config_avoid_method(evcfg, "devpoll");*/
+    event_config_avoid_method(evcfg, "devpoll");
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
-	log_err(1, "libevent");
+        log_err(1, "libevent");
     }
-    printf("bite !\n");
     exit(0);
 #else
-    if ((evbase = event_base_new()) == NULL) {
-	log_err(1, "libevent");
+    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
+        log_err(1, "libevent");
     }
 #endif
     tnet_libevent_dump(evbase);
@@ -218,7 +214,7 @@ main(int argc, char *argv[]) {
     sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sig_gen_hdlr, evbase);
 
     if (close(imsg_fds[1]))
-	log_notice("close");
+        log_notice("close");
 
     data.evbase = evbase;
     data.is_ready_write = 0;
@@ -227,8 +223,8 @@ main(int argc, char *argv[]) {
     imsg_init(&ibuf, imsg_fds[0]);
     evutil_make_socket_nonblocking(imsg_fds[0]);
     event = event_new(evbase, imsg_fds[0],
-		      EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
-		      &imsg_callback_handler, &data);
+              EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
+              &imsg_callback_handler, &data);
     data.event = event;
 
     event_add(event, NULL);
@@ -241,17 +237,18 @@ main(int argc, char *argv[]) {
      * as the child is stillborn.
      */
     if (sigchld_recv != 1)
-	event_base_dispatch(evbase);
+        event_base_dispatch(evbase);
     else
-	log_notice("tNETacle initialisation failed");
+        log_notice("tNETacle initialisation failed");
 
     signal(SIGCHLD, SIG_DFL);
     signal(SIGSEGV, SIG_DFL);
 
     if (chld_pid != 0)
-	kill(chld_pid, SIGTERM);
+        kill(chld_pid, SIGTERM);
 
     msgbuf_clear(&ibuf.w);
+    close(event_get_fd(event));
     event_free(event);
     event_free(sigint);
     event_free(sigterm);
@@ -259,6 +256,7 @@ main(int argc, char *argv[]) {
     event_base_free(evbase);
     if (dev != NULL)
         tnt_ttc_close(dev);
+    event_config_free(evcfg);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
@@ -281,57 +279,57 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 
     n = imsg_read(ibuf);
     if (n == -1) {
-	log_warnx("loose some imsgs");
-	imsg_clear(ibuf);
-	return -1;
+        log_warnx("loose some imsgs");
+        imsg_clear(ibuf);
+        return -1;
     }
 
     if (n == 0) {
-	log_warnx("pipe closed");
-	return -1;
+        log_warnx("pipe closed");
+        return -1;
     }
 
     for (;;) {
-	/* Loops through the queue created by imsg_read */
-	n = imsg_get(ibuf, &imsg);
-	if (n == -1) {
-	    log_warnx("imsg_get");
-	    return -1;
-	}
-
-	/* Nothing was ready, return to the main loop */
-	if (n == 0)
-	    break;
-
-	switch (imsg.hdr.type) {
-	case IMSG_CREATE_DEV:
-	    dev = tnt_ttc_open(serv_opts.tunnel);
-        if (dev != NULL) {
-            fd = tnt_ttc_get_fd(dev);
-            imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
-                         NULL, 0);
-        } else {
-            log_warn("Can't open a tun device:");
+        /* Loops through the queue created by imsg_read */
+        n = imsg_get(ibuf, &imsg);
+        if (n == -1) {
+            log_warnx("imsg_get");
+            return -1;
         }
-	    break;
-	case IMSG_SET_IP:
-	    if (dev == NULL) {
-	        log_warnx("can't set ip, use IMSG_CREATE_DEV first");
-	        break;
-	    }
-	    datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
-	    (void)memset(buf, '\0', sizeof buf);
-	    (void)memcpy(buf, imsg.data, datalen);
-	    buf[datalen] = '\0';
-	    
-	    log_info("receive IMSG_SET_IP: %s", buf);
-	    tnt_ttc_set_ip(dev, buf);
-            tnt_ttc_up(dev);
-	    break;
-	default:
-	    break;
-	}
-    imsg_free(&imsg);
+
+        /* Nothing was ready, return to the main loop */
+        if (n == 0)
+            break;
+
+        switch (imsg.hdr.type) {
+            case IMSG_CREATE_DEV:
+                dev = tnt_ttc_open(serv_opts.tunnel);
+                if (dev != NULL) {
+                    fd = tnt_ttc_get_fd(dev);
+                    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
+                                 NULL, 0);
+                } else {
+                    log_warn("Can't open a tun device:");
+                }
+                break;
+            case IMSG_SET_IP:
+                if (dev == NULL) {
+                    log_warnx("can't set ip, use IMSG_CREATE_DEV first");
+                    break;
+                }
+                datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
+                (void)memset(buf, '\0', sizeof buf);
+                (void)memcpy(buf, imsg.data, datalen);
+                buf[datalen] = '\0';
+
+                log_info("receive IMSG_SET_IP: %s", buf);
+                tnt_ttc_set_ip(dev, buf);
+                tnt_ttc_up(dev);
+                break;
+            default:
+                break;
+        }
+        imsg_free(&imsg);
     }
     return 0;
 }

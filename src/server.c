@@ -281,9 +281,9 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
         {
             char name[128];
 
-            mc_close(mc);
             log_debug("[META] %s removed from the pending list",
                       mc_presentation(mc, name, sizeof name));
+            mc_close(mc);
             v_mc_erase(s->pending_peers, mc);
         }
         else

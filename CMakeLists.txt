@@ -15,11 +15,12 @@ set(${CMAKE_SYSTEM_NAME} True)
 include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local OPTIONAL)
 
 # CMake global options
-# ------------------
+# --------------------
+
 # None at the moment
 
 # Global Packages search
-# ------------------
+# ----------------------
 #find_package(ZLIB REQUIRED)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
@@ -40,6 +41,7 @@ if (NOT TUNTAP_FOUND)
 endif()
 
 # Global CPP definitions
+# ----------------------
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 
 if (ClientQT)
@@ -55,12 +57,24 @@ else()
 endif()
 
 # Global include directories
-# ------------------
+# --------------------------
+
+
 include_directories(${CMAKE_HOME_DIRECTORY}/include)
 include_directories(${EVENT_INCLUDE_DIR})
 #include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
+include_directories(${TCLT_INCLUDE_DIR})
+
+if (${CALM_INCLUDE_DIR})
+        include_directories(${CALM_INCLUDE_DIR})
+else()
+        set(CALM_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/sub/calm-containers/include)
+        include_directories(${CALM_INCLUDE_DIR})
+endif()
+
+
 if (TUNTAP_FOUND)
 	include_directories(${TUNTAP_INCLUDE_DIRS})
 else()
@@ -106,8 +120,8 @@ set(HEADERS_LIST
     include/tntexits.h
     include/tntsocket.h
     include/tun.h
-    include/map.h
-    include/vector.h
+    ${CALM_INCLUDE_DIR}/map.h
+    ${CALM_INCLUDE_DIR}/vector.h
     include/client.h
     include/imsg.h
     include/wincompat.h
@@ -191,7 +205,7 @@ if(Linux)
 
         # Definition for the coroutine backend
         # ------------------------------------
-        add_definitions(-DCORO_UCONTEXT)
+        add_definitions(-DCORO_SJLJ)
 
 	# Linux specific definitions
 	# --------------------------

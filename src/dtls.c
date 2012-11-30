@@ -177,7 +177,7 @@ dtls_sendto(int sockfd,
 {
     int err;
 
-    err = SSL_write(peer->ssl, buf, len);
+    err = SSL_write(peer->ssl, buf, (int)len);
     if (err != (int)len)
     {
         /*SSL_write return less bytes written than expected */
@@ -256,7 +256,7 @@ dtls_recvfrom(int sockfd,
     {
         int err;
         struct udp_peer *peer;
-        int pending;
+        size_t pending;
 
         peer = v_udp_find_if(udp->udp_peers, find_peer, (void *)addr);
         if (peer == NULL)
@@ -269,7 +269,7 @@ dtls_recvfrom(int sockfd,
                                          DTLS_ENABLE | DTLS_SERVER);
         }
         BIO_write(peer->bio, tbuf, nread);
-        err = SSL_read(peer->ssl, buf, len);
+        err = SSL_read(peer->ssl, buf, (int)len);
         if (err < 0)
         {
             log_ssl("[DTLS] unable to read on the ssl endpoint");

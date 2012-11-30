@@ -13,6 +13,7 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 **/
 
+#include <stdio.h>
 #include <string.h>
 
 #include <event2/util.h>
@@ -36,6 +37,7 @@ endpoint_new(void)
 {
     struct endpoint *e = tnt_new(struct endpoint);
 
+    e->addrlen = sizeof(e->addr);
     return e;
 }
 
@@ -119,17 +121,19 @@ endpoint_copy(struct endpoint *dst,
 struct endpoint *
 endpoint_clone(struct endpoint const *src)
 {
-    struct endpoint *new = tnt_new(struct endpoint);
+    struct endpoint *new_end = tnt_new(struct endpoint);
 
-    endpoint_copy(new, src);
-    return new;
+    endpoint_copy(new_end, src);
+    return new_end;
 }
 
 void
-endpoint_assign_sockname(int socket,
+endpoint_assign_sockname(intptr_t socket,
                   struct endpoint *e)
 {
-    getsockname(socket, endpoint_addr(e), &e->addrlen);
+    int ret;
+
+    ret = getsockname(socket, endpoint_addr(e), &e->addrlen);
 }
 
 char const *
@@ -159,7 +163,7 @@ endpoint_presentation(struct endpoint const *e)
             }
         default:
             {
-                log_debug("[ENDPOINT] presentation doesn't handle protocol", e->addr.ss_family);
+                log_warnx("[ENDPOINT] presentation doesn't handle protocol", e->addr.ss_family);
             }
     }
     return name;

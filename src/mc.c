@@ -95,7 +95,7 @@ mc_presentation(struct mc *self,
 int
 mc_init(struct mc *self,
         struct event_base *evb,
-        int fd,
+        evutil_socket_t fd,
         struct sockaddr *s,
         socklen_t len,
         SSL_CTX *server_ctx)
@@ -171,7 +171,7 @@ mc_peer_accept(struct server *s,
                struct event_base *evbase,
                struct sockaddr *sock,
                int socklen,
-               int fd)
+               evutil_socket_t fd)
 {
     int errcode;
     struct mc mc;
@@ -185,7 +185,8 @@ mc_peer_accept(struct server *s,
     if (mc_established(s, sock, socklen) != 0)
     {
         log_notice("[META] [ACCEPT] connexion already established with %s", peername);
-        close(fd);
+        /* TODO: write a tnet_close_socket(intptr_t) */
+        close((int)fd);
         return NULL;
     }
     errcode = mc_init(&mc, evbase, fd, sock, socklen, s->server_ctx);
@@ -233,7 +234,9 @@ mc_close(struct mc *self)
  * failed, the number of bytes added otherwise
  */
 
-int
+/* This one is useless */
+
+size_t
 mc_add_raw_data(struct mc *self,
                 void *data,
                 size_t size)
@@ -303,3 +306,5 @@ mc_pending(struct server *s, struct sockaddr *sck, int socklen)
     it = v_mc_find_if(s->pending_peers, find_established, sck);
     return !(it == v_mc_end(s->pending_peers));
 }
+
+
