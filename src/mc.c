@@ -171,7 +171,7 @@ mc_peer_accept(struct server *s,
                struct event_base *evbase,
                struct sockaddr *sock,
                int socklen,
-               intptr_t fd)
+               evutil_socket_t fd)
 {
     int errcode;
     struct mc mc;
@@ -306,3 +306,5 @@ mc_pending(struct server *s, struct sockaddr *sck, int socklen)
     it = v_mc_find_if(s->pending_peers, find_established, sck);
     return !(it == v_mc_end(s->pending_peers));
 }
+
+

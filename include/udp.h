@@ -89,7 +89,7 @@ void forward_udp_frame_to_other_peers(void *ctx,
 void broadcast_udp_to_peers(struct server *s);
 
 int frame_recvfrom(void *ctx,
-                   intptr_t fd,
+                   evutil_socket_t fd,
                    struct frame *frame,
                    struct sockaddr *saddr,
                    unsigned int *socklen);
@@ -104,3 +104,5 @@ unsigned short
 udp_get_port(struct udp *);
 
 #endif /* end of include guard: UDP_US4EZ32H */
+
+
