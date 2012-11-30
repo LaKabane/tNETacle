@@ -18,6 +18,7 @@
 
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
+#include <event2/util.h>
 #include "networking.h"
 #include "coro.h"
 #include "tntsched.h"
@@ -56,7 +57,7 @@ struct udp_peer
 
 struct udp
 {
-    int                     fd;
+    evutil_socket_t         fd;
     SSL_CTX                 *ctx;
     struct fiber            *udp_recv_fib;
     struct fiber            *udp_brd_fib;
@@ -88,7 +89,7 @@ void forward_udp_frame_to_other_peers(void *ctx,
 void broadcast_udp_to_peers(struct server *s);
 
 int frame_recvfrom(void *ctx,
-                   int fd,
+                   intptr_t fd,
                    struct frame *frame,
                    struct sockaddr *saddr,
                    unsigned int *socklen);

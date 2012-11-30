@@ -127,7 +127,7 @@ endpoint_clone(struct endpoint const *src)
 }
 
 void
-endpoint_assign_sockname(int socket,
+endpoint_assign_sockname(intptr_t socket,
                   struct endpoint *e)
 {
     getsockname(socket, endpoint_addr(e), &e->addrlen);

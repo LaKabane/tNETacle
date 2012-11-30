@@ -33,6 +33,6 @@ server_device(void *ctx);
 
 void
 server_set_device(struct server *s,
-                  int fd);
+                  intptr_t fd);
 
 #endif /* end of include guard: DEVICE_3U2N3YXR */

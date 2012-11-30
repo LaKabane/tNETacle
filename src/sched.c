@@ -45,7 +45,7 @@ struct fiber_args
 #define VECTOR_TYPE_SCALAR
 #include "vector.h"
 
-struct rw_events *get_events(struct fiber_args *s, int fd, short event)
+struct rw_events *get_events(struct fiber_args *s, evutil_socket_t fd, short event)
 {
     struct rw_events *t;
 
@@ -134,7 +134,7 @@ void sched_fiber_exit(struct fiber_args *s,
 }
 
 int async_event(struct fiber_args *s,
-                int fd,
+                evutil_socket_t fd,
                 short flag)
 {
     struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
@@ -159,7 +159,7 @@ int async_event(struct fiber_args *s,
 }
 
 ssize_t async_recvfrom(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    char *buf,
                    int len,
                    int flag,
@@ -196,12 +196,12 @@ ssize_t async_recvfrom(struct fiber_args *s,
 }
 
 
-int async_accept(struct fiber_args *s,
-                 int fd,
+evutil_socket_t async_accept(struct fiber_args *s,
+                 evutil_socket_t fd,
                  struct sockaddr *sock,
                  int *socklen)
 {
-    int res_fd;
+    evutil_socket_t res_fd;
 
     res_fd = accept(fd, sock, (socklen_t *)socklen);
     if (res_fd == -1)
@@ -221,11 +221,11 @@ int async_accept(struct fiber_args *s,
             s->fib->fib_op.arg3 = (intptr_t)socklen;
             coro_transfer(&s->fib->fib_ctx, origin);
             evutil_make_socket_nonblocking(s->fib->fib_op.ret);
-            return (int)s->fib->fib_op.ret;
+            return (evutil_socket_t)s->fib->fib_op.ret;
         }
     }
     evutil_make_socket_nonblocking(res_fd);
-    return (int)res_fd;
+    return (evutil_socket_t)res_fd;
 }
 
 void    async_sleep(struct fiber_args *s,
@@ -241,7 +241,7 @@ void    async_sleep(struct fiber_args *s,
 }
 
 ssize_t async_recv(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void *buf,
                    size_t len,
                    int flags)
@@ -273,7 +273,7 @@ ssize_t async_recv(struct fiber_args *s,
 }
 
 ssize_t async_send(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void const *buf,
                    size_t len,
                    int flags)
@@ -305,7 +305,7 @@ ssize_t async_send(struct fiber_args *s,
 }
 
 ssize_t async_read(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void *buf,
                    size_t len)
 {
@@ -335,7 +335,7 @@ ssize_t async_read(struct fiber_args *s,
 }
 
 ssize_t async_write(struct fiber_args *s,
-                    int fd,
+                    evutil_socket_t fd,
                     void const *buf,
                     size_t len)
 {
@@ -365,7 +365,7 @@ ssize_t async_write(struct fiber_args *s,
 }
 
 ssize_t async_sendto(struct fiber_args *s,
-                     int fd,
+                     evutil_socket_t fd,
                      void const *buf,
                      size_t len,
                      int flags,

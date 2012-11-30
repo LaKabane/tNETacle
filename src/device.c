@@ -64,7 +64,7 @@ send_buffer_to_device_thread(struct server *s,
 
 void
 server_set_device(struct server *s,
-                  int fd)
+                  intptr_t fd)
 {
     struct evconnlistener **it = NULL;
     struct evconnlistener **ite = NULL;
@@ -83,7 +83,7 @@ server_set_device(struct server *s,
 
 void
 server_set_device(struct server *s,
-                  int fd)
+                  intptr_t fd)
 {
     struct evconnlistener **it = NULL;
     struct evconnlistener **ite = NULL;
