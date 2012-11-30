@@ -136,7 +136,7 @@ ssize_t async_write(struct fiber_args *s,
                     void const *buf,
                     size_t len);
 
-int async_recvfrom(struct fiber_args *s,
+ssize_t async_recvfrom(struct fiber_args *s,
                    int fd,
                    char *buf,
                    int len,

@@ -155,10 +155,10 @@ int async_event(struct fiber_args *s,
     s->fib->fib_op.op_type = EVENT;
     s->fib->fib_op.ret = 0;
     coro_transfer(&s->fib->fib_ctx, origin);
-    return s->fib->fib_op.ret;
+    return (int)s->fib->fib_op.ret;
 }
 
-int async_recvfrom(struct fiber_args *s,
+ssize_t async_recvfrom(struct fiber_args *s,
                    int fd,
                    char *buf,
                    int len,
@@ -166,7 +166,7 @@ int async_recvfrom(struct fiber_args *s,
                    struct sockaddr *sock,
                    int *socklen)
 {
-    int res;
+    ssize_t res;
 
     res = recvfrom(fd, buf, len, flag, sock, (socklen_t *)socklen);
     if (res == -1)
@@ -189,10 +189,10 @@ int async_recvfrom(struct fiber_args *s,
             s->fib->fib_op.arg5 = (intptr_t)sock;
             s->fib->fib_op.arg6 = (intptr_t)socklen;
             coro_transfer(&s->fib->fib_ctx, origin);
-            return s->fib->fib_op.ret;
+            return (ssize_t)s->fib->fib_op.ret;
         }
     }
-    return res;
+    return (ssize_t)res;
 }
 
 
@@ -221,11 +221,11 @@ int async_accept(struct fiber_args *s,
             s->fib->fib_op.arg3 = (intptr_t)socklen;
             coro_transfer(&s->fib->fib_ctx, origin);
             evutil_make_socket_nonblocking(s->fib->fib_op.ret);
-            return s->fib->fib_op.ret;
+            return (int)s->fib->fib_op.ret;
         }
     }
     evutil_make_socket_nonblocking(res_fd);
-    return res_fd;
+    return (int)res_fd;
 }
 
 void    async_sleep(struct fiber_args *s,
@@ -269,7 +269,7 @@ ssize_t async_recv(struct fiber_args *s,
             return (ssize_t)s->fib->fib_op.ret;
         }
     }
-    return ret;
+    return (ssize_t)ret;
 }
 
 ssize_t async_send(struct fiber_args *s,
@@ -301,7 +301,7 @@ ssize_t async_send(struct fiber_args *s,
             return (ssize_t)s->fib->fib_op.ret;
         }
     }
-    return ret;
+    return (ssize_t)ret;
 }
 
 ssize_t async_read(struct fiber_args *s,
@@ -331,7 +331,7 @@ ssize_t async_read(struct fiber_args *s,
             return (ssize_t)s->fib->fib_op.ret;
         }
     }
-    return ret;
+    return (ssize_t)ret;
 }
 
 ssize_t async_write(struct fiber_args *s,
@@ -361,7 +361,7 @@ ssize_t async_write(struct fiber_args *s,
             return (ssize_t)s->fib->fib_op.ret;
         }
     }
-    return ret;
+    return (ssize_t)ret;
 }
 
 ssize_t async_sendto(struct fiber_args *s,
@@ -396,7 +396,7 @@ ssize_t async_sendto(struct fiber_args *s,
             return (ssize_t)s->fib->fib_op.ret;
         }
     }
-    return ret;
+    return (ssize_t)ret;
 }
 
 intptr_t async_yield(struct fiber_args *s,
