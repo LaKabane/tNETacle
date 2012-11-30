@@ -361,8 +361,6 @@ pipe_read_cb(struct bufferevent *bev, void *data)
         evbuffer_drain(input, frame_size);
     }
     broadcast_udp_to_peers(s);
-    v_frame_foreach(s->frames_to_send, free_frame);
-    v_frame_clean(s->frames_to_send);
 }
 
 int

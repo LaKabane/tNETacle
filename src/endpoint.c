@@ -37,6 +37,7 @@ endpoint_new(void)
 {
     struct endpoint *e = tnt_new(struct endpoint);
 
+    e->addrlen = sizeof(e->addr);
     return e;
 }
 
@@ -130,7 +131,9 @@ void
 endpoint_assign_sockname(intptr_t socket,
                   struct endpoint *e)
 {
-    getsockname(socket, endpoint_addr(e), &e->addrlen);
+    int ret;
+
+    ret = getsockname(socket, endpoint_addr(e), &e->addrlen);
 }
 
 char const *

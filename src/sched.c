@@ -171,7 +171,7 @@ ssize_t async_recvfrom(struct fiber_args *s,
     res = recvfrom(fd, buf, len, flag, sock, (socklen_t *)socklen);
     if (res == -1)
     {
-        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        if (EVUTIL_SOCKET_ERROR() == TNET_EAGAIN)
         /* There is no pending data, transfert the exe stream*/
         {
             struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
@@ -206,7 +206,7 @@ evutil_socket_t async_accept(struct fiber_args *s,
     res_fd = accept(fd, sock, (socklen_t *)socklen);
     if (res_fd == -1)
     {
-        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        if (EVUTIL_SOCKET_ERROR() == TNET_EAGAIN)
         {
             struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
             struct rw_events *it;
@@ -251,7 +251,7 @@ ssize_t async_recv(struct fiber_args *s,
     ret = recv(fd, buf, len, flags);
     if (ret == -1)
     {
-        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        if (EVUTIL_SOCKET_ERROR() == TNET_EAGAIN)
         {
             struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
             struct rw_events *it;
@@ -283,7 +283,7 @@ ssize_t async_send(struct fiber_args *s,
     ret = send(fd, buf, len, flags);
     if (ret == -1)
     {
-        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        if (EVUTIL_SOCKET_ERROR() == TNET_EAGAIN)
         {
             struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
             struct rw_events *it;
@@ -314,7 +314,7 @@ ssize_t async_read(struct fiber_args *s,
     ret = read(fd, buf, len);
     if (ret == -1)
     {
-        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        if (EVUTIL_SOCKET_ERROR() == TNET_EAGAIN)
         {
             struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
             struct rw_events *it;
@@ -344,7 +344,7 @@ ssize_t async_write(struct fiber_args *s,
     ret = write(fd, buf, len);
     if (ret == -1)
     {
-        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        if (EVUTIL_SOCKET_ERROR() == TNET_EAGAIN)
         {
             struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
             struct rw_events *it;
@@ -377,7 +377,7 @@ ssize_t async_sendto(struct fiber_args *s,
     ret = sendto(fd, buf, len, flags, dst, addrlen);
     if (ret == -1)
     {
-        if (EVUTIL_SOCKET_ERROR() == EAGAIN)
+        if (EVUTIL_SOCKET_ERROR() == TNET_EAGAIN)
         {
             struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
             struct rw_events *it;

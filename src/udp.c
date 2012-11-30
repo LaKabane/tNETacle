@@ -236,6 +236,7 @@ server_udp(void *ctx)
 #endif
         frame_free(&current_frame);
     }
+    sched_fiber_exit(ctx, 1);
 }
 
 void
