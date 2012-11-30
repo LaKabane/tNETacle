@@ -1,9 +1,9 @@
 [submodule "sub/libtclt"]
 	path = sub/libtclt
-	url = git@github.com:LaKabane/libtclt.git
+	url = git://github.com/LaKabane/libtclt.git
 [submodule "sub/libtuntap"]
 	path = sub/libtuntap
-	url = git@github.com:LaKabane/libtuntap
+	url = git://github.com/LaKabane/libtuntap
 [submodule "sub/calm-containers"]
 	path = sub/calm-containers
-	url = git@github.com:drepdash/calm-containers.git
+	url = git://github.com/drepdash/calm-containers.git
