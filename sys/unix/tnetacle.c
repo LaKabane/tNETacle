@@ -43,6 +43,7 @@
 #include "options.h"
 #include "mc.h"
 #include "server.h"
+#include "device.h"
 
 extern struct options serv_opts;
 
