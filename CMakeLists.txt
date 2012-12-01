@@ -211,6 +211,7 @@ if(Linux)
 	add_definitions(-DHAVE_SETRESXID)
         if (ENABLE_BSDCOMPAT AND BSD_FOUND)
 		add_definitions(-DHAVE_BSD_COMPAT)
+                add_definitions(-DHAVE_SETPROCTITLE)
 	endif()
 
         # Linux specifig include directories
