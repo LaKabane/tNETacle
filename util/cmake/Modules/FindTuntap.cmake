@@ -16,10 +16,19 @@ endif()
 libfind_pkg_check_modules(TUNTAP_PKGCONF libtuntap)
 
 find_path(TUNTAP_INCLUDE_DIR tuntap.h
-  PATH ${TUNTAP_PKGCONF_INCLUDE_DIRS}
+        PATHS ${TUNTAP_PKGCONF_INCLUDE_DIRS}
+              ${CMAKE_SOURCE_DIR}/sub/libtuntap/
+              ${CMAKE_BINARY_DIR}/libtuntap/
+              ${CMAKE_BINARY_DIR}/sub/libtuntap/
 )
 
-libfind_library(TUNTAP tuntap)
+# Best effort if we don't find it..
+find_library(TUNTAP_LIBRARY
+        NAMES tuntap
+        PATHS ${CMAKE_SOURCE_DIR}/sub/libtuntap/lib/
+              ${CMAKE_BINARY_DIR}/libtuntap/lib
+              ${CMAKE_BINARY_DIR}/sub/libtuntap/lib
+)
 
 set(TUNTAP_PROCESS_INCLUDES TUNTAP_INCLUDE_DIR)
 set(TUNTAP_PROCESS_LIBS TUNTAP_LIBRARY)
