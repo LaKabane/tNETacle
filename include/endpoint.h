@@ -57,7 +57,7 @@ endpoint_set_port(struct endpoint *e,
                   int port);
 
 void
-endpoint_assign_sockname(int socket,
+endpoint_assign_sockname(intptr_t socket,
                   struct endpoint *e);
 
 char const *

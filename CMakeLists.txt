@@ -105,6 +105,7 @@ set(SOURCES_LIST
   src/dtls.c
   src/subset.c
   src/endpoint.c
+  src/log_extern.c
 )
 
 set(HEADERS_LIST 
@@ -132,6 +133,7 @@ set(HEADERS_LIST
     include/dtls.h
     include/subset.h
     include/endpoint.h
+    include/log_extern.h
 )
 
 # Add Source for LibTclt

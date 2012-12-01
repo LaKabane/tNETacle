@@ -52,16 +52,16 @@ struct mc
 
 int mc_init(struct mc *,
             struct event_base *,
-            int fd,
+            evutil_socket_t fd,
             struct sockaddr *,
             socklen_t len,
             SSL_CTX *server_ctx);
 
 void mc_close(struct mc *);
 
-int mc_add_raw_data(struct mc *,
-                    void *,
-                    size_t);
+size_t mc_add_raw_data(struct mc *,
+                       void *,
+                       size_t);
 
 int mc_hello(struct mc *,
              struct udp *);
@@ -73,7 +73,7 @@ struct mc *mc_peer_accept(struct server *s,
                           struct event_base *evbase,
                           struct sockaddr *sock,
                           int socklen,
-                          int fd);
+                          evutil_socket_t fd);
 
 struct mc *mc_peer_connect(struct server *s,
                            struct event_base *evbase,
@@ -98,3 +98,5 @@ char *address_presentation(struct sockaddr *,
                            char *, int);
 
 #endif /* end of include guard: MC_ENDPOINT_JU2N66SJ */
+
+

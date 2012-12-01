@@ -23,21 +23,24 @@
 struct fiber_args;
 struct map_fd_evl;
 
+enum sched_operation
+{
+    NONE = 0,
+    READ,
+    WRITE,
+    ACCEPT,
+    RECVFROM,
+    SENDTO,
+    SEND,
+    RECV,
+    YIELD,
+    FREE,
+    EVENT,
+};
+
 struct operation
 {
-    enum {
-        NONE = 0,
-        READ,
-        WRITE,
-        ACCEPT,
-        RECVFROM,
-        SENDTO,
-        SEND,
-        RECV,
-        YIELD,
-        FREE,
-        EVENT,
-    } op_type;
+    enum sched_operation op_type;
     intptr_t fd;   /* Used to store the fd if needed */
     intptr_t ret;  
     intptr_t arg1; /* Used to store the first arg, if the 1st is a fd, then we store it twice*/
@@ -93,7 +96,7 @@ void async_sleep(struct fiber_args *args,
                  int sec);
 
 int async_event(struct fiber_args *s,
-                int fd,
+                evutil_socket_t fd,
                 short flag);
 
 intptr_t async_yield(struct fiber_args *S,
@@ -107,47 +110,47 @@ void async_wake(struct fiber *F,
                 intptr_t data);
 
 ssize_t async_sendto(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void const *buf,
                    size_t len,
                    int flag,
                    struct sockaddr const *sock,
-                   int socklen);
+                   socklen_t socklen);
 
 ssize_t async_send(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void const *buf,
                    size_t len,
                    int flag);
 
 ssize_t async_read(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void *buf,
                    size_t len);
 
 ssize_t async_recv(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void *buf,
                    size_t len,
                    int flag);
 
 ssize_t async_write(struct fiber_args *s,
-                    int fd,
+                    evutil_socket_t fd,
                     void const *buf,
                     size_t len);
 
-int async_recvfrom(struct fiber_args *s,
-                   int fd,
+ssize_t async_recvfrom(struct fiber_args *s,
+                   evutil_socket_t fd,
                    char *buf,
                    int len,
                    int flag,
                    struct sockaddr *sock,
-                   int *socklen);
+                   socklen_t *socklen);
 
-int async_accept(struct fiber_args *s,
-                 int fd,
+evutil_socket_t async_accept(struct fiber_args *s,
+                 evutil_socket_t fd,
                  struct sockaddr *sock,
-                 int *socklen);
+                 socklen_t *socklen);
 
 
 #endif /* end of include guard: SCHED_O6L1KITS */

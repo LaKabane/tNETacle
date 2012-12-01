@@ -48,6 +48,7 @@
 #include "wincompat.h"
 #include "device.h"
 #include "frame.h"
+#include "endpoint.h"
 
 #if defined Windows
 
@@ -64,7 +65,7 @@ send_buffer_to_device_thread(struct server *s,
 
 void
 server_set_device(struct server *s,
-                  int fd)
+                  intptr_t fd)
 {
     struct evconnlistener **it = NULL;
     struct evconnlistener **ite = NULL;
@@ -74,8 +75,17 @@ server_set_device(struct server *s,
     /* Enable all the listeners */
     for (; it != ite; it = v_evl_next(it))
     {
+        struct endpoint *listen_endp = endpoint_new();
+        evutil_socket_t fd;
+
+        fd = evconnlistener_get_fd(*it);
+        endpoint_assign_sockname(fd, listen_endp);
+        log_info("[INIT] [TCP] starting server on %s",
+            endpoint_presentation(listen_endp));
         evconnlistener_enable(*it);
+        free(listen_endp);
     }
+    server_udp_launch(s->udp);
     log_info("listeners started");
 }
 
@@ -83,7 +93,7 @@ server_set_device(struct server *s,
 
 void
 server_set_device(struct server *s,
-                  int fd)
+                  intptr_t fd)
 {
     struct evconnlistener **it = NULL;
     struct evconnlistener **ite = NULL;
@@ -100,7 +110,15 @@ server_set_device(struct server *s,
     /* Enable all the listeners */
     for (; it != ite; it = v_evl_next(it))
     {
+        struct endpoint *listen_endp = endpoint_new();
+        evutil_socket_t fd;
+
+        fd = evconnlistener_get_fd(*it);
+        endpoint_assign_sockname(fd, listen_endp);
+        log_info("[INIT] [TCP] starting server on %s",
+            endpoint_presentation(listen_endp));
         evconnlistener_enable(*it);
+        free(listen_endp);
     }
     s->tap_fd = fd;
     s->device_fib = sched_new_fiber(s->ev_sched, server_device, (intptr_t)s);

@@ -84,9 +84,6 @@ int server_init(struct server *,
 
 void server_delete(struct server *);
 
-void server_set_device(struct server *,
-                       int fd);
-
 #if defined Windows
 void broadcast_udp_to_peers(struct server *s);
 

@@ -39,12 +39,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "tnetacle.h"
-#include "tntexits.h"
-#include "options.h"
-#include "log.h"
-#include "tun.h"
-
 /* imsg specific includes */
 #include <sys/uio.h>
 #include <sys/queue.h>
@@ -52,6 +46,13 @@
 #include <pwd.h>
 
 #include <event2/event.h>
+
+#include "tnetacle.h"
+#include "tntexits.h"
+#include "options.h"
+#include "log_extern.h"
+#include "log.h"
+#include "tun.h"
 
 int debug;
 volatile sig_atomic_t sigchld_recv;
@@ -125,31 +126,6 @@ imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
         }
     }
     return ;
-}
-
-static void
-libevent_dump(struct event_base *base)
-{
-    int i;
-    enum event_method_feature f;
-    const char **methods = event_get_supported_methods();
-
-    log_debug("Starting Libevent %s.  Available methods are:",
-             event_get_version());
-    for (i=0; methods[i] != NULL; ++i)
-    {
-        log_debug("	%s", methods[i]);
-    }
-
-    log_debug("Using Libevent with backend method %s.",
-             event_base_get_method(base));
-    f = event_base_get_features(base);
-    if ((f & EV_FEATURE_ET))
-        log_debug("  Edge-triggered events are supported.");
-    if ((f & EV_FEATURE_O1))
-        log_debug("  O(1) event notification is supported.");
-    if ((f & EV_FEATURE_FDS))
-        log_debug("  All FD types are supported.");
 }
 
 int
@@ -229,7 +205,9 @@ main(int argc, char *argv[]) {
         log_err(1, "libevent");
     }
 #endif
-    libevent_dump(evbase);
+    tnet_libevent_dump(evbase);
+    event_set_log_callback(tnet_libevent_log);
+    /* tuntap_log_set_cb(tnet_libtuntap_log); */
 
     sigint = event_new(evbase, SIGINT, EV_SIGNAL, &sig_gen_hdlr, evbase);
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sig_gen_hdlr, evbase);

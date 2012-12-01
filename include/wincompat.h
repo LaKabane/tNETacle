@@ -16,11 +16,12 @@
 
 #ifndef WINCOMPAT_H_
 #define WINCOMPAT_H_
-# if defined Windows
+#if defined Windows
 
 # define WIN32_LEAN_AND_MEAN
 # include <Windows.h>
 # include <stdlib.h> /* For _countof */
+# include <sys/types.h>
 
 /* Avoid redifinition */
 # if !defined __func__
@@ -31,7 +32,7 @@
  * Functions helpers
  */
 # define alloca _alloca
-# define snprintf _snprintf
+# define strcpy(x, y) strcpy_s((x), _countof(x), (y))
 /* From libtuntap's tuntap.h */
 # undef snprintf
 # undef _snprintf
@@ -42,6 +43,7 @@
  * Types helpers
  */
 # define ssize_t SSIZE_T
+typedef unsigned short sa_family_t;
 
 /*
  * Prototypes our reimplementations

@@ -45,7 +45,7 @@ struct fiber_args
 #define VECTOR_TYPE_SCALAR
 #include "vector.h"
 
-struct rw_events *get_events(struct fiber_args *s, int fd, short event)
+struct rw_events *get_events(struct fiber_args *s, evutil_socket_t fd, short event)
 {
     struct rw_events *t;
 
@@ -134,7 +134,7 @@ void sched_fiber_exit(struct fiber_args *s,
 }
 
 int async_event(struct fiber_args *s,
-                int fd,
+                evutil_socket_t fd,
                 short flag)
 {
     struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
@@ -155,16 +155,16 @@ int async_event(struct fiber_args *s,
     s->fib->fib_op.op_type = EVENT;
     s->fib->fib_op.ret = 0;
     coro_transfer(&s->fib->fib_ctx, origin);
-    return s->fib->fib_op.ret;
+    return (int)s->fib->fib_op.ret;
 }
 
-int async_recvfrom(struct fiber_args *s,
-                   int fd,
+ssize_t async_recvfrom(struct fiber_args *s,
+                   evutil_socket_t fd,
                    char *buf,
                    int len,
                    int flag,
                    struct sockaddr *sock,
-                   int *socklen)
+                   socklen_t *socklen)
 {
     struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
     struct rw_events *it;
@@ -181,14 +181,14 @@ int async_recvfrom(struct fiber_args *s,
     s->fib->fib_op.arg5 = (intptr_t)sock;
     s->fib->fib_op.arg6 = (intptr_t)socklen;
     coro_transfer(&s->fib->fib_ctx, origin);
-    return s->fib->fib_op.ret;
+    return (ssize_t)s->fib->fib_op.ret;
 }
 
 
-int async_accept(struct fiber_args *s,
-                 int fd,
+evutil_socket_t async_accept(struct fiber_args *s,
+                 evutil_socket_t fd,
                  struct sockaddr *sock,
-                 int *socklen)
+                 socklen_t *socklen)
 {
     struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
     struct rw_events *it;
@@ -203,7 +203,7 @@ int async_accept(struct fiber_args *s,
     s->fib->fib_op.arg3 = (intptr_t)socklen;
     coro_transfer(&s->fib->fib_ctx, origin);
     evutil_make_socket_nonblocking(s->fib->fib_op.ret);
-    return s->fib->fib_op.ret;
+    return (evutil_socket_t)s->fib->fib_op.ret;
 }
 
 void    async_sleep(struct fiber_args *s,
@@ -219,7 +219,7 @@ void    async_sleep(struct fiber_args *s,
 }
 
 ssize_t async_recv(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void *buf,
                    size_t len,
                    int flags)
@@ -241,7 +241,7 @@ ssize_t async_recv(struct fiber_args *s,
 }
 
 ssize_t async_send(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void const *buf,
                    size_t len,
                    int flags)
@@ -263,7 +263,7 @@ ssize_t async_send(struct fiber_args *s,
 }
 
 ssize_t async_read(struct fiber_args *s,
-                   int fd,
+                   evutil_socket_t fd,
                    void *buf,
                    size_t len)
 {
@@ -283,7 +283,7 @@ ssize_t async_read(struct fiber_args *s,
 }
 
 ssize_t async_write(struct fiber_args *s,
-                    int fd,
+                    evutil_socket_t fd,
                     void const *buf,
                     size_t len)
 {
@@ -303,26 +303,26 @@ ssize_t async_write(struct fiber_args *s,
 }
 
 ssize_t async_sendto(struct fiber_args *s,
-                     int fd,
+                     evutil_socket_t fd,
                      void const *buf,
                      size_t len,
                      int flags,
                      struct sockaddr const *dst,
-                     int addrlen)
+                     socklen_t socklen)
 {
     struct coro_context *origin = s->fib->sched_back_ref->origin_ctx;
     struct rw_events *it;
 
     it = get_events(s, fd, EV_WRITE);
     event_add(it->w_event, NULL);// XXX Check if (it && it->w_event)
-    s->fib->fib_op.op_type = SENDTO;
+    s->fib->fib_op.op_type = SEND;
     s->fib->fib_op.fd = (intptr_t)fd;
     s->fib->fib_op.arg1 = (intptr_t)fd;
     s->fib->fib_op.arg2 = (intptr_t)buf;
     s->fib->fib_op.arg3 = (intptr_t)len;
     s->fib->fib_op.arg4 = (intptr_t)flags;
     s->fib->fib_op.arg5 = (intptr_t)dst;
-    s->fib->fib_op.arg6 = (intptr_t)addrlen;
+    s->fib->fib_op.arg6 = (intptr_t)socklen;
     coro_transfer(&s->fib->fib_ctx, origin);
     return (ssize_t)s->fib->fib_op.ret;
 }
