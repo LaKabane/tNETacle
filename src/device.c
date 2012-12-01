@@ -145,13 +145,16 @@ server_device(void *async_ctx)
         }
 
         if (v_frame_size(s->frames_to_send) > 0)
+        {
             broadcast_udp_to_peers(s);
+        }
+
+        /* Don't forget to free the last allocated frame */
+        /* As we are out of the loop, the last call to frame alloc is useless */
+        frame_free(&tmp);
 
     } while(1);
 
-    /* Don't forget to free the last allocated frame */
-    /* As we are out of the loop, the last call to frame alloc is useless */
-    frame_free(&tmp);
     sched_fiber_exit(async_ctx, -1);
 }
 
