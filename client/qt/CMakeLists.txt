@@ -52,12 +52,12 @@ SET(client_HEADERS
 )
 
 SET(client_FORMS
-    ${CMAKE_CURRENT_LIST_DIR}/qclient.ui
-    ${CMAKE_CURRENT_LIST_DIR}/theader.ui
-    ${CMAKE_CURRENT_LIST_DIR}/bodymain.ui
-    ${CMAKE_CURRENT_LIST_DIR}/bodyaddgroup.ui
-    ${CMAKE_CURRENT_LIST_DIR}/bodyaddcontact.ui
-    ${CMAKE_CURRENT_LIST_DIR}/bodyconnexion.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/qclient.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/theader.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/bodymain.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/bodyaddgroup.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/bodyaddcontact.ui
+    ${CMAKE_CURRENT_LIST_DIR}/ui/bodyconnexion.ui
 )
 
 SET(client_RESOURCES

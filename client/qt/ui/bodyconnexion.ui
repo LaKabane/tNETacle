@@ -14,7 +14,7 @@
    <string>Widget</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../share/img/client.qrc">
+   <iconset resource="../../share/img/client.qrc">
     <normaloff>:/tools/root_notconnected.png</normaloff>:/tools/root_notconnected.png</iconset>
   </property>
   <property name="frameShape">
@@ -96,15 +96,15 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>name</tabstop>
-  <tabstop>adress</tabstop>
-  <tabstop>port</tabstop>
+  <tabstop>_name</tabstop>
+  <tabstop>_adress</tabstop>
+  <tabstop>_port</tabstop>
+  <tabstop>_pubKey</tabstop>
   <tabstop>selectPubKey</tabstop>
-  <tabstop>isOk</tabstop>
-  <tabstop>pubKey</tabstop>
+  <tabstop>_isOk</tabstop>
  </tabstops>
  <resources>
-  <include location="../share/img/client.qrc"/>
+  <include location="../../share/img/client.qrc"/>
  </resources>
  <connections/>
 </ui>

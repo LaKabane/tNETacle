@@ -14,7 +14,7 @@
    <string>Widget</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../share/img/client.qrc">
+   <iconset resource="../../share/img/client.qrc">
     <normaloff>:/tools/root_notconnected.png</normaloff>:/tools/root_notconnected.png</iconset>
   </property>
   <property name="frameShape">
@@ -97,8 +97,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>listContacts</tabstop>
+  <tabstop>groupName</tabstop>
+  <tabstop>lineEdit_2</tabstop>
+  <tabstop>newContact</tabstop>
+  <tabstop>isOk</tabstop>
+ </tabstops>
  <resources>
-  <include location="../share/img/client.qrc"/>
+  <include location="../../share/img/client.qrc"/>
  </resources>
  <connections/>
 </ui>

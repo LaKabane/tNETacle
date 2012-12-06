@@ -68,7 +68,9 @@
  </widget>
  <tabstops>
   <tabstop>name</tabstop>
+  <tabstop>ip</tabstop>
   <tabstop>pubKey</tabstop>
+  <tabstop>selectPubKey</tabstop>
   <tabstop>okOrReject</tabstop>
  </tabstops>
  <resources/>

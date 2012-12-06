@@ -52,6 +52,9 @@
    </property>
   </widget>
  </widget>
+ <tabstops>
+  <tabstop>config</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
