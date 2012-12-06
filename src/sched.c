@@ -405,6 +405,8 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
                     fib->fib_op.ret = accept(fib->fib_op.arg1,
                                              (struct sockaddr *)fib->fib_op.arg2,
                                              (socklen_t *)fib->fib_op.arg3);
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             case RECVFROM:
@@ -415,6 +417,8 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
                                                (int)fib->fib_op.arg4,
                                                (struct sockaddr *)fib->fib_op.arg5,
                                                (socklen_t *)fib->fib_op.arg6);
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             case RECV:
@@ -423,6 +427,8 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
                                            (void *)fib->fib_op.arg2,
                                            (size_t)fib->fib_op.arg3,
                                            (int)fib->fib_op.arg4);
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             case READ:
@@ -430,15 +436,19 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
                     fib->fib_op.ret = read(fib->fib_op.arg1,
                                            (void *)fib->fib_op.arg2,
                                            (size_t)fib->fib_op.arg3);
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             case EVENT:
                 {
                     fib->fib_op.ret |= EV_READ;
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             default:
-                    log_warnx("[sched] syscall not implemented");
+                log_warnx("[sched] syscall not implemented");
         }
     }
     else if (event & EV_WRITE)
@@ -451,28 +461,36 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
                                            (void *)fib->fib_op.arg2,
                                            (size_t)fib->fib_op.arg3,
                                            (int)fib->fib_op.arg4);
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             case SENDTO:
                 {
                     fib->fib_op.ret = sendto(fib->fib_op.arg1,
-                                           (void *)fib->fib_op.arg2,
-                                           (size_t)fib->fib_op.arg3,
-                                           (int)fib->fib_op.arg4,
-                                           (struct sockaddr *)fib->fib_op.arg5,
-                                           (int)fib->fib_op.arg6);
+                                             (void *)fib->fib_op.arg2,
+                                             (size_t)fib->fib_op.arg3,
+                                             (int)fib->fib_op.arg4,
+                                             (struct sockaddr *)fib->fib_op.arg5,
+                                             (int)fib->fib_op.arg6);
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             case WRITE:
                 {
                     fib->fib_op.ret = write(fib->fib_op.arg1,
-                                           (void const *)fib->fib_op.arg2,
-                                           (size_t)fib->fib_op.arg3);
+                                            (void const *)fib->fib_op.arg2,
+                                            (size_t)fib->fib_op.arg3);
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             case EVENT:
                 {
                     fib->fib_op.ret |= EV_WRITE;
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             default:
@@ -485,19 +503,20 @@ void sched_dispatch(evutil_socket_t fd, short event, void *ctx)
         {
             case YIELD:
                 {
-                    /* noting ! */
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                     break;
                 }
             case EVENT:
                 {
                     fib->fib_op.ret |= EV_TIMEOUT;
+                    S->origin_ctx = &cctx;
+                    coro_transfer(&cctx, &fib->fib_ctx);
                 }
             default:
                 break;
         }
     }
-    S->origin_ctx = &cctx;
-    coro_transfer(&cctx, &fib->fib_ctx);
     if (fib->fib_op.op_type == FREE)
     {
         free(fib->fib_stack);
