@@ -357,9 +357,12 @@ void async_wake(struct fiber *F,
                 intptr_t data)
 {
     (void)data;
-    event_active(F->yield_event,
-                 EV_TIMEOUT,
-                 /* Unused */0);
+    if (event_pending(F->yield_event, EV_TIMEOUT, NULL) == 0)
+    {
+        event_active(F->yield_event,
+                     EV_TIMEOUT,
+                     /* Unused */0);
+    }
 }
 
 
