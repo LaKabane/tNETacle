@@ -25,6 +25,7 @@ include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local OPTIONAL)
 find_package(Yajl REQUIRED)
 find_package(Tuntap)
 find_package(OpenSSL REQUIRED)
+find_package(TinyDTLS REQUIRED)
 
 if (ClientQT)
   find_package(Tclt REQUIRED)
@@ -39,6 +40,8 @@ endif()
 if (NOT TUNTAP_FOUND)
     find_package(Tapcfg REQUIRED)
 endif()
+
+
 
 # Global CPP definitions
 # ----------------------
@@ -65,6 +68,7 @@ include_directories(${EVENT_INCLUDE_DIR})
 #include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${YAJL_INCLUDE_DIR})
 include_directories(${OPENSSL_INCLUDE_DIR})
+include_directories(${TINYDTLS_INCLUDE_DIR})
 include_directories(${TCLT_INCLUDE_DIR})
 
 if (${CALM_INCLUDE_DIR})
@@ -102,7 +106,6 @@ set(SOURCES_LIST
   src/frame.c
   src/coro.c
   src/sched.c
-  src/dtls.c
   src/subset.c
   src/endpoint.c
   src/log_extern.c
@@ -131,7 +134,6 @@ set(HEADERS_LIST
     include/frame.h
     include/coro.h
     include/tntsched.h
-    include/dtls.h
     include/subset.h
     include/endpoint.h
     include/log_extern.h
@@ -279,6 +281,7 @@ add_executable(tNETacle ${SOURCES_LIST})
 target_link_libraries(tNETacle
         ${EVENT_LIBRARIES}
         ${YAJL_LIBRARIES}
+        ${TINYDTLS_LIBRARIES}
         ${OPENSSL_LIBRARIES}
 )
 # ${ZLIB_LIBRARY}

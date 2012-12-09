@@ -13,7 +13,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
 **/
 
-
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -35,6 +34,9 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+
+#include <dtls.h>
+#include <debug.h>
 
 #include "networking.h"
 #include "udp.h"
@@ -68,13 +70,6 @@ find_bev(struct mc const *a, void *ctx)
 {
     struct bufferevent *bev = ctx;
     return a->bev == bev;
-}
-
-static int
-find_udppeer(struct udp_peer const *a, void *ctx)
-{
-    struct sockaddr *s = ctx;
-    return !evutil_sockaddr_cmp(endpoint_addr(&a->peer_addr), s, 0);
 }
 
 char *next_token(char *ptr, char **saveit, char const *delimit)
@@ -150,10 +145,7 @@ server_mc_read_cb(struct bufferevent *bev, void *ctx)
                           mc->p.len);
 
             endpoint_set_port(&udp_remote_endpoint, port);
-
-            udp_register_new_peer(s->udp,
-                                  &udp_remote_endpoint,
-                                  DTLS_DISABLE);
+            udp_connect(s->udp, &udp_remote_endpoint);
         }
         v_cptr_delete(splited);
         free(line);
@@ -222,14 +214,12 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             v_mc_erase(s->pending_peers, mc);
             mc = v_mc_insert(s->peers, &tmp);
             mc_hello(mc, s->udp);
-            mc_establish_tunnel(mc, s->udp);
         }
     }
     else if (events & BEV_EVENT_EOF)
     {
         /* Disconnected */
         struct mc *mc;
-        struct udp_peer *up;
 
         mc = v_mc_find_if(s->peers, (void *)find_bev, bev);
         if (mc != v_mc_end(s->peers))
@@ -237,14 +227,6 @@ server_mc_event_cb(struct bufferevent *bev, short events, void *ctx)
             char name[INET6_ADDRSTRLEN];
             struct sockaddr *sock = mc->p.address;
 
-            up = v_udp_find_if(s->udp->udp_peers, find_udppeer, sock);
-            if (up != v_udp_end(s->udp->udp_peers))
-            {
-                v_udp_erase(s->udp->udp_peers, up);
-                log_debug("[%s] stop peering with %s",
-                          (up->ssl_flags & DTLS_ENABLE) ? "DTLS" : "UDP",
-                          endpoint_presentation(&up->peer_addr));
-            }
             log_debug("[META] stop the meta-connexion with %s",
                       mc_presentation(mc, name, sizeof(name)));
             mc_close(mc);
@@ -330,6 +312,7 @@ listen_callback(struct evconnlistener *evl,
     {
         server_mc_event_cb(mc->bev, BEV_EVENT_CONNECTED, s);
     }
+    mc_establish_tunnel(mc, s->udp);
 }
 
 int
@@ -433,6 +416,15 @@ server_init(struct server *s, struct event_base *evbase)
     ite_listen = v_sockaddr_end(serv_opts.listen_addrs);
     s->ev_sched = sched_new(evbase);
 
+    /* udp endpoint init */
+    /* first we initialize tinydtls, cannot fail */
+    dtls_init();
+    set_log_level(LOG_DEBUG);
+
+    s->udp = udp_new(s);
+    if (s->udp == NULL)
+        return -1;
+
     /* Listen on all ListenAddress */
     for (; it_listen != ite_listen; it_listen = v_sockaddr_next(it_listen), ++i)
     {
@@ -452,25 +444,20 @@ server_init(struct server *s, struct event_base *evbase)
         evconnlistener_set_error_cb(evl, NULL);
         evconnlistener_disable(evl);
 
-        /* udp endpoint init */
-
         /*
          * We listen on the same address for the udp socket
          */
         endpoint_init(&endp, (struct sockaddr *)&it_listen->sockaddr,
                       it_listen->len);
-        s->udp = server_udp_new(s, &endp);
-        if (s->udp == NULL)
-        {
-            log_warnx("[INIT] [UDP] failed to init the udp socket on %s",
-                  address_presentation((struct sockaddr *)&it_listen->sockaddr,
-                                           it_listen->len, listenname,
-                                           sizeof listenname));
+        if (udp_bind(s->udp, &endp) == -1)
             continue;
-        }
+
+        memcpy(&s->udp->udp_endpoint, &endp, sizeof(s->udp->udp_endpoint));
 
         v_evl_push(s->srv_list, evl);
     }
+
+    udp_launch(s->udp);
 
 	// Listen enable for client in the ports registered
     it_client = v_sockaddr_begin(serv_opts.client_addrs);
@@ -535,7 +522,7 @@ void server_delete(struct server *s)
 {
     /* Start by the servers */
     v_evl_foreach(s->srv_list, evconnlistener_free);
-    server_udp_exit(s->udp);
+    udp_exit(s->udp);
 
     /* Clean the vectors */
     v_mc_foreach(s->pending_peers, (void (*)(struct mc const *))mc_close);

@@ -7,3 +7,6 @@
 [submodule "sub/calm-containers"]
 	path = sub/calm-containers
 	url = git://github.com/drepdash/calm-containers.git
+[submodule "sub/tinydtls"]
+	path = sub/tinydtls
+	url = git://github.com/LaKabane/tinydtls.git

@@ -122,7 +122,6 @@ server_set_device(struct server *s,
     }
     s->tap_fd = fd;
     s->device_fib = sched_new_fiber(s->ev_sched, server_device, (intptr_t)s);
-    server_udp_launch(s->udp);
     sched_fiber_launch(s->device_fib);
     log_info("listener started");
 }
@@ -151,26 +150,18 @@ server_device(void *async_ctx)
         async_event(async_ctx, tap_fd, EV_READ);
         while ((n = read(tap_fd, tmp.frame, FRAME_DYN_SIZE)) != -1)
         {
+            dtls_peer_t *p = NULL;
+
             if (n == -1)
             {
                 log_warn("[TAP] read on the device failed");
                 break;
             }
-            /* Can we read more than a ushort ? */
             tmp.size = (unsigned short)n;
-            v_frame_push(s->frames_to_send, &tmp);
-            frame_alloc(&tmp, FRAME_DYN_SIZE);
+            udp_broadcast(s->udp, tmp.frame, tmp.size);
         }
 
-        if (v_frame_size(s->frames_to_send) > 0)
-        {
-            broadcast_udp_to_peers(s);
-        }
-
-        /* Don't forget to free the last allocated frame */
-        /* As we are out of the loop, the last call to frame alloc is useless */
         frame_free(&tmp);
-
     } while(1);
 
     sched_fiber_exit(async_ctx, -1);
