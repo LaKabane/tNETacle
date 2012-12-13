@@ -21,7 +21,6 @@ SET(client_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/modellog.cpp
     ${CMAKE_CURRENT_LIST_DIR}/protocol.cpp
     ${CMAKE_CURRENT_LIST_DIR}/network.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/theader.cpp
     ${CMAKE_CURRENT_LIST_DIR}/bodyconnexion.cpp
     ${CMAKE_CURRENT_LIST_DIR}/bodymain.cpp
@@ -48,7 +47,6 @@ SET(client_HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/include/modellog.h
     ${CMAKE_CURRENT_LIST_DIR}/include/protocol.h
     ${CMAKE_CURRENT_LIST_DIR}/include/network.h
-    ${CMAKE_CURRENT_LIST_DIR}/include/utils.h
 )
 
 SET(client_FORMS
