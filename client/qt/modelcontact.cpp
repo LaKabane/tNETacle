@@ -32,6 +32,8 @@ void  ModelContact::print()
 
 void  ModelContact::feedData(const QString& command, const QVariant& data)
 {
+    (void)command;
+    (void)data;
 }
 
 const QString& ModelContact::getObjectName() const
