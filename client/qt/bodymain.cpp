@@ -40,7 +40,7 @@ void
 BodyMain::deleteContact()
 {
     QList<QTreeWidgetItem*> peers = _listContacts->selectedItems();
-    for (unsigned int i = 0; i < peers.size(); ++i)
+    for (int i = 0; i < peers.size(); ++i)
     {
         QTreeWidgetItem* peer = peers[i];
         QString name = peer->text(0);
