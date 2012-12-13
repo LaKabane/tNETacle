@@ -148,8 +148,7 @@ add_peer(void *f, void *internal)
 static int
 delete_peer(void *f, void *internal)
 {
-    char *c = (char*)f;
-
+    (void)f;
     (void)internal;
     return 0;
 }
