@@ -51,12 +51,14 @@ Controller::Controller() :
 
 void Controller::feedData(const QVariant& data)
 {
+    (void)data;
 }
 
 int
 Controller::add_peer_controll(void *f, void *internal)
 {
     peer *p = static_cast<peer*>(f);
+    (void)internal;
 
     BodyMain* view = dynamic_cast<BodyMain*>(BodyMain::get(0, 0));
     if(view != 0)
@@ -70,6 +72,7 @@ int
 Controller::add_log_controll(void *f, void *internal)
 {
     char *str = static_cast<char*>(f);
+    (void)internal;
 
     std::cout << "add log :" << str << std::endl;
     return 0;
@@ -80,6 +83,7 @@ Controller::delete_peer_controll(void *f, void *internal)
 {
     char *str = static_cast<char*>(f);
     QString str2(str);
+    (void)internal;
     qDebug() << str2;
 
     return 0;
@@ -88,6 +92,8 @@ Controller::delete_peer_controll(void *f, void *internal)
 int
 Controller::edit_peer_controll(void *f, void*internal)
 {
+    (void)f;
+    (void)internal;
     std::cout << "edit peer" << std::endl;
     return 0;
 }
@@ -103,11 +109,13 @@ Controller::init_callback()
 
 void Controller::appendLog(const QString& s)
 {
+    (void)s;
     //this->_view->appendLog(s);
 }
 
 void Controller::editContact(QListWidgetItem* item)
 {
+    (void)item;
     try {
         /*this->_view->createAddContact(item->text(),
                                       dynamic_cast<ModelContact*>(_modelContacts)->getKey(item->text()),
@@ -132,6 +140,7 @@ quint16 Controller::getPort() const
 
 void Controller::error(const QString &s)
 {
+    (void)s;
     //this->_view->printError(s);
 }
 
@@ -139,7 +148,6 @@ void Controller::deleteContact(const QString& name)
 {
     try
     {
-        //dynamic_cast<ModelContact*>(this->_modelContacts)->delContact(v);
         this->writeToSocket(tclt_delete_peer(name.toStdString().c_str()));
     }
     catch (Exception *e)
@@ -206,8 +214,7 @@ bool Controller::addContact()
 
 void Controller::editRootNode()
 {
-    ModelRootNode* root = dynamic_cast<ModelRootNode*>(_modelNode);
-    bool ok;
+    //ModelRootNode* root = dynamic_cast<ModelRootNode*>(_modelNode);
     //this->_view->createRootNodeGui(root->getName(),  root->getKey(), root->getIP(), root->getPort().toUShort(&ok));
 }
 
@@ -405,11 +412,6 @@ void Controller::disconnected()
 void Controller::writeToSocket(const QString& buff)
 {
     _network.write(buff);
-}
-
-void Controller::printError(const QString& message)
-{
-    error(message);
 }
 
 void Controller::viewAddContact()

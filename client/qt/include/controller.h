@@ -53,7 +53,6 @@ public:
 
   const QMap<QString, QVariant>* getConfigMenu() const;
 
-  void			printError(const QString&);
   void          setGui(IClient* gui) {_view = gui;}
   void          setConnexionParam();
 

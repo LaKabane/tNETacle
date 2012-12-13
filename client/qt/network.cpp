@@ -52,7 +52,7 @@ void Network::read()
     }
     catch (Exception* e)
     {
-        this->_controller.printError(e->getMessage());
+        this->_controller.error(e->getMessage());
         delete e;
     }
 }
