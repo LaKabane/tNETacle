@@ -31,6 +31,9 @@ class BodyAddGroup : public QFrame, public Ui::BodyAddGroup
 public:
     explicit BodyAddGroup(QWidget *parent = 0, Controller* controller = 0);
     ~BodyAddGroup() {}
+
+private:
+    Controller* _controller;
 };
 
 #endif // BODYADDGROUP_H

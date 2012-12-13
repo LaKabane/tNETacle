@@ -17,7 +17,7 @@
 #include "bodyaddgroup.h"
 
 BodyAddGroup::BodyAddGroup(QWidget *parent, Controller *controller) :
-    QFrame(parent)
+    QFrame(parent), _controller(controller)
 {
     this->setupUi(this);
 }
