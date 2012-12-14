@@ -50,7 +50,7 @@ QString BodyAddContact::getNewContactKey() const
 
 QString BodyAddContact::getContactIp() const
 {
-  return (this->ip->text());
+    return (this->adress->text() + ":" + this->port->text());
 }
 
 void BodyAddContact::sendContact() {
@@ -70,5 +70,6 @@ BodyAddContact::cleanField()
 {
     this->name->clear();
     this->pubKey->clear();
-    this->ip->clear();
+    this->adress->clear();
+    this->port->clear();
 }
