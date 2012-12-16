@@ -53,6 +53,7 @@
 #include "log_extern.h"
 #include "log.h"
 #include "tun.h"
+#include "utility.h"
 
 int debug;
 volatile sig_atomic_t sigchld_recv;
@@ -108,7 +109,7 @@ sig_gen_hdlr(evutil_socket_t sig, short events, void *args) {
 }
 
 static void
-imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
+imsg_callback_handler_et(evutil_socket_t fd, short events, void *args) {
     (void)fd;
     struct imsg_data *data = args;
 
@@ -126,6 +127,60 @@ imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
         }
     }
     return ;
+}
+
+static void
+imsg_callback_handler_non_et(evutil_socket_t fd, short events, void *args) {
+    (void)fd;
+    struct imsg_data *data = args;
+
+    if (events & EV_READ)
+    {
+        dispatch_imsg(data->ibuf);
+    }
+    if (events & EV_WRITE)
+    {
+        msgbuf_write(&data->ibuf->w);
+    }
+}
+
+static struct event *
+init_pipe_endpoint_priv(int imsg_fds[2],
+                        struct imsg_data *data,
+                        struct imsgbuf *ibuf,
+                        struct event_base *evbase)
+{
+    enum event_method_feature f;
+
+    f = event_base_get_features(evbase);
+    if (close(imsg_fds[1]))
+        log_notice("close");
+
+    data->evbase = evbase;
+
+    data->is_ready_write = 0;
+    data->is_ready_read = 0;
+    imsg_init(ibuf, imsg_fds[0]);
+    data->ibuf = ibuf;
+
+    if ((f & EV_FEATURE_ET))
+    {
+        evutil_make_socket_nonblocking(imsg_fds[0]);
+        data->event = event_new(evbase,
+                                imsg_fds[0],
+                                EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
+                                &imsg_callback_handler_et,
+                                data);
+    }
+    else /*Not an edge-triggered backend */
+    {
+        data->event = event_new(evbase,
+                                imsg_fds[0],
+                                EV_READ | EV_PERSIST,
+                                &imsg_callback_handler_non_et,
+                                data);
+    }
+    return data->event;
 }
 
 int
@@ -193,9 +248,7 @@ main(int argc, char *argv[]) {
     chld_pid = tnt_fork(imsg_fds);
 
 #if defined(Darwin)
-    event_config_avoid_method(evcfg, "kqueue");
-    event_config_avoid_method(evcfg, "poll");
-    event_config_avoid_method(evcfg, "devpoll");
+    evutil_select_backend(evcfg, "select");
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
         log_err(1, "libevent");
     }
@@ -213,21 +266,9 @@ main(int argc, char *argv[]) {
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sig_gen_hdlr, evbase);
     sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sig_gen_hdlr, evbase);
 
-    if (close(imsg_fds[1]))
-        log_notice("close");
+    data.event = init_pipe_endpoint_priv(imsg_fds, &data, &ibuf, evbase);
 
-    data.evbase = evbase;
-    data.is_ready_write = 0;
-    data.is_ready_read = 0;
-    data.ibuf = &ibuf;
-    imsg_init(&ibuf, imsg_fds[0]);
-    evutil_make_socket_nonblocking(imsg_fds[0]);
-    event = event_new(evbase, imsg_fds[0],
-              EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
-              &imsg_callback_handler, &data);
-    data.event = event;
-
-    event_add(event, NULL);
+    event_add(data.event, NULL);
     event_add(sigint, NULL);
     event_add(sigterm, NULL);
     event_add(sigchld, NULL);
@@ -306,8 +347,8 @@ dispatch_imsg(struct imsgbuf *ibuf) {
                 dev = tnt_ttc_open(serv_opts.tunnel);
                 if (dev != NULL) {
                     fd = tnt_ttc_get_fd(dev);
-                    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
-                                 NULL, 0);
+                    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd, NULL, 0);
+                    msgbuf_write(&ibuf->w);
                 } else {
                     log_warn("Can't open a tun device:");
                 }

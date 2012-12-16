@@ -43,6 +43,7 @@
 #include "options.h"
 #include "mc.h"
 #include "server.h"
+#include "utility.h"
 
 extern struct options serv_opts;
 
@@ -59,7 +60,7 @@ volatile sig_atomic_t chld_quit;
 int tnt_dispatch_imsg(struct imsg_data *);
 
 static void
-tnt_imsg_callback(evutil_socket_t fd, short events, void *args) {
+tnt_imsg_callback_et(evutil_socket_t fd, short events, void *args) {
     (void)fd;
     struct imsg_data *data = args;
     struct imsgbuf *ibuf = data->ibuf;
@@ -75,6 +76,22 @@ tnt_imsg_callback(evutil_socket_t fd, short events, void *args) {
             if (msgbuf_write(&ibuf->w) == -1)
                 data->is_ready_write = 0;
         }
+    }
+}
+
+static void
+tnt_imsg_callback_non_et(evutil_socket_t fd, short events, void *args) {
+    (void)fd;
+    struct imsg_data *data = args;
+    struct imsgbuf *ibuf = data->ibuf;
+
+    if (events & EV_READ)
+    {
+        tnt_dispatch_imsg(data);
+    }
+    if (events & EV_WRITE)
+    {
+        msgbuf_write(&ibuf->w);
     }
 }
 
@@ -134,19 +151,32 @@ tnt_priv_drop(struct passwd *pw) {
 }
 
 static struct event *
-init_pipe_endpoint(int imsg_fds[2], struct imsg_data *data) {
+init_pipe_endpoint_unpriv(int imsg_fds[2],
+                          struct imsg_data *data,
+                          struct event_base *evbase) {
     struct event *event = NULL;
+    enum event_method_feature f;
 
+    f = event_base_get_features(evbase);
     if (close(imsg_fds[0]))
         log_notice("close");
 
     data->is_ready_write = 0;
     data->is_ready_read = 0;
     imsg_init(data->ibuf, imsg_fds[1]);
-    evutil_make_socket_nonblocking(imsg_fds[1]);
-    event = event_new(data->evbase, imsg_fds[1],
-                      EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
-                      &tnt_imsg_callback, data);
+    if ((f & EV_FEATURE_ET))
+    {
+        evutil_make_socket_nonblocking(imsg_fds[1]);
+        event = event_new(data->evbase, imsg_fds[1],
+                          EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
+                          &tnt_imsg_callback_et, data);
+    }
+    else /*Not an edge-triggered backend */
+    {
+        event = event_new(data->evbase, imsg_fds[1],
+                          EV_READ | EV_PERSIST,
+                          &tnt_imsg_callback_non_et, data);
+    }
     return event;
 }
 
@@ -204,9 +234,7 @@ tnt_fork(int imsg_fds[2]) {
 
 #if defined(Darwin)
     /* It's sad isn't it ?*/
-    event_config_avoid_method(evcfg, "kqueue");
-    event_config_avoid_method(evcfg, "poll");
-    event_config_avoid_method(evcfg, "devpoll");
+    evutil_select_backend(evcfg, "select");
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
         log_err(1, "libevent");
     }
@@ -229,7 +257,7 @@ tnt_fork(int imsg_fds[2]) {
     data.ibuf = &ibuf;
     data.evbase = evbase;
     data.server = &server;
-    imsg_event = init_pipe_endpoint(imsg_fds, &data);
+    imsg_event = init_pipe_endpoint_unpriv(imsg_fds, &data, evbase);
 
     event_add(sigterm, NULL);
     event_add(sigint, NULL);
@@ -239,6 +267,7 @@ tnt_fork(int imsg_fds[2]) {
 
     /* Immediately request the creation of a tun interface */
     imsg_compose(&ibuf, IMSG_CREATE_DEV, 0, 0, -1, NULL, 0);
+    msgbuf_write(&ibuf.w);
 
     log_info("starting event loop");
     event_base_dispatch(evbase);
@@ -302,6 +331,7 @@ tnt_dispatch_imsg(struct imsg_data *data) {
                 /* directly ask to configure the tun device */
                 imsg_compose(ibuf, IMSG_SET_IP, 0, 0, -1,
                              serv_opts.addr , strlen(serv_opts.addr));
+                msgbuf_write(&ibuf->w);
                 break;
             default:
                 break;
