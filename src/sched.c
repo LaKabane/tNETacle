@@ -551,7 +551,7 @@ struct fiber *sched_new_fiber(struct sched *S,
     struct fiber_args *args;
     struct fiber *new_fiber;
     void *stack_space;
-    size_t stack_size = 1 << 14;
+    size_t stack_size = 1 << 15;
         
     args = malloc(sizeof(struct fiber_args));
     new_fiber = malloc(sizeof(struct fiber));
