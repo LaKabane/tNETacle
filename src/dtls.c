@@ -220,7 +220,7 @@ dtls_sendto(int sockfd,
 }
 
 static int
-find_peer(struct udp_peer const *P, void *ctx) 
+find_peer(struct udp_peer const *P, void *ctx)
 {
     struct sockaddr *addr = ctx;
     return !evutil_sockaddr_cmp((struct sockaddr *)&P->peer_addr.addr, addr, 1);
@@ -246,7 +246,7 @@ dtls_recvfrom(int sockfd,
                          sizeof(tbuf),
                          flags,
                          addr,
-                         socklen);
+                         (socklen_t *)socklen);
     if (nread == -1)
     {
         log_warn("[DTLS] async_recvfrom");

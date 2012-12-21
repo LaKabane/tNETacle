@@ -48,7 +48,7 @@ forward_udp_frame_to_other_peers(void *async_ctx,
                                  struct frame *current_frame,
                                  struct sockaddr *current_sockaddr,
                                  unsigned int
-                                 current_socklen) 
+                                 current_socklen)
 {
     struct udp_peer *it = NULL;
     struct udp_peer *ite = NULL;
@@ -67,7 +67,7 @@ forward_udp_frame_to_other_peers(void *async_ctx,
         {
             continue;
         }
-        
+
         err = async_sendto(async_ctx,
                            udp->fd,
                            current_frame->raw_packet,
@@ -95,7 +95,7 @@ udp_register_new_peer(struct udp *udp,
                       struct endpoint *remote,
                       int ssl_flags)
 {
-    struct udp_peer tmp_udp; 
+    struct udp_peer tmp_udp;
     struct endpoint *e = &tmp_udp.peer_addr;
 
     memset(&tmp_udp, 0, sizeof(tmp_udp));
@@ -324,7 +324,7 @@ server_udp_new(struct server *s,
 {
     int err;
     struct udp *udp;
-    
+
     udp = tnt_new(struct udp);
     if (udp == NULL)
     {
@@ -356,7 +356,7 @@ frame_recvfrom(void *ctx,
                          sizeof(struct packet_hdr),
                          MSG_PEEK,
                          saddr,
-                         (int *)socklen);
+                         (socklen_t *)socklen);
     /*
     ** Sometimes, on some OS, recvfrom return EMSGSIZE when the size of the
     ** peeked buffer is not enough to read the entire datagram.
@@ -393,6 +393,3 @@ udp_get_port(struct udp *udp)
 {
     return endpoint_port(&udp->udp_endpoint);
 }
-
-
-
