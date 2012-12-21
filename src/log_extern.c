@@ -52,6 +52,9 @@ tnet_libevent_log(int severity, const char *msg) {
 
 void
 tnet_libtuntap_log(int severity, const char *msg) {
+    /* Unused until libtuntap become the only supported backend */
+    (void)severity;
+    (void)msg;
 #if 0
     switch (severity) {
     case TUNTAP_LOG_DEBUG:
