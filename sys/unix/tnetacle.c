@@ -46,7 +46,6 @@
 #include "utility.h"
 #include "device.h"
 
-
 extern struct options serv_opts;
 
 struct imsg_data {
