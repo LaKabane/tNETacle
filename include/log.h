@@ -16,12 +16,20 @@
 
 #include <sys/types.h>
 #include <stdarg.h>
+#include <syslog.h>
 
 #ifndef LOG_H__
 #define LOG_H__
 
+#define TNET_LOG_ERROR   LOG_EMERG /* Is generaly 0 */
+#define TNET_LOG_WARNING LOG_WARNING
+#define TNET_LOG_NOTICE  LOG_NOTICE
+#define TNET_LOG_INFO    LOG_INFO
+#define TNET_LOG_DEBUG   LOG_DEBUG
+
 void		 log_init(void);
 void		 log_set_prefix(char *);
+void		 log_set_filter(int);
 void		 log_err(int, const char *, ...);
 void		 log_errx(int, const char *, ...);
 void		 log_warn(const char *, ...);

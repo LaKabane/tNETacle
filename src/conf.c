@@ -41,6 +41,7 @@
 
 #include "tnetacle.h"
 #include "options.h"
+#include "log.h"
 
 extern int debug;
 struct options serv_opts;
@@ -60,7 +61,6 @@ init_options(struct options *opt) {
     opt->tunnel_index = -1;
     opt->mode = TNT_DAEMONMODE_ROUTER;
 
-    opt->debug = 0;
     opt->compression = 1;
     opt->encryption = 1;
 
@@ -189,8 +189,6 @@ int yajl_boolean(void *lctx, int val) {
         serv_opts.compression = val;
     } else if (strncmp("Encryption", (const char *)ctx->map, ctx->len) == 0) {
         serv_opts.encryption = val;
-    } else if (strncmp("Debug", (const char *)ctx->map, ctx->len) == 0) {
-        serv_opts.debug = val;
     } else {
         char *s;
 
@@ -345,13 +343,39 @@ int yajl_string(void *lctx, const unsigned char *str, size_t len) {
         } else
             add_sockaddr(serv_opts.listen_addrs, bufaddr);
         add_client_addrs_ports(serv_opts.addr_family, serv_opts.cports);
+    } else if (strncmp("LogLevel", (const char *)ctx->map, ctx->len) == 0) {
+        switch (str[0]) {
+        case 'E':
+        case 'e':
+	    log_set_filter(TNET_LOG_ERROR);
+            break;
+        case 'W':
+        case 'w':
+	    log_set_filter(TNET_LOG_WARNING);
+            break;
+        case 'I':
+        case 'i':
+	    log_set_filter(TNET_LOG_INFO);
+            break;
+        case 'N':
+        case 'n':
+	    log_set_filter(TNET_LOG_NOTICE);
+            break;
+        case 'D':
+        case 'd':
+	    log_set_filter(TNET_LOG_DEBUG);
+            break;
+        default:
+	    log_set_filter(TNET_LOG_INFO);
+            break;
+        }
     } else {
         char *s;
 
         s = alloca(ctx->len);
         (void)memcpy(s, ctx->map, ctx->len);
         s[ctx->len] = '\0';
-        fprintf(stderr, "%s: unknown variable\n", s);
+        (void)fprintf(stderr, "%s: unknown variable\n", s);
         return -1;
     }
     return 1;
@@ -439,7 +463,6 @@ tnt_parse_buf(char *p, size_t size) {
 		return -1;
 	}
 
-    debug = serv_opts.debug;
     if (serv_opts.ports[0] == -1)
         serv_opts.ports[0] = TNETACLE_DEFAULT_PORT;
     if (serv_opts.cports[0] == -1)

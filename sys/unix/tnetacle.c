@@ -243,7 +243,6 @@ tnt_fork(int imsg_fds[2]) {
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
         log_err(1, "libevent");
     }
-    tnet_libevent_dump(evbase);
 
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);

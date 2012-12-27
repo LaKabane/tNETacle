@@ -43,7 +43,6 @@ struct options {
     int tunnel_index;              /* Force the device instance number */
     int mode;                      /* Server mode: router, switch or hub */
 
-    int debug;                     /* If true debug is allowed */
     int compression;               /* If true compression is allowed */
     int encryption;                /* If true encryption is allowed */
 

@@ -29,15 +29,20 @@
 #include "log.h"
 
 extern int debug;
-static char *prefix = "";
+
+static char *log_prefix = "";
+static int   log_filter = TNET_LOG_DEBUG;
 
 static void
 vlog(int pri, const char *fmt, va_list ap) {
 	char	*nfmt;
 
 	if (debug == 1) {
+		if (pri > log_filter)
+			return;
+
 		/* best effort in out of mem situations */
-		if (asprintf(&nfmt, "[%s] %s\n", prefix, fmt) == -1) {
+		if (asprintf(&nfmt, "[%s] %s\n", log_prefix, fmt) == -1) {
 			vfprintf(stderr, fmt, ap);
 			fprintf(stderr, "\n");
 		} else {
@@ -46,7 +51,7 @@ vlog(int pri, const char *fmt, va_list ap) {
 		}
 		fflush(stderr);
 	} else {
-		if (asprintf(&nfmt, "[%s] %s\n", prefix, fmt) == -1)
+		if (asprintf(&nfmt, "[%s] %s\n", log_prefix, fmt) == -1)
 			vsyslog(pri, fmt, ap);
 		else {
 			vsyslog(pri, nfmt, ap);
@@ -66,7 +71,36 @@ flog(int pri, const char *fmt, ...) {
 
 void
 log_set_prefix(char *s) {
-	prefix = s;
+	log_prefix = s;
+}
+
+void
+log_set_filter(int max_pri) {
+	switch (max_pri) {
+	case TNET_LOG_DEBUG:
+		log_filter = LOG_DEBUG;
+		/* FALLTHROUGH */
+		break;
+	case TNET_LOG_INFO:
+		log_filter = LOG_INFO;
+		/* FALLTHROUGH */
+		break;
+	case TNET_LOG_NOTICE:
+		log_filter = LOG_NOTICE;
+		/* FALLTHROUGH */
+		break;
+	case TNET_LOG_WARNING:
+		log_filter = LOG_WARNING;
+		/* FALLTHROUGH */
+		break;
+	case TNET_LOG_ERROR:
+		log_filter = LOG_EMERG;
+		/* FALLTHROUGH */
+		break;
+	default:
+		break;
+	}
+	(void)setlogmask(log_filter);
 }
 
 void
