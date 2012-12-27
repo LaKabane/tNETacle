@@ -218,7 +218,7 @@ if(Linux)
                 add_definitions(-DHAVE_SETPROCTITLE)
 	endif()
 
-        # Linux specifig include directories
+        # Linux specific include directories
 	# ----------------------------------
 	include_directories(/usr/local/include)
         if (ENABLE_BSDCOMPAT AND BSD_FOUND)
@@ -253,7 +253,6 @@ if (FreeBSD)
 endif()
 
 if (Darwin)
-        add_definitions(-DCORO_SJLJ)
 	# Darwin specific include directories (macport)
 	# ------------------
         set(CMAKE_SYSTEM_INCLUDE_PATH
@@ -262,6 +261,7 @@ if (Darwin)
 
 	# Darwin specific definitions
 	# ------------------
+        add_definitions(-DCORO_SJLJ)
 endif()
 
 # Executable definitons
