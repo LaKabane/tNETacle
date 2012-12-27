@@ -227,10 +227,13 @@ tnt_fork(int imsg_fds[2]) {
         /* never returns */
     }
 
-    if (serv_opts.encryption)
+    if (serv_opts.encryption) {
         server.server_ctx = evssl_init();
-    else
+	if (server.server_ctx == NULL)
+            exit(1);	
+    } else {
         server.server_ctx = NULL;
+    }
 
     tnt_priv_drop(pw);
 
