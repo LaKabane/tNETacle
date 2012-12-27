@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2012 Florent Tribouilloy <tribou_f AT epitech DOT net>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <QDebug>
 #include "protocol.h"
 
@@ -5,7 +21,7 @@ QString	Protocol::add(const QString& object, const QVector<QString>& v)
 {
   QString	json("");
 
-  if (v.size() < 2 || object == "")
+  if (v.size() < 3 || object == "")
     return json;
 
   json = "{";
@@ -14,13 +30,15 @@ QString	Protocol::add(const QString& object, const QVector<QString>& v)
   json += "\": {";
 
   // TODO : make it generic, work only for Contact
-  json += "\"";
+  json += "\"Name\":\"";
   json += v[0];
-  json += "\": {";
+  json += "\",";
   json += "\"Key\": \"";
   json += v[1];
+  json += "\",";
+  json += "\"Ip\": \"";
+  json += v[2];
   json += "\"";
-  json += "}";
   //!TODO
 
   json += "}";

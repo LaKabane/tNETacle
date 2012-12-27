@@ -17,8 +17,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "tnetacle.h"
 #include "log.h"
-#include "wincompat.h"
 
 void
 hex_dump(void *data, int size)

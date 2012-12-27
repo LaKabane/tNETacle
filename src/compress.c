@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "networking.h"
+
 #ifdef Windows
 # define ZLIB_WINAPI
 #endif
@@ -48,6 +50,7 @@ tnt_compress(uchar *in, const size_t in_size, size_t *out_size)
     error = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
     if (error != Z_OK)
     {
+        free(out);
         log_warnx("zlib: error on deflateInit (%d)\n", error);
         return (NULL);
     }
@@ -128,4 +131,43 @@ tnt_uncompress(uchar *in, const size_t in_size, const size_t orignal_len)
     }
     (void)inflateEnd(&strm);
     return out;
+}
+
+uchar *tnt_compress_sized(uchar *uncompressed_data, const int size,
+  size_t *compressed_size)
+{
+    uchar *compressed_data = tnt_compress(uncompressed_data, size, compressed_size);
+    if (compressed_data == NULL)
+    {
+        log_warn("Compress failed. Sending uncompressed data.");
+        return NULL;
+    }
+    log_debug("Compressed from %d to %d + int size.",
+      size, *compressed_size);
+    if ((compressed_data = realloc(compressed_data,
+          *compressed_size + sizeof(size))) == NULL)
+    {
+        free(compressed_data);
+        log_warn("reallocf failed. Sending uncompressed data");
+        return NULL;
+    }
+    int n_size = htonl(size);
+    memcpy(compressed_data + *compressed_size, &n_size,
+      sizeof(n_size));
+    *compressed_size += sizeof(n_size);
+    return compressed_data;
+}
+
+uchar *tnt_uncompress_sized(uchar *compressed_data, const size_t size,
+  size_t *uncompressed_size)
+{
+    int index = size - sizeof(int);
+    printf("\n%d - %d = %d\n", (int)size, (int)sizeof(int), index);
+    int net_size = *((int *)(compressed_data + (index)));
+    int host_size = ntohl(net_size);
+    /* i = memcpy(&i, compressed_data + (size - sizeof(int)), sizeof(int)); */
+    /* i = ntohl(i); */
+    printf("size is %d\n", host_size);
+    *uncompressed_size = host_size;
+    return tnt_uncompress(compressed_data, index, host_size);
 }

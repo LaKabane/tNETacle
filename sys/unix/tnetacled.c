@@ -39,12 +39,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "tnetacle.h"
-#include "tntexits.h"
-#include "options.h"
-#include "log.h"
-#include "tun.h"
-
 /* imsg specific includes */
 #include <sys/uio.h>
 #include <sys/queue.h>
@@ -53,12 +47,18 @@
 
 #include <event2/event.h>
 
+#include "tnetacle.h"
+#include "tntexits.h"
+#include "options.h"
+#include "log_extern.h"
+#include "log.h"
+#include "tun.h"
+
 int debug;
 volatile sig_atomic_t sigchld_recv;
 extern struct options serv_opts;
-
-/* XXX: clean that after the TA2 */
-struct device *dev = NULL;
+static struct device *dev;
+pid_t chld_pid = -1; /* Usefull for the signal handler */
 
 static void usage(void);
 static int dispatch_imsg(struct imsgbuf *);
@@ -72,30 +72,38 @@ struct imsg_data {
 };
 
 static void
-_sighdlr(int sig) {
-    printf("%s\n", __PRETTY_FUNCTION__);
+init_sig_hdlr(int sig) {
     if (sig == SIGCHLD)
-	sigchld_recv = 1;
+        sigchld_recv = 1;
+    if (sig == SIGSEGV)
+    {
+        /* This is useless, our code does not segfault ! */
+        fprintf(stderr, "The tNETacle failed seriously. This is not our fault.\n"
+            "- I mean, our code is flawless, for sure.\n"
+            "- Ok ok, we SIGSEGVed, sorry x(\n");
+        kill(chld_pid, SIGTERM);
+        exit(-1);
+    }
 }
 
 static void
-sighdlr(evutil_socket_t sig, short events, void *args) {
+sig_gen_hdlr(evutil_socket_t sig, short events, void *args) {
     struct event_base *evbase = args;
     char *name = "unknow";
     (void)events;
 
     switch (sig) {
-    case SIGCHLD:
-        name = "sigchld";
-	break;
-    case SIGTERM:
-        name = "sigterm";
-	break;
-    case SIGINT:
-        name = "sigint";
-	break;
+        case SIGCHLD:
+            name = "sigchld";
+            break;
+        case SIGTERM:
+            name = "sigterm";
+            break;
+        case SIGINT:
+            name = "sigint";
+            break;
     }
-    log_warnx("received signal %d(%s), stopping", sig, name);
+    log_warnx("received signal %s(%d), stopping", name, sig);
     event_base_loopbreak(evbase);
 }
 
@@ -105,17 +113,17 @@ imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
     struct imsg_data *data = args;
 
     if (events & EV_READ || data->is_ready_read == 1) {
-	data->is_ready_read = 1;
-	if (dispatch_imsg(data->ibuf) == -1)
-	    data->is_ready_read = 0;
+        data->is_ready_read = 1;
+        if (dispatch_imsg(data->ibuf) == -1)
+            data->is_ready_read = 0;
     }
 
     if (events & EV_WRITE || data->is_ready_write == 1) {
-	data->is_ready_write = 1;
-	if (data->ibuf->w.queued > 0) {
-	    if (msgbuf_write(&data->ibuf->w) == -1)
-		data->is_ready_write = 0;
-	}
+        data->is_ready_write = 1;
+        if (data->ibuf->w.queued > 0) {
+            if (msgbuf_write(&data->ibuf->w) == -1)
+                data->is_ready_write = 0;
+        }
     }
     return ;
 }
@@ -123,7 +131,6 @@ imsg_callback_handler(evutil_socket_t fd, short events, void *args) {
 int
 main(int argc, char *argv[]) {
     int ch;
-    pid_t chld_pid;
     int imsg_fds[2];
     struct imsgbuf ibuf;
     struct imsg_data data;
@@ -132,6 +139,7 @@ main(int argc, char *argv[]) {
     struct event *sigint = NULL;
     struct event *sigterm = NULL;
     struct event *sigchld = NULL;
+    struct event_config *evcfg;
 
     /* Parse configuration file and then command line switches */
     tnt_parse_file(NULL);
@@ -152,45 +160,61 @@ main(int argc, char *argv[]) {
             usage();
         }
     }
-    argc -= optind;
-    argv += optind;
+    (void)argc;
+    (void)optind;
 
     log_init();
     log_set_prefix("pre-fork");
 
+    evcfg = event_config_new();
+
     if (geteuid()) {
-	(void)fprintf(stderr, "need root privileges\n");
-	return 1;
+        (void)fprintf(stderr, "need root privileges\n");
+        return 1;
     }
 
 
     if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1) {
-	perror("socketpair");
-	return 1;
+        perror("socketpair");
+        return 1;
     }
 
     if (debug == 0) {
-	if (tnt_daemonize() == -1) {
-		fprintf(stderr, "can't daemonize\n");
-		return 1;
-	}
+        if (tnt_daemonize() == -1) {
+            fprintf(stderr, "can't daemonize\n");
+            return 1;
+        }
     }
     /* The child can die while we are still in the init phase. So we need to
      * monitor for SIGCHLD by signal
      */
-    signal(SIGCHLD, _sighdlr);
+    signal(SIGCHLD, init_sig_hdlr);
+    signal(SIGSEGV, init_sig_hdlr);
     chld_pid = tnt_fork(imsg_fds);
 
-    if ((evbase = event_base_new()) == NULL) {
-	log_err(1, "libevent");
+#if defined(Darwin)
+    event_config_avoid_method(evcfg, "kqueue");
+    event_config_avoid_method(evcfg, "poll");
+    event_config_avoid_method(evcfg, "devpoll");
+    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
+        log_err(1, "libevent");
     }
+    exit(0);
+#else
+    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
+        log_err(1, "libevent");
+    }
+#endif
+    tnet_libevent_dump(evbase);
+    event_set_log_callback(tnet_libevent_log);
+    /* tuntap_log_set_cb(tnet_libtuntap_log); */
 
-    sigint = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
-    sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sighdlr, evbase);
-    sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sighdlr, evbase);
+    sigint = event_new(evbase, SIGINT, EV_SIGNAL, &sig_gen_hdlr, evbase);
+    sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &sig_gen_hdlr, evbase);
+    sigchld = event_new(evbase, SIGCHLD, EV_SIGNAL, &sig_gen_hdlr, evbase);
 
     if (close(imsg_fds[1]))
-	log_notice("close");
+        log_notice("close");
 
     data.evbase = evbase;
     data.is_ready_write = 0;
@@ -199,8 +223,8 @@ main(int argc, char *argv[]) {
     imsg_init(&ibuf, imsg_fds[0]);
     evutil_make_socket_nonblocking(imsg_fds[0]);
     event = event_new(evbase, imsg_fds[0],
-		      EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
-		      &imsg_callback_handler, &data);
+              EV_READ | EV_WRITE | EV_ET | EV_PERSIST,
+              &imsg_callback_handler, &data);
     data.event = event;
 
     event_add(event, NULL);
@@ -213,21 +237,26 @@ main(int argc, char *argv[]) {
      * as the child is stillborn.
      */
     if (sigchld_recv != 1)
-	event_base_dispatch(evbase);
+        event_base_dispatch(evbase);
     else
-	log_notice("tNETacle initialisation failed");
+        log_notice("tNETacle initialisation failed");
 
     signal(SIGCHLD, SIG_DFL);
+    signal(SIGSEGV, SIG_DFL);
 
     if (chld_pid != 0)
-	kill(chld_pid, SIGTERM);
+        kill(chld_pid, SIGTERM);
 
     msgbuf_clear(&ibuf.w);
+    close(event_get_fd(event));
     event_free(event);
     event_free(sigint);
     event_free(sigterm);
     event_free(sigchld);
     event_base_free(evbase);
+    if (dev != NULL)
+        tnt_ttc_close(dev);
+    event_config_free(evcfg);
     log_info("tnetacle exiting");
     return TNT_OK;
 }
@@ -250,53 +279,57 @@ dispatch_imsg(struct imsgbuf *ibuf) {
 
     n = imsg_read(ibuf);
     if (n == -1) {
-	log_warnx("loose some imsgs");
-	imsg_clear(ibuf);
-	return -1;
+        log_warnx("loose some imsgs");
+        imsg_clear(ibuf);
+        return -1;
     }
 
     if (n == 0) {
-	log_warnx("pipe closed");
-	return -1;
+        log_warnx("pipe closed");
+        return -1;
     }
 
     for (;;) {
-	/* Loops through the queue created by imsg_read */
-	n = imsg_get(ibuf, &imsg);
-	if (n == -1) {
-	    log_warnx("imsg_get");
-	    return -1;
-	}
+        /* Loops through the queue created by imsg_read */
+        n = imsg_get(ibuf, &imsg);
+        if (n == -1) {
+            log_warnx("imsg_get");
+            return -1;
+        }
 
-	/* Nothing was ready, return to the main loop */
-	if (n == 0)
-	    break;
+        /* Nothing was ready, return to the main loop */
+        if (n == 0)
+            break;
 
-	switch (imsg.hdr.type) {
-	case IMSG_CREATE_DEV:
-	    dev = tnt_ttc_open(serv_opts.tunnel);
-	    fd = tnt_ttc_get_fd(dev);
-	    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
-	      NULL, 0);
-	    break;
-	case IMSG_SET_IP:
-	    if (dev == NULL) {
-	        log_warnx("can't set ip, use IMSG_CREATE_DEV first");
-	        break;
-	    }
-	    datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
-	    (void)memset(buf, '\0', sizeof buf);
-	    (void)memcpy(buf, imsg.data, datalen);
-	    buf[datalen] = '\0';
-	    
-	    log_info("receive IMSG_SET_IP: %s", buf);
-	    tnt_ttc_set_ip(dev, buf);
-            tnt_ttc_up(dev);
-	    break;
-	default:
-	    break;
-	}
-	imsg_free(&imsg);
+        switch (imsg.hdr.type) {
+            case IMSG_CREATE_DEV:
+                dev = tnt_ttc_open(serv_opts.tunnel);
+                if (dev != NULL) {
+                    fd = tnt_ttc_get_fd(dev);
+                    imsg_compose(ibuf, IMSG_CREATE_DEV, 0, 0, fd,
+                                 NULL, 0);
+                } else {
+                    log_warn("Can't open a tun device:");
+                }
+                break;
+            case IMSG_SET_IP:
+                if (dev == NULL) {
+                    log_warnx("can't set ip, use IMSG_CREATE_DEV first");
+                    break;
+                }
+                datalen = imsg.hdr.len - IMSG_HEADER_SIZE;
+                (void)memset(buf, '\0', sizeof buf);
+                (void)memcpy(buf, imsg.data, datalen);
+                buf[datalen] = '\0';
+
+                log_info("receive IMSG_SET_IP: %s", buf);
+                tnt_ttc_set_ip(dev, buf);
+                tnt_ttc_up(dev);
+                break;
+            default:
+                break;
+        }
+        imsg_free(&imsg);
     }
     return 0;
 }

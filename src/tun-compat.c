@@ -93,7 +93,10 @@ tnt_ttc_set_ip(struct device *dev, const char *addr) {
 
 	mask = strchr(ip, '/');
 	if (mask == NULL)
+    {
+        free(ip);
 		return -1;
+    }
 	*mask= '\0';
 	++mask;
 
@@ -131,6 +134,15 @@ tnt_ttc_get_fd(struct device *dev) {
 	return TUNTAP_GET_FD(dev);
 #elif defined USE_TAPCFG
 	return tapcfg_get_fd(dev);
+#endif
+}
+
+int
+tnt_ttc_get_mtu(struct device *dev) {
+#if defined USE_LIBTUNTAP
+	return tuntap_get_mtu(dev);
+#elif defined USE_TAPCFG
+	return tapcfg_iface_get_mtu(dev);
 #endif
 }
 

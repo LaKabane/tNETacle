@@ -15,12 +15,12 @@ Directories
     3. 'include', contains all *.h files.
     4. 'src', contains *.c files used by all versions.
     5. 'util', contains files for utility programs, such as scripts.
-    6. 'sys', contains subdirectories for OSs specific files.
-    7. 'sys/share', contains files shared by some OSs.
-    8. 'sys/unix', contains UNIX family (*BSD, Linux and Mac OS X)
+    6. 'sub', contains subdirectories for our libraries.
+    7. 'sys', contains subdirectories for OSs specific files.
+    8. 'sys/share', contains files shared by some OSs.
+    9. 'sys/unix', contains UNIX family (*BSD, Linux and Mac OS X)
        specific files.
-    9. 'sys/wnt', contains Windows NT specific files.
-   10. 'sys/vms', contains VMS specific files. (This is a joke)
+   10. 'sys/wnt', contains Windows NT specific files.
    11. 'client', contains subdirectories for our clients.
    12. 'client/share', contains files shared by some clients.
    13. 'client/qt', contains files for our Qt client.
@@ -33,7 +33,7 @@ Requirements
 Add the tNETacle default user (_tnetacle) with '/var/empty' as home,
 owned by root with permission 700, or the tNETacle will refuse to start.
 
-Install OpenSSL, Libevent-2.0.x (both _core and _openssl), Yajl 2.x and zlib.
+Install OpenSSL, Libevent-2.0.x (both _core and _openssl) and Yajl 2.x.
 If you are under Linux you might install libbsd too, but it's not mandatory.
 
 Depending of your system you should now install either tapcfg or libtuntap.
@@ -63,8 +63,6 @@ Licence
    * The OpenSSL library is distributed under its own license,
      check here for more details: <http://www.openssl.org/source/license.html>;
    * The libevent library is distributed under the 3-clause BSD license;
-   * The zlib library is distributed under the zlib license,
-     check here for more details: <http://www.zlib.net/zlib_license.html>;
    * The libyajl is distributed under the ISC license;
    * The libbsd library is distrbitued under BSD and MIT license,
      check here for more details: <http://libbsd.freedesktop.org/wiki/#License>;

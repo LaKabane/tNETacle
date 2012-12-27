@@ -32,6 +32,7 @@ struct passwd;
 #define TNETACLE_USER "_tnetacle"
 
 #define TNETACLE_DEFAULT_PORT	4242
+#define CLIENT_DEFAULT_PORT	4243
 #define TNETACLE_MAX_PORTS	256
 #define TNETACLE_DEFAULT_LISTEN_IPV4 "0.0.0.0"
 #define TNETACLE_DEFAULT_LISTEN_IPV6 "::"
@@ -40,8 +41,10 @@ struct passwd;
  * Few definitions for windows
  */
 #if defined Windows
-# define __func__ __FUNCTIONW__
+# include "wincompat.h"
 #endif
+
+#define DEBUG fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__)
 
 /*
  * Definition of types for our imsg.

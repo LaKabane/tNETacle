@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BodyAddGroup</class>
+ <widget class="QFrame" name="BodyAddGroup">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>445</width>
+    <height>397</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Widget</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../share/img/client.qrc">
+    <normaloff>:/tools/root_notconnected.png</normaloff>:/tools/root_notconnected.png</iconset>
+  </property>
+  <property name="frameShape">
+   <enum>QFrame::StyledPanel</enum>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0" rowspan="2">
+    <widget class="QTreeWidget" name="listContacts">
+     <column>
+      <property name="text">
+       <string>Contacts</string>
+      </property>
+     </column>
+     <item>
+      <property name="text">
+       <string>Foo</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>bar</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="0" column="1" rowspan="2">
+    <widget class="QWidget" name="widget_2" native="true">
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="lineEdit_2"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Group name</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="groupName"/>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QDialogButtonBox" name="isOk">
+        <property name="standardButtons">
+         <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+        </property>
+        <property name="centerButtons">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Add a new group</string>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::AutoText</enum>
+        </property>
+        <property name="scaledContents">
+         <bool>false</bool>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QTreeView" name="newContact"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../share/img/client.qrc"/>
+ </resources>
+ <connections/>
+</ui>

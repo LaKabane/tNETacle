@@ -25,8 +25,8 @@
 # include <sys/mman.h>
 #else
 # define WIN32_LEAN_AND_MEAN
-# include <Windows.h>
 # include <Winsock2.h>
+# include <Windows.h>
 # include <Ws2tcpip.h>
 # include "wincompat.h"
 #endif
@@ -45,6 +45,11 @@
 extern int debug;
 struct options serv_opts;
 
+struct ctx {
+    const unsigned char *map;
+    size_t               len;
+};
+
 void
 init_options(struct options *opt) {
     unsigned int i;
@@ -59,23 +64,23 @@ init_options(struct options *opt) {
     opt->compression = 1;
     opt->encryption = 1;
 
-    for (i = 0; i < TNETACLE_MAX_PORTS; ++i)
+    for (i = 0; i < TNETACLE_MAX_PORTS; ++i) {
         opt->ports[i] = -1;
+        opt->cports[i] = -1;
+    }
 
     opt->addr_family = AF_UNSPEC;
-    v_sockaddr_init(&serv_opts.listen_addrs);
-    v_sockaddr_init(&serv_opts.peer_addrs);
+    serv_opts.listen_addrs = v_sockaddr_new();
+	serv_opts.client_addrs = v_sockaddr_new();
+    serv_opts.peer_addrs = v_sockaddr_new();
 
     opt->addr = NULL;
 
     opt->key_path= NULL;
-
-    opt->last_map_key = NULL;
-    opt->last_map_key_len = 0;
 }
 
 static int
-add_addr_text(struct vector_sockaddr *vsp, char *bufaddr) {
+add_sockaddr(struct vector_sockaddr *vsp, char *bufaddr) {
     struct cfg_sockaddress out;
 
     (void)memset(&out, 0, sizeof out);
@@ -83,7 +88,8 @@ add_addr_text(struct vector_sockaddr *vsp, char *bufaddr) {
     /* Take the size from the sockaddr_storage*/
     out.len = sizeof(out.sockaddr);
     /* TODO: Sanity check with socklen */
-    if (evutil_parse_sockaddr_port(bufaddr, &out.sockaddr, &out.len) == -1) {
+    if (evutil_parse_sockaddr_port(bufaddr, (struct sockaddr *)&out.sockaddr,
+      &out.len) == -1) {
         (void)fprintf(stderr, "%s: not a valid IP address\n", bufaddr);
         return -1;
     }
@@ -92,31 +98,105 @@ add_addr_text(struct vector_sockaddr *vsp, char *bufaddr) {
     return 0;
 }
 
+static int
+add_listen_addrs_ports(int family, int *ports) {
+    unsigned int i;
+    struct cfg_sockaddress tmp_store;
+    struct sockaddr_in *sin = (struct sockaddr_in *)&tmp_store.sockaddr;
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&tmp_store.sockaddr;
+
+    for (i = 0; i < TNETACLE_MAX_PORTS && ports[i] != -1; ++i) {
+        (void)memset(&tmp_store, 0, sizeof tmp_store);
+    
+        if (family == AF_INET || family == AF_UNSPEC) {
+            sin->sin_family = AF_INET;
+            sin->sin_port = htons(ports[i]);
+            if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
+              &sin->sin_addr.s_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin;
+            v_sockaddr_push(serv_opts.listen_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenAddr: Added %s:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV4, ports[i]);
+        }
+        if (family == AF_INET6 || family == AF_UNSPEC) {
+            sin6->sin6_family = AF_INET6;
+            sin6->sin6_port = htons(ports[i]);
+            if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
+              &sin6->sin6_addr.s6_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin6;
+            v_sockaddr_push(serv_opts.listen_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV6, ports[i]);
+        }
+    }
+    return 0;
+}
+
+static int
+add_client_addrs_ports(int family, int *ports) {
+    unsigned int i;
+    struct cfg_sockaddress tmp_store;
+    struct sockaddr_in *sin = (struct sockaddr_in *)&tmp_store.sockaddr;
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&tmp_store.sockaddr;
+
+    for (i = 0; i < TNETACLE_MAX_PORTS && ports[i] != -1; ++i) {
+        (void)memset(&tmp_store, 0, sizeof tmp_store);
+
+        if (family == AF_INET || family == AF_UNSPEC) {
+            sin->sin_family = AF_INET;
+            sin->sin_port = htons(ports[i]);
+            if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
+              &sin->sin_addr.s_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin;
+            v_sockaddr_push(serv_opts.client_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenClient: Added %s:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV4, ports[i]);
+        }
+        if (family == AF_INET6 || family == AF_UNSPEC) {
+            sin6->sin6_family = AF_INET6;
+            sin6->sin6_port = htons(ports[i]);
+            if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
+              &sin6->sin6_addr.s6_addr) == -1)
+                return -1;
+            tmp_store.len = sizeof *sin6;
+            v_sockaddr_push(serv_opts.client_addrs, &tmp_store);
+            if (debug == 1)
+                fprintf(stderr, "ListenClient: Added [%s]:%i\n",
+                  TNETACLE_DEFAULT_LISTEN_IPV6, ports[i]);
+        }
+    }
+    return 0;
+}
+
 int yajl_null(void *ctx) {
     (void)ctx;
     return -1;
 }
 
-int yajl_boolean(void *ctx, int val) {
-    const char *map = serv_opts.last_map_key;
-    const int map_len = serv_opts.last_map_key_len;
+int yajl_boolean(void *lctx, int val) {
+    struct ctx *ctx = lctx;
 
-    (void)ctx;
-    if (map == NULL)
+    if (ctx->map == NULL)
         return -1;
 
-    if (strncmp("Compression", map, map_len) == 0) {
+    if (strncmp("Compression", (const char *)ctx->map, ctx->len) == 0) {
         serv_opts.compression = val;
-    } else if (strncmp("Encryption", map, map_len) == 0) {
+    } else if (strncmp("Encryption", (const char *)ctx->map, ctx->len) == 0) {
         serv_opts.encryption = val;
-    } else if (strncmp("Debug", map, map_len) == 0) {
+    } else if (strncmp("Debug", (const char *)ctx->map, ctx->len) == 0) {
         serv_opts.debug = val;
     } else {
         char *s;
 
-        s = alloca(map_len);
-        (void)memcpy(s, map, map_len);
-        s[map_len] = '\0';
+        s = alloca(ctx->len);
+        (void)memcpy(s, ctx->map, ctx->len);
+        s[ctx->len] = '\0';
         fprintf(stderr, "%s: unknown boolean\n", s);
         return -1;
     }
@@ -135,14 +215,13 @@ int yajl_double(void *ctx, double val) {
     return -1;
 }
 
-int yajl_number(void *ctx, const char *num, size_t len) {
-    const char *map = serv_opts.last_map_key;
-    const int map_len = serv_opts.last_map_key_len;
+int yajl_number(void *lctx, const char *num, size_t len) {
     char *errstr;
     long ret;
     char nptr[20];
+    struct ctx *ctx = lctx;
 
-    if (map == NULL)
+    if (ctx->map == NULL)
         return -1;
 
     if (len > 20) {
@@ -161,20 +240,26 @@ int yajl_number(void *ctx, const char *num, size_t len) {
         return -1;
     }
 
-    if (strncmp("TunnelIndex", map, map_len) == 0) {
+    if (strncmp("TunnelIndex", (const char *)ctx->map, ctx->len) == 0) {
         serv_opts.tunnel_index = ret;
-    } else if (strncmp("Port", map, map_len) == 0) {
+    } else if (strncmp("Port", (const char *)ctx->map, ctx->len) == 0) {
         unsigned int i;
 
         for (i = 0; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i)
             ;
         serv_opts.ports[i] = ret;
+    } else if (strncmp("ClientPort", (const char *)ctx->map, ctx->len) == 0) {
+        unsigned int i;
+
+        for (i = 0; i < TNETACLE_MAX_PORTS && serv_opts.cports[i] != -1; ++i)
+            ;
+        serv_opts.cports[i] = ret;
     } else {
        char *s;
 
-       s = alloca(map_len);
-       (void)memcpy(s, map, map_len);
-       s[map_len] = '\0';
+       s = alloca(ctx->len);
+       (void)memcpy(s, ctx->map, ctx->len);
+       s[ctx->len] = '\0';
 
        fprintf(stderr, "%s: unknown integer\n", s);
         return -1;
@@ -183,124 +268,89 @@ int yajl_number(void *ctx, const char *num, size_t len) {
     return 1;
 }
 
-int yajl_string(void *ctx, const unsigned char *str, size_t len) {
-    const char *map = serv_opts.last_map_key;
-    const int map_len = serv_opts.last_map_key_len;
+int yajl_string(void *lctx, const unsigned char *str, size_t len) {
+    struct ctx *ctx = lctx;
 
-    (void)ctx;
-    if (map == NULL)
+    if (ctx->map == NULL)
         return -1;
 
-    if (strncmp("Address", map, map_len) == 0) {
+    if (strncmp("Address", (const char *)ctx->map, ctx->len) == 0) {
         /* XXX: Address validation */
-        serv_opts.addr = strndup(str, len);
+        serv_opts.addr = strndup((const char *)str, len);
         if (serv_opts.addr == NULL) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("AddressFamily", map, map_len) == 0) {
-        if (strncmp("inet6", str, len) == 0) {
+    } else if (strncmp("AddressFamily", (const char *)ctx->map, ctx->len) == 0) {
+        if (strncmp("inet6", (const char *)str, len) == 0) {
             serv_opts.addr_family = AF_INET;
-        } else if (strncmp("inet", str, len) == 0) {
+        } else if (strncmp("inet", (const char *)str, len) == 0) {
             serv_opts.addr_family = AF_INET6;
-        } else if (strncmp("any", str, len) == 0) {
+        } else if (strncmp("any", (const char *)str, len) == 0) {
             serv_opts.addr_family = AF_UNSPEC;
         } else {
             fprintf(stderr, "AddressFamily: bad value, should be "
               "\"inet6\", \"inet\" or \"any\"\n");
             return -1;
         }
-    } else if (strncmp("Mode", map, map_len) == 0) {
-        if (strncmp("router", str, len) == 0) {
+    } else if (strncmp("Mode", (const char *)ctx->map, ctx->len) == 0) {
+        if (strncmp("router", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_DAEMONMODE_ROUTER;
-        } else if (strncmp("switch", str, len) == 0) {
+        } else if (strncmp("switch", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_DAEMONMODE_SWITCH;
-        } else if (strncmp("hub", str, len) == 0) {
+        } else if (strncmp("hub", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_DAEMONMODE_HUB;
         } else {
             fprintf(stderr, "Mode: bad value, should be "
               "\"router\", \"switch\" or \"hub\"\n");
             return -1;
         }
-    } else if (strncmp("Tunnel", map, map_len) == 0) {
-         if (strncmp("point-to-point", str, len) == 0) {
+    } else if (strncmp("Tunnel", (const char *)ctx->map, ctx->len) == 0) {
+         if (strncmp("point-to-point", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_TUNMODE_TUNNEL;
-        } else if (strncmp("ethernet", str, len) == 0) {
+        } else if (strncmp("ethernet", (const char *)str, len) == 0) {
             serv_opts.tunnel = TNT_TUNMODE_ETHERNET;
         } else {
             fprintf(stderr, "Tunnel: bad value, should be "
               "\"ethernet\" or \"point-to-point\"\n");
             return -1;
         }
-    } else if (strncmp("PrivateKey", map, map_len) == 0) {
+    } else if (strncmp("PrivateKey", (const char *)ctx->map, ctx->len) == 0) {
         /* XXX: Should we check for the existence of the key now ? */
-        serv_opts.key_path = strndup(str, len);
+        serv_opts.key_path = strndup((const char *)str, len);
         if (serv_opts.key_path == NULL) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("CertFile", map, map_len) == 0) {
+    } else if (strncmp("CertFile", (const char *)ctx->map, ctx->len) == 0) {
         /* XXX: Should we check for the existence of the key now ? */
-        serv_opts.cert_path = strndup(str, len);
+        serv_opts.cert_path = strndup((const char *)str, len);
         if (serv_opts.cert_path == NULL) {
             perror(__func__);
             return -1;
         }
-    } else if (strncmp("PeerAddress", map, map_len) == 0) {
-        char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
+    } else if (strncmp("PeerAddress", (const char *)ctx->map, ctx->len) == 0) {
+        char bufaddr[INET6_ADDRSTRLEN]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
-        add_addr_text(&serv_opts.peer_addrs, bufaddr);
-    } else if (strncmp("ListenAddress", map, map_len) == 0) {
-        char bufaddr[45]; /* IPv6 with IPv4 tunnelling */
+        add_sockaddr(serv_opts.peer_addrs, bufaddr);
+    } else if (strncmp("ListenAddress", (const char *)ctx->map, ctx->len) == 0) {
+        char bufaddr[INET6_ADDRSTRLEN]; /* IPv6 with IPv4 tunnelling */
         (void)memset(bufaddr, '\0', sizeof bufaddr);
         (void)memcpy(bufaddr, str, len);
 
-        if (strncmp("any", str, len) == 0) {
-            unsigned int i = 0;
-            int family = serv_opts.addr_family;
-            struct cfg_sockaddress tmp_store;
-            struct sockaddr_in *sin = &tmp_store.sockaddr;
-            struct sockaddr_in6 *sin6 = &tmp_store.sockaddr;
-
-            /* Feed local addresses */
-            for (; i < TNETACLE_MAX_PORTS && serv_opts.ports[i] != -1; ++i) {
-                (void)memset(&tmp_store, 0, sizeof tmp_store);
-
-                if (family == AF_INET || family == AF_UNSPEC) {
-                    sin->sin_family = AF_INET;
-                    sin->sin_port = htons(serv_opts.ports[i]);
-                    if (inet_pton(AF_INET, TNETACLE_DEFAULT_LISTEN_IPV4,
-                      &sin->sin_addr.s_addr) == -1)
-                        return -1;
-                    tmp_store.len = sizeof *sin;
-                    v_sockaddr_push(&serv_opts.listen_addrs, &tmp_store);
-                    if (debug == 1)
-                        fprintf(stderr, "ListenAddr: Added %s:%i\n",
-                          TNETACLE_DEFAULT_LISTEN_IPV4, serv_opts.ports[i]);
-                }
-                if (family == AF_INET6 || family == AF_UNSPEC) {
-                    sin6->sin6_family = AF_INET6;
-                    sin6->sin6_port = htons(serv_opts.ports[i]);
-                    if (inet_pton(AF_INET6, TNETACLE_DEFAULT_LISTEN_IPV6,
-                      &sin6->sin6_addr.s6_addr) == -1)
-                        return -1;
-                    tmp_store.len = sizeof *sin6;
-                    v_sockaddr_push(&serv_opts.listen_addrs, &tmp_store);
-                    if (debug == 1)
-                        fprintf(stderr, "ListenAddr: Added [%s]:%i\n",
-                          TNETACLE_DEFAULT_LISTEN_IPV6, serv_opts.ports[i]);
-                }
-            }
+        if (strncmp("any", (const char *)str, len) == 0) {
+	    add_listen_addrs_ports(serv_opts.addr_family, serv_opts.ports);
         } else
-            add_addr_text(&serv_opts.listen_addrs, bufaddr);
+            add_sockaddr(serv_opts.listen_addrs, bufaddr);
+        add_client_addrs_ports(serv_opts.addr_family, serv_opts.cports);
     } else {
         char *s;
 
-        s = alloca(map_len);
-        (void)memcpy(s, map, map_len);
-        s[map_len] = '\0';
+        s = alloca(ctx->len);
+        (void)memcpy(s, ctx->map, ctx->len);
+        s[ctx->len] = '\0';
         fprintf(stderr, "%s: unknown variable\n", s);
         return -1;
     }
@@ -312,17 +362,19 @@ int yajl_start_map(void *ctx) {
     return -1;
 }
 
-int yajl_map_key(void *ctx, const unsigned char *key, size_t len) {
-    (void)ctx;
-    serv_opts.last_map_key = key;
-    serv_opts.last_map_key_len = len;
+int yajl_map_key(void *lctx, const unsigned char *key, size_t len) {
+    struct ctx *ctx = lctx;
+
+    ctx->map = key;
+    ctx->len = len;
     return 1;
 }
 
-int yajl_end_map(void *ctx) {
-    (void)ctx;
-    serv_opts.last_map_key = NULL;
-    serv_opts.last_map_key_len = 0;
+int yajl_end_map(void *lctx) {
+    struct ctx *ctx = lctx;
+
+    ctx->map = NULL;
+    ctx->len = 0;
     return -1;
 }
 
@@ -331,10 +383,11 @@ int yajl_start_array(void *ctx) {
     return -1;
 }
 
-int yajl_end_array(void *ctx) {
-    (void)ctx;
-    serv_opts.last_map_key = NULL;
-    serv_opts.last_map_key_len = 0;
+int yajl_end_array(void *lctx) {
+    struct ctx *ctx = lctx;
+
+    ctx->map = NULL;
+    ctx->len = 0;
     return -1;
 }
 
@@ -356,21 +409,24 @@ int
 tnt_parse_buf(char *p, size_t size) {
 	yajl_handle parse;
 	yajl_status status;
+	struct ctx ctx;
 
         /* Overwrite previous configuration in case of SIGHUP */
         init_options(&serv_opts);
+	ctx.map = NULL;
+	ctx.len = 0;
 
-	parse = yajl_alloc(&callbacks, NULL, NULL);
+	parse = yajl_alloc(&callbacks, NULL, &ctx);
 	yajl_config(parse, yajl_allow_comments, 1);
 
         /* yajl might be feeded a bit at a time, but it also works this way */
-	status = yajl_parse(parse, p, size);
+	status = yajl_parse(parse, (unsigned char *)p, size);
 	if (status != yajl_status_ok) {
 		char *err;
 		
-		err = yajl_get_error(parse, 1, p, size);
+		err = (char *)yajl_get_error(parse, 1, (const unsigned char *)p, size);
 		fprintf(stderr, "%s\n", err);
-		yajl_free_error(parse, err);
+		yajl_free_error(parse, (unsigned char *)err);
 	}
 
 	status = yajl_complete_parse(parse);
@@ -386,6 +442,8 @@ tnt_parse_buf(char *p, size_t size) {
     debug = serv_opts.debug;
     if (serv_opts.ports[0] == -1)
         serv_opts.ports[0] = TNETACLE_DEFAULT_PORT;
+    if (serv_opts.cports[0] == -1)
+        serv_opts.cports[0] = CLIENT_DEFAULT_PORT;
     return 0;
 }
 
