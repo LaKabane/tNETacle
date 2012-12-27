@@ -40,6 +40,7 @@
 #include "tntexits.h"
 #include "tnetacle.h"
 #include "log.h"
+#include "log_extern.h"
 #include "options.h"
 #include "mc.h"
 #include "server.h"
@@ -213,7 +214,7 @@ tnt_fork(int imsg_fds[2]) {
         return TNT_NOUSER;
     }
 
-    /*Allocate the event config*/
+    /* Allocate the event config */
     evcfg = event_config_new();
 
     /* Initialize the OpenSSL library */
@@ -233,17 +234,13 @@ tnt_fork(int imsg_fds[2]) {
 
     tnt_priv_drop(pw);
 
-#if defined(Darwin)
-    /* It's sad isn't it ?*/
+#if !defined(HAVE_WORKINGKQUEUE)
     evutil_select_backend(evcfg, "select");
-    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
-        log_err(1, "libevent");
-    }
-#else
-    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
-        log_err(1, "libevent");
-    }
 #endif
+    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
+        log_err(1, "libevent");
+    }
+    tnet_libevent_dump(evbase);
 
     sigterm = event_new(evbase, SIGTERM, EV_SIGNAL, &chld_sighdlr, evbase);
     sigint = event_new(evbase, SIGINT, EV_SIGNAL, &chld_sighdlr, evbase);

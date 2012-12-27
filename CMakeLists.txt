@@ -174,7 +174,7 @@ if (Windows)
 	# ------------------
 	set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
   	add_definitions(-DWindows)
-    add_definitions(-DCORO_WIN32)
+        add_definitions(-DCORO_WIN32)
 
 
 	# Windows source files
@@ -213,6 +213,7 @@ if(Linux)
 	# --------------------------
 	add_definitions(-D_GNU_SOURCE)
 	add_definitions(-DHAVE_SETRESXID)
+	add_definitions(-DHAVE_WORKINGKQUEUE)
         if (ENABLE_BSDCOMPAT AND BSD_FOUND)
 		add_definitions(-DHAVE_BSD_COMPAT)
                 add_definitions(-DHAVE_SETPROCTITLE)
@@ -233,6 +234,7 @@ if (OpenBSD)
 	include_directories(/usr/local/include)
 	add_definitions(-DHAVE_SETPROCTITLE)
 	add_definitions(-DHAVE_SETRESXID)
+	add_definitions(-DHAVE_WORKINGKQUEUE)
 endif()
 
 if (NetBSD)
@@ -241,6 +243,7 @@ if (NetBSD)
                 ${CMAKE_SYSTEM_INCLUDE_PATH} /usr/pkg/include)
 	include_directories(/usr/pkg/include)
 	add_definitions(-DHAVE_SETPROCTITLE)
+	add_definitions(-DHAVE_WORKINGKQUEUE)
 endif()
 
 if (FreeBSD)
@@ -250,6 +253,7 @@ if (FreeBSD)
 	include_directories(/usr/local/include)
 	add_definitions(-DHAVE_SETPROCTITLE)
 	add_definitions(-DHAVE_SETRESXID)
+	add_definitions(-DHAVE_WORKINGKQUEUE)
 endif()
 
 if (Darwin)

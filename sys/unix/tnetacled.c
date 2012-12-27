@@ -250,8 +250,9 @@ main(int argc, char *argv[]) {
     /*
      * Force buggy operating systems to use non-buggy backends
      */
-    if (event_config_require_features(evcfg, EV_FEATURE_FDS) == -1)
-        log_warnx("libevent");
+#if !defined(HAVE_WORKINGKQUEUE)
+    evutil_select_backend(evcfg, "select");
+#endif
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
         log_err(1, "libevent");
     }
