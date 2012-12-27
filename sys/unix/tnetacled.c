@@ -76,14 +76,12 @@ static void
 init_sig_hdlr(int sig) {
     if (sig == SIGCHLD)
         sigchld_recv = 1;
-    if (sig == SIGSEGV)
-    {
+    if (sig == SIGSEGV) {
         /* This is useless, our code does not segfault ! */
-        fprintf(stderr, "The tNETacle failed seriously. This is not our fault.\n"
-            "- I mean, our code is flawless, for sure.\n"
-            "- Ok ok, we SIGSEGVed, sorry x(\n");
+        (void)fprintf(stderr, "The tNETacle failed seriously.\n"
+            "Please fill a bug report at trac.medu.se\n");
         kill(chld_pid, SIGTERM);
-        exit(-1);
+        exit(1);
     }
 }
 
@@ -206,7 +204,7 @@ main(int argc, char *argv[]) {
         break;
         case 'f':
             if (tnt_parse_file(optarg) == -1) {
-                fprintf(stderr, "%s: invalid file\n", optarg);
+                (void)fprintf(stderr, "%s: invalid file\n", optarg);
                 return 1;
             }
         break;
@@ -228,7 +226,6 @@ main(int argc, char *argv[]) {
         return 1;
     }
 
-
     if (socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, imsg_fds) == -1) {
         perror("socketpair");
         return 1;
@@ -236,29 +233,33 @@ main(int argc, char *argv[]) {
 
     if (debug == 0) {
         if (tnt_daemonize() == -1) {
-            fprintf(stderr, "can't daemonize\n");
+            (void)fprintf(stderr, "can't daemonize\n");
             return 1;
         }
     }
-    /* The child can die while we are still in the init phase. So we need to
+
+    /*
+     * The child can die while we are still in the init phase. So we need to
      * monitor for SIGCHLD by signal
      */
     signal(SIGCHLD, init_sig_hdlr);
     signal(SIGSEGV, init_sig_hdlr);
+
     chld_pid = tnt_fork(imsg_fds);
 
-#if defined(Darwin)
-    evutil_select_backend(evcfg, "select");
+    /*
+     * Force buggy operating systems to use non-buggy backends
+     */
+    if (event_config_require_features(evcfg, EV_FEATURE_FDS) == -1)
+        log_warnx("libevent");
     if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
         log_err(1, "libevent");
     }
-    exit(0);
-#else
-    if ((evbase = event_base_new_with_config(evcfg)) == NULL) {
-        log_err(1, "libevent");
-    }
-#endif
     tnet_libevent_dump(evbase);
+
+    /*
+     * Catch log information from external libs
+     */
     event_set_log_callback(tnet_libevent_log);
     /* tuntap_log_set_cb(tnet_libtuntap_log); */
 

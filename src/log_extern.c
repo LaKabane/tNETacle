@@ -84,23 +84,23 @@ tnet_libtuntap_log(int severity, const char *msg) {
 
 void
 tnet_libevent_dump(struct event_base *base) {
-    int i;
+    size_t i;
     enum event_method_feature f;
     const char **methods = event_get_supported_methods();
 
-    log_debug("Starting Libevent %s.  Available methods are:",
+    log_debug("Using libevent-%s.  Available methods are:",
         event_get_version());
-    for (i=0; methods[i] != NULL; ++i) {
-        log_debug("	%s", methods[i]);
+    for (i = 0; methods[i] != NULL; ++i) {
+        log_debug("\t%s", methods[i]);
     }
 
-    log_debug("Using Libevent with backend method %s.",
-        event_base_get_method(base));
+    log_debug("Selected method is %s.", event_base_get_method(base));
     f = event_base_get_features(base);
     if ((f & EV_FEATURE_ET))
-        log_debug("  Edge-triggered events are supported.");
+        log_debug("  - Edge-triggered events are supported.");
     if ((f & EV_FEATURE_O1))
-        log_debug("  O(1) event notification is supported.");
+        log_debug("  - O(1) event notification is supported.");
     if ((f & EV_FEATURE_FDS))
-        log_debug("  All FD types are supported.");
+        log_debug("  - All FD types are supported.");
 }
+
