@@ -26,9 +26,7 @@ find_package(Yajl REQUIRED)
 find_package(Tuntap)
 find_package(OpenSSL REQUIRED)
 
-if (ClientQT)
-  find_package(Tclt REQUIRED)
-endif()
+find_package(Tclt REQUIRED)
 
 if(WIN32)
 	find_package(Event COMPONENTS core REQUIRED)
@@ -44,9 +42,7 @@ endif()
 # ----------------------
 add_definitions(-D${CMAKE_SYSTEM_NAME})
 
-if (ClientQT)
-  add_definitions(-DUSE_TCLT)
-endif()
+add_definitions(-DUSE_TCLT)
 
 if (TUNTAP_FOUND)
     add_definitions(-DUSE_LIBTUNTAP)
@@ -83,9 +79,7 @@ else()
 	endif()
 endif()
 
-if (ClientQT)
-  include_directories(${TCLT_INCLUDE_DIR})
-endif()
+include_directories(${TCLT_INCLUDE_DIR})
 
 # Portable source files
 # ------------------
@@ -139,15 +133,13 @@ set(HEADERS_LIST
 )
 
 # Add Source for LibTclt
-if (ClientQT)
-  set(SOURCES_LIST ${SOURCES_LIST}
-    src/client.c
-    )
+set(SOURCES_LIST ${SOURCES_LIST}
+  src/client.c
+  )
 
-  set(HEADERS_LIST ${HEADERS_LIST}
-    include/client.h
-    )
-endif()
+set(HEADERS_LIST ${HEADERS_LIST}
+  include/client.h
+  )
 
 # OS families specific things
 # ---------------------------
@@ -289,9 +281,7 @@ elseif(TAPCFG_FOUND)
   target_link_libraries(tNETacle ${TAPCFG_LIBRARIES})
 endif()
 
-if (ClientQT)
-  target_link_libraries(tNETacle ${TCLT_LIBRARY})
-endif()
+target_link_libraries(tNETacle ${TCLT_LIBRARY})
 
 # Linux linked libraries
 # ------------------------
