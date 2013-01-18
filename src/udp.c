@@ -53,6 +53,8 @@ udp_session_presentation(session_t *session)
 int
 udp_connect(struct udp *udp, struct endpoint *e)
 {
+    session_t session;
+
     memset(&session, '\0', sizeof(session));
     session.size = endpoint_addrlen(e);
     memcpy(&session.addr, endpoint_addr(e), session.size);
