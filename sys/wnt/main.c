@@ -35,6 +35,7 @@
 #include "frame.h"
 #include "udp.h"
 #include "device.h"
+#include "log_extern.h"
 
 int debug;
 extern struct options serv_opts;
