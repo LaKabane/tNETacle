@@ -1,11 +1,11 @@
 # tNETacle CMakeLists.txt
-# ========================
+# =======================
 
 project(tNETacle)
 cmake_minimum_required(VERSION 2.8)
 
 # CMake Configuration
-# ------------------
+# -------------------
 set(CMAKE_MODULE_PATH ${CMAME_MODULE_PATH} ${CMAKE_SOURCE_DIR}/util/cmake/Modules/)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
