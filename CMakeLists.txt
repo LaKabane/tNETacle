@@ -22,11 +22,11 @@ include(${CMAKE_SOURCE_DIR}/CMakeLists.txt.local OPTIONAL)
 # Global Packages search
 # ----------------------
 #find_package(ZLIB REQUIRED)
-find_package(Yajl REQUIRED)
-find_package(Tuntap)
+find_package(YAJL REQUIRED)
+find_package(TUNTAP)
 find_package(OpenSSL REQUIRED)
 
-find_package(Tclt REQUIRED)
+find_package(TCLT REQUIRED)
 
 if(WIN32)
 	find_package(Event COMPONENTS core REQUIRED)
