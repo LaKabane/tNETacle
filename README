@@ -24,8 +24,8 @@ Directories
    11. 'client', contains subdirectories for our clients.
    12. 'client/share', contains files shared by some clients.
    13. 'client/qt', contains files for our Qt client.
-   14. 'client/tty', contains files for our curses client.
-   15. 'client/cli', contains files for our basic command line interface.
+   14. 'client/cli', contains files for our basic command line interface.
+   15. 'plugins', contains files for our plugins.
 
 Requirements
 ------------
